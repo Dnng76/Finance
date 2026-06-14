@@ -21,6 +21,12 @@
     --accent: #2dd4bf; --accent2: #38bdf8;
     --green: #34d399; --red: #f87171; --yellow: #fbbf24; --purple: #a78bfa;
   }
+  body.light {
+    --bg: #f1f5f9; --bg2: #ffffff; --panel: #ffffff; --panel2: #e2e8f0;
+    --border: #cbd5e1; --text: #0f172a; --muted: #64748b;
+    --accent: #0d9488; --accent2: #0284c7;
+    --green: #16a34a; --red: #dc2626; --yellow: #d97706; --purple: #7c3aed;
+  }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
@@ -114,6 +120,22 @@
   var STORAGE_KEY = "financeTracker_v1";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Health","Savings","Other"];
+  var CATMETA = {
+    Food: { e: "🍔", bg: "#fef3c7", ic: "#f59e0b" },
+    Rent: { e: "🏠", bg: "#ffedd5", ic: "#f97316" },
+    Utilities: { e: "💡", bg: "#fef9c3", ic: "#eab308" },
+    Transport: { e: "🚌", bg: "#dbeafe", ic: "#3b82f6" },
+    Shopping: { e: "🛍️", bg: "#fce7f3", ic: "#ec4899" },
+    Entertainment: { e: "🎮", bg: "#ede9fe", ic: "#8b5cf6" },
+    Health: { e: "🏥", bg: "#d1fae5", ic: "#10b981" },
+    Salary: { e: "💳", bg: "#d1fae5", ic: "#10b981" },
+    Investment: { e: "💰", bg: "#fef3c7", ic: "#f59e0b" },
+    Freelance: { e: "💼", bg: "#e0e7ff", ic: "#6366f1" },
+    Gift: { e: "🎁", bg: "#fce7f3", ic: "#ec4899" },
+    Savings: { e: "🏦", bg: "#cffafe", ic: "#06b6d4" },
+    Other: { e: "💸", bg: "#e2e8f0", ic: "#64748b" }
+  };
+  function catMeta(name) { return CATMETA[name] || { e: "💸", bg: "#e2e8f0", ic: "#64748b" }; }
 
   var defaultData = {
     openingBalance: 0,
@@ -125,7 +147,12 @@
     currency: "$"
   };
 
-  var state, currentTab = "dashboard", privacy = false, editGoalId = null, editDebtId = null, locked = false, pinBuffer = "", pinError = false;
+  var state, currentTab = "dashboard", privacy = false, editGoalId = null, editDebtId = null, locked = false, pinBuffer = "", pinError = false, theme = "dark";
+  function applyTheme() {
+    document.body.classList.toggle("light", theme === "light");
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.setAttribute("content", theme === "light" ? "#f1f5f9" : "#0b1120");
+  }
 
   function load() {
     try {
@@ -311,7 +338,7 @@
     var center = centerLabel ? '<text x="80" y="78" text-anchor="middle" fill="' + (centerSub === "accent" ? "#2dd4bf" : "#e2e8f0") + '" font-size="26" font-weight="700">' + centerLabel + '</text>' +
       '<text x="80" y="98" text-anchor="middle" fill="#94a3b8" font-size="11">' + (centerSub === "accent" ? "funded" : "") + '</text>' : "";
     return '<svg viewBox="0 0 160 160" width="170" height="170" style="display:block;margin:0 auto"><g transform="rotate(-90 80 80)">' +
-      '<circle cx="80" cy="80" r="' + R + '" fill="none" stroke="#0f172a" stroke-width="' + W + '"/>' + segs + '</g>' + center + '</svg>';
+      '<circle cx="80" cy="80" r="' + R + '" fill="none" stroke="var(--bg2)" stroke-width="' + W + '"/>' + segs + '</g>' + center + '</svg>';
   }
 
   function legend(items) {
@@ -326,7 +353,7 @@
     var r = (size / 2) - 8, c = 2 * Math.PI * r, len = Math.min(100, pct) / 100 * c;
     return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" style="flex-shrink:0">' +
       '<g transform="rotate(-90 ' + (size / 2) + ' ' + (size / 2) + ')">' +
-      '<circle cx="' + (size / 2) + '" cy="' + (size / 2) + '" r="' + r + '" fill="none" stroke="#334155" stroke-width="8"/>' +
+      '<circle cx="' + (size / 2) + '" cy="' + (size / 2) + '" r="' + r + '" fill="none" stroke="var(--border)" stroke-width="8"/>' +
       '<circle cx="' + (size / 2) + '" cy="' + (size / 2) + '" r="' + r + '" fill="none" stroke="' + (color || "#2dd4bf") + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="' + len + ' ' + (c - len) + '"/>' +
       '</g>' +
       '<text x="' + (size / 2) + '" y="' + (size / 2 + size * 0.08) + '" text-anchor="middle" fill="#e2e8f0" font-size="' + (size * 0.22) + '" font-weight="700">' + pct.toFixed(0) + '%</text>' +
@@ -357,6 +384,21 @@
         '<div class="progress"><div style="width:' + (x.value / compMax * 100) + '%;background:' + x.color + '"></div></div></div>';
     }).join("") : '<div class="empty">Add data to see your net worth breakdown.</div>';
 
+    var emTarget = num(state.emergency.monthlyExpenses) * num(state.emergency.months);
+    var emPct = emTarget > 0 ? Math.min(100, t.emFund / emTarget * 100) : 0;
+    var goalTargetTotal = state.goals.reduce(function (s, g) { return s + num(g.target); }, 0);
+    var goalCurTotal = state.goals.reduce(function (s, g) { return s + num(g.current); }, 0);
+    var goalPct = goalTargetTotal > 0 ? Math.min(100, goalCurTotal / goalTargetTotal * 100) : 0;
+    var debtOrig = state.debts.reduce(function (s, d) { return s + num(d.total); }, 0);
+    var debtRem = state.debts.reduce(function (s, d) { return s + num(d.remaining); }, 0);
+    var debtPct = debtOrig > 0 ? Math.min(100, (debtOrig - debtRem) / debtOrig * 100) : 0;
+    function ptile(pct, color, label) { return '<div>' + ring(pct, color, 110) + '<div class="mini" style="margin-top:8px">' + label + '</div></div>'; }
+    var ptiles = [];
+    if (emTarget > 0) ptiles.push(ptile(emPct, "#2dd4bf", "Emergency Fund"));
+    if (goalTargetTotal > 0) ptiles.push(ptile(goalPct, "#38bdf8", "Goals Saved"));
+    if (debtOrig > 0) ptiles.push(ptile(debtPct, "#34d399", "Debt Paid Off"));
+    var progressPanel = ptiles.length ? '<div class="panel"><h3>Progress at a Glance</h3><div style="display:flex;gap:30px;flex-wrap:wrap;justify-content:space-around;text-align:center">' + ptiles.join("") + '</div></div>' : "";
+
     return '<h1 class="page-title">Dashboard</h1><p class="page-sub">Your complete financial picture at a glance.</p>' +
       '<div class="panel"><h3>Starting Balance</h3>' +
         '<p class="mini" style="margin:-8px 0 14px">Enter the cash you have right now. Your balance below = this + income − expenses.</p>' +
@@ -371,7 +413,7 @@
         card("💹 Trading Balance", fmt(t.tradingBalance), state.trading.trades.length + " trade" + (state.trading.trades.length !== 1 ? "s" : ""), t.tradingBalance >= 0 ? "pos" : "neg") +
         card("🎁 Gift Saved", fmt(t.goalGift), "Not counted in net worth", "") +
         card("📈 Net Worth", fmt(t.netWorth), "Assets minus debts (gifts excluded)", t.netWorth >= 0 ? "pos" : "neg") +
-      '</div>' +
+      '</div>' + progressPanel +
       '<div class="grid2">' +
         '<div class="panel"><h3>Balance Over Time</h3>' + areaChart(series) + '</div>' +
         '<div class="panel"><h3>Spending by Category</h3>' + (cats.length ? donut(cats) + legend(cats) : '<div class="empty">No expenses logged yet.</div>') + '</div>' +
@@ -509,7 +551,7 @@
     var target = num(em.monthlyExpenses) * num(em.months);
     var pct = target > 0 ? Math.min(100, num(em.current) / target * 100) : 0;
     var covered = num(em.monthlyExpenses) > 0 ? num(em.current) / num(em.monthlyExpenses) : 0;
-    var gauge = [{ name: "saved", value: pct, color: "#2dd4bf" }, { name: "rest", value: 100 - pct, color: "#0f172a" }];
+    var gauge = [{ name: "saved", value: pct, color: "#2dd4bf" }, { name: "rest", value: 100 - pct, color: "var(--bg2)" }];
 
     return '<h1 class="page-title">Emergency Fund</h1><p class="page-sub">A safety net of 3–6 months of expenses is the usual goal.</p>' +
       '<div class="grid2">' +
@@ -534,12 +576,48 @@
     var target = num(em.monthlyExpenses) * num(em.months);
     var pct = target > 0 ? Math.min(100, num(em.current) / target * 100) : 0;
     var covered = num(em.monthlyExpenses) > 0 ? num(em.current) / num(em.monthlyExpenses) : 0;
-    var gauge = [{ name: "saved", value: pct, color: "#2dd4bf" }, { name: "rest", value: 100 - pct, color: "#0f172a" }];
+    var gauge = [{ name: "saved", value: pct, color: "#2dd4bf" }, { name: "rest", value: 100 - pct, color: "var(--bg2)" }];
     if (el("em_gauge")) el("em_gauge").innerHTML = donut(gauge, pct.toFixed(0) + "%", "accent");
     if (el("em_saved")) el("em_saved").textContent = fmt(em.current);
     if (el("em_target")) el("em_target").textContent = fmt(target);
     if (el("em_covers")) el("em_covers").textContent = covered.toFixed(1) + " mo";
     if (el("em_mlabel")) el("em_mlabel").textContent = em.months;
+  }
+
+  function catCard(name, amount, maxv) {
+    var m = catMeta(name), pct = maxv > 0 ? Math.min(100, amount / maxv * 100) : 0;
+    return '<div style="flex:1 1 140px;max-width:200px;background:' + m.bg + ';border-radius:18px;padding:18px 16px;text-align:center;color:#1e293b">' +
+      '<div style="font-weight:600;margin-bottom:12px">' + esc(name) + '</div>' +
+      '<div style="width:54px;height:54px;border-radius:50%;background:' + m.ic + ';display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px">' + m.e + '</div>' +
+      '<div style="font-size:20px;font-weight:700">' + fmt(amount) + '</div>' +
+      '<div class="progress" style="margin-top:12px;height:8px;background:rgba(0,0,0,.12)"><div style="width:' + pct + '%;background:' + m.ic + '"></div></div>' +
+      '</div>';
+  }
+  function categorySummary() {
+    var exp = {}, inc = {};
+    state.transactions.forEach(function (t) { var bucket = t.type === "income" ? inc : exp; var c = t.category || "Other"; bucket[c] = (bucket[c] || 0) + num(t.amount); });
+    var ek = Object.keys(exp), ik = Object.keys(inc);
+    if (!ek.length && !ik.length) return "";
+    var t = totals();
+    var stat = function (label, value, cls) { return '<div><div class="mini">' + label + '</div><div style="font-size:22px;font-weight:700" class="' + (cls || "") + '">' + value + '</div></div>'; };
+    var net = t.income - t.expense;
+    var summary = '<div style="display:flex;gap:30px;flex-wrap:wrap;margin-bottom:22px">' +
+      stat("Income", fmt(t.income), "pos") + stat("Expense", fmt(t.expense), "neg") +
+      stat("Net (in − out)", fmt(net), net >= 0 ? "pos" : "neg") +
+      stat("Balance", fmt(t.balance), t.balance >= 0 ? "pos" : "neg") + '</div>';
+    var flex = "display:flex;flex-wrap:wrap;gap:14px";
+    var html = summary;
+    if (ek.length) {
+      var et = ek.reduce(function (s, k) { return s + exp[k]; }, 0), em = Math.max.apply(null, ek.map(function (k) { return exp[k]; }));
+      html += '<h3 style="margin:0 0 14px">Expense ' + fmt(et) + '</h3><div style="' + flex + '">' +
+        ek.sort(function (a, b) { return exp[b] - exp[a]; }).map(function (k) { return catCard(k, exp[k], em); }).join("") + '</div>';
+    }
+    if (ik.length) {
+      var it = ik.reduce(function (s, k) { return s + inc[k]; }, 0), im = Math.max.apply(null, ik.map(function (k) { return inc[k]; }));
+      html += '<h3 style="margin:24px 0 14px">Income ' + fmt(it) + '</h3><div style="' + flex + '">' +
+        ik.sort(function (a, b) { return inc[b] - inc[a]; }).map(function (k) { return catCard(k, inc[k], im); }).join("") + '</div>';
+    }
+    return '<div class="panel">' + html + '</div>';
   }
 
   function pageTransactions() {
@@ -554,6 +632,7 @@
     var opts = CATEGORIES.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join("");
 
     return '<h1 class="page-title">Transactions</h1><p class="page-sub">Log income and expenses to keep your balance accurate.</p>' +
+      categorySummary() +
       '<div class="panel"><h3>Add Transaction</h3><div class="form-row">' +
         '<label class="field"><span>Date</span><input id="t_date" type="date" value="' + today() + '"/></label>' +
         '<label class="field"><span>Type</span><select id="t_type"><option value="expense">Expense</option><option value="income">Income</option></select></label>' +
@@ -647,6 +726,36 @@
       '<div class="panel"><h3>Trade History</h3>' + (rows ?
         '<div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Symbol</th><th>Result</th><th style="text-align:right">Amount</th><th>Note</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
         : '<div class="empty">No trades logged yet.</div>') + '</div>' + symPanel;
+  }
+
+  function pageCompound() {
+    if (pageCompound.p == null) { pageCompound.p = 1000; pageCompound.m = 100; pageCompound.r = 7; pageCompound.y = 10; }
+    var P = num(pageCompound.p), PMT = num(pageCompound.m), rate = num(pageCompound.r), years = num(pageCompound.y);
+    var r = rate / 100 / 12, months = Math.round(years * 12);
+    var series = [], bal = P, fv;
+    if (months > 0) {
+      for (var i = 1; i <= months; i++) { bal = bal * (1 + r) + PMT; if (i % 12 === 0 || i === months) series.push({ date: "Y" + Math.ceil(i / 12), balance: bal }); }
+      fv = bal;
+    } else { fv = P; series = [{ date: "Y0", balance: P }]; }
+    var contrib = P + PMT * months;
+    var interest = fv - contrib;
+    var cur = state.currency || "$";
+
+    return '<h1 class="page-title">Compound Interest</h1><p class="page-sub">See how your money can grow over time.</p>' +
+      '<div class="panel"><h3>Inputs</h3><div class="form-row">' +
+        '<label class="field"><span>Starting amount (' + cur + ')</span><input id="ci_p" type="number" value="' + P + '"/></label>' +
+        '<label class="field"><span>Monthly contribution (' + cur + ')</span><input id="ci_m" type="number" value="' + PMT + '"/></label>' +
+        '<label class="field"><span>Annual interest rate %</span><input id="ci_r" type="number" value="' + rate + '"/></label>' +
+        '<label class="field"><span>Years</span><input id="ci_y" type="number" value="' + years + '"/></label>' +
+        '<button class="btn" data-act="calcCompound">Calculate</button>' +
+      '</div><p class="mini" style="margin-top:10px">Assumes interest compounds monthly and contributions are added each month.</p></div>' +
+      '<div class="cards">' +
+        card("Future Value", fmt(fv), "After " + years + " year" + (years === 1 ? "" : "s"), "pos") +
+        card("Total Contributions", fmt(contrib), "What you put in", "") +
+        card("Interest Earned", fmt(interest), "Growth from compounding", "pos") +
+        card("Growth", contrib > 0 ? (fv / contrib).toFixed(2) + "×" : "—", "Value ÷ contributions", "") +
+      '</div>' +
+      '<div class="panel"><h3>Projected Growth</h3>' + areaChart(series) + '</div>';
   }
 
   function pagePayday() {
@@ -756,7 +865,9 @@
     setOB: function () { state.openingBalance = num(val("ob_input")); save(); render(); },
     setTradeStart: function () { state.trading.startBalance = num(val("tr_start")); save(); render(); },
     setPayday: function () { state.payday = { label: val("pd_label") || "Payday", date: val("pd_date") || "", amount: num(val("pd_amount")) }; save(); render(); },
+    calcCompound: function () { pageCompound.p = num(val("ci_p")); pageCompound.m = num(val("ci_m")); pageCompound.r = num(val("ci_r")); pageCompound.y = num(val("ci_y")); render(); },
     privacy: function () { privacy = !privacy; try { localStorage.setItem("ft_privacy", privacy ? "1" : "0"); } catch (e) {} render(); },
+    theme: function () { theme = theme === "light" ? "dark" : "light"; try { localStorage.setItem("ft_theme", theme); } catch (e) {} applyTheme(); render(); },
     setPin: function () { var v = (val("sp_pin") || "").replace(/\D/g, ""); if (v.length < 4) { msg("PIN must be at least 4 digits."); return; } state.pin = v; save(); render(); },
     removePin: function () { state.pin = ""; locked = false; save(); render(); },
     lockNow: function () { if (state.pin) { locked = true; pinBuffer = ""; pinError = false; render(); } },
@@ -872,7 +983,7 @@
 
   function render() {
     if (locked && state.pin) { el("root").innerHTML = lockScreen(); wire(); return; }
-    var pages = { dashboard: pageDashboard, goals: pageGoals, debt: pageDebt, emergency: pageEmergency, transactions: pageTransactions, trading: pageTrading, payday: pagePayday, data: pageData };
+    var pages = { dashboard: pageDashboard, goals: pageGoals, debt: pageDebt, emergency: pageEmergency, transactions: pageTransactions, trading: pageTrading, payday: pagePayday, calc: pageCompound, data: pageData };
     var nav = [
       { id: "dashboard", label: "Dashboard", ico: "▥" },
       { id: "goals", label: "Goals", ico: "◎" },
@@ -881,12 +992,14 @@
       { id: "transactions", label: "Transactions", ico: "⇄" },
       { id: "trading", label: "Trading", ico: "💹" },
       { id: "payday", label: "Payday", ico: "⏰" },
+      { id: "calc", label: "Calculator", ico: "🧮" },
       { id: "data", label: "Backup / Export", ico: "⤓" }
     ];
     var sidebar = '<aside class="sidebar"><div class="brand"><span class="dot"></span> Finance</div><nav class="nav">' +
       nav.map(function (n) { return '<button class="' + (currentTab === n.id ? "active" : "") + '" data-tab="' + n.id + '"><span class="ico">' + n.ico + '</span> <span class="label">' + n.label + '</span></button>'; }).join("") +
       '</nav>' +
       '<button class="btn ghost sm" data-act="privacy" style="margin-top:14px;width:100%">' + (privacy ? "👁 Show amounts" : "🙈 Hide amounts") + '</button>' +
+      '<button class="btn ghost sm" data-act="theme" style="margin-top:8px;width:100%">' + (theme === "light" ? "🌙 Dark mode" : "☀ Light mode") + '</button>' +
       '</aside>';
     el("root").innerHTML = '<div class="app">' + sidebar + '<main class="main">' + pages[currentTab]() + '</main></div>';
     wire();
@@ -919,9 +1032,14 @@
   try {
     state = load();
     try { privacy = localStorage.getItem("ft_privacy") === "1"; } catch (e) {}
+    try { theme = localStorage.getItem("ft_theme") || "dark"; } catch (e) {}
+    applyTheme();
     if (state.pin) locked = true;
     render();
     initCloud(); // reconnects automatically if you've set up sync before
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden && state && state.pin && !locked) { locked = true; pinBuffer = ""; pinError = false; render(); }
+    });
   } catch (err) {
     document.getElementById("root").innerHTML = '<div style="padding:40px;color:#f87171;font-family:monospace">Error: ' + esc(err.message) + '</div>';
   }
