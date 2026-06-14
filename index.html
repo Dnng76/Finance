@@ -174,7 +174,13 @@
       try { cloud.db.enablePersistence({ synchronizeTabs: true }).catch(function () {}); } catch (e) {}
       cloud.auth.onAuthStateChanged(function (u) {
         cloud.user = u;
-        if (u) { subscribe(); } else if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
+        if (u) {
+          if (localStorage.getItem("ft_resetpin") === "1") {
+            try { localStorage.removeItem("ft_resetpin"); } catch (e) {}
+            state.pin = ""; locked = false; pinBuffer = ""; saveLocal(); cloudPush(); render();
+          }
+          subscribe();
+        } else if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
         if (currentTab === "data") render();
       });
       cloud.ready = true;
@@ -689,6 +695,8 @@
         '<p class="mini" style="' + (pinError ? "color:var(--red)" : "") + '">' + (pinError ? "Wrong PIN — try again" : "Enter your PIN") + '</p>' +
         '<div style="margin:18px 0">' + dots + '</div>' +
         '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">' + keys + '</div>' +
+        '<button class="btn ghost sm" data-act="forgotPin" style="margin-top:18px">Forgot PIN? Reset with Google</button>' +
+        '<div class="mini" id="pinMsg" style="margin-top:10px"></div>' +
       '</div></div>';
   }
 
@@ -698,7 +706,7 @@
         '<p class="mini" style="margin:-8px 0 12px">Set a numeric PIN to lock the app on open. Casual privacy lock — not bank-grade security.</p>' +
         '<div class="form-row" style="max-width:360px"><label class="field"><span>New PIN (4+ digits)</span><input id="sp_pin" type="password" inputmode="numeric" placeholder="••••"/></label><button class="btn" data-act="setPin">Set PIN</button></div></div>';
     }
-    return '<div class="panel"><h3>🔒 App Lock (PIN)</h3><div class="hint" style="margin:0 0 12px">✓ PIN lock is on — you\'ll be asked for it when the app opens.</div>' +
+    return '<div class="panel"><h3>🔒 App Lock (PIN)</h3><div class="hint" style="margin:0 0 12px">✓ PIN lock is on — you\'ll be asked for it when the app opens. Forgot it? Tap <strong>“Forgot PIN? Reset with Google”</strong> on the lock screen to reset using your Google account.</div>' +
       '<div class="toolbar"><button class="btn" data-act="lockNow">Lock now</button><button class="btn ghost" data-act="removePin">Remove PIN</button></div></div>';
   }
 
@@ -760,6 +768,22 @@
       render();
     },
     pinDel: function () { pinBuffer = pinBuffer.slice(0, -1); render(); },
+    forgotPin: function () {
+      var note = function (t) { if (el("pinMsg")) el("pinMsg").textContent = t; };
+      if (location.protocol === "file:") { note("Reset only works on the hosted app (your github.io link), not the local file. Open the app online to reset."); return; }
+      if (!fbAvailable()) { note("You appear to be offline. Connect to the internet and try again."); return; }
+      if (!initCloud()) { note("Cloud not available — try again online."); return; }
+      note("Opening Google sign-in…");
+      var provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      cloud.auth.signInWithPopup(provider).then(function () {
+        state.pin = ""; pinBuffer = ""; pinError = false; locked = false; save(); render();
+      }).catch(function (e) {
+        if (e && e.code === "auth/popup-closed-by-user") { note("Sign-in cancelled. Tap to try again."); return; }
+        try { localStorage.setItem("ft_resetpin", "1"); } catch (err) {}
+        cloud.auth.signInWithRedirect(provider).catch(function () { note("Couldn't open Google sign-in. Use the hosted app online to reset."); });
+      });
+    },
     calcDebt: function () { pageDebt.extra = num(val("sn_extra")); render(); },
     addTrade: function () {
       if (!val("tr_amount")) return;
