@@ -112,10 +112,11 @@
     openingBalance: 0,
     transactions: [], goals: [], debts: [],
     emergency: { monthlyExpenses: 0, months: 3, current: 0 },
+    trading: { startBalance: 0, trades: [] },
     currency: "$"
   };
 
-  var state, currentTab = "dashboard";
+  var state, currentTab = "dashboard", privacy = false;
 
   function load() {
     try {
@@ -131,7 +132,7 @@
   function uid() { return Math.random().toString(36).slice(2, 10); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c]; }); }
   function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
-  function fmt(n) { return (state.currency || "$") + num(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function fmt(n) { if (privacy) return (state.currency || "$") + "•••"; return (state.currency || "$") + num(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function today() { return new Date().toISOString().slice(0, 10); }
   function el(id) { return document.getElementById(id); }
   function val(id) { var e = el(id); return e ? e.value : ""; }
@@ -201,8 +202,11 @@
     var totalDebt = state.debts.reduce(function (s, d) { return s + num(d.remaining); }, 0);
     var goalSavings = state.goals.reduce(function (s, g) { return s + num(g.current); }, 0);
     var emFund = num(state.emergency.current);
-    var netWorth = balance + goalSavings + emFund - totalDebt;
-    return { income: income, expense: expense, balance: balance, totalDebt: totalDebt, goalSavings: goalSavings, emFund: emFund, netWorth: netWorth };
+    var tProfit = 0, tLoss = 0;
+    state.trading.trades.forEach(function (t) { if (t.result === "loss") tLoss += num(t.amount); else tProfit += num(t.amount); });
+    var tradingBalance = num(state.trading.startBalance) + tProfit - tLoss;
+    var netWorth = balance + goalSavings + emFund + tradingBalance - totalDebt;
+    return { income: income, expense: expense, balance: balance, totalDebt: totalDebt, goalSavings: goalSavings, emFund: emFund, tradingBalance: tradingBalance, netWorth: netWorth };
   }
 
   function payoffMonths(remaining, annualRate, payment) {
@@ -213,6 +217,45 @@
     if (r === 0) return Math.ceil(remaining / payment);
     if (payment <= remaining * r) return Infinity;
     return Math.ceil(-Math.log(1 - (r * remaining) / payment) / Math.log(1 + r));
+  }
+
+  function simulateDebts(strategy, extra) {
+    var list = state.debts.map(function (d) {
+      return { remaining: num(d.remaining), rate: num(d.rate) / 100 / 12, min: num(d.payment), creditor: d.creditor };
+    }).filter(function (d) { return d.remaining > 0; });
+    if (!list.length) return { months: 0, interest: 0, order: [] };
+    var months = 0, interest = 0, order = [], guard = 0;
+    while (list.some(function (d) { return d.remaining > 0.005; }) && guard < 1200) {
+      guard++; months++;
+      list.forEach(function (d) { if (d.remaining > 0) { var i = d.remaining * d.rate; d.remaining += i; interest += i; } });
+      var pool = num(extra);
+      list.forEach(function (d) { if (d.remaining > 0) { var m = Math.min(d.min, d.remaining); d.remaining -= m; if (d.min > m) pool += (d.min - m); } });
+      var active = list.filter(function (d) { return d.remaining > 0.005; });
+      active.sort(function (a, b) { return strategy === "avalanche" ? b.rate - a.rate : a.remaining - b.remaining; });
+      for (var k = 0; k < active.length && pool > 0.005; k++) {
+        var pay = Math.min(pool, active[k].remaining);
+        active[k].remaining -= pay; pool -= pay;
+      }
+      list.forEach(function (d) { if (d.remaining <= 0.005 && order.indexOf(d.creditor) < 0) order.push(d.creditor); });
+    }
+    return { months: guard >= 1200 ? Infinity : months, interest: interest, order: order };
+  }
+
+  function debtCalcResults() {
+    if (!state.debts.length) return '<div class="empty">Add debts above to use the calculator.</div>';
+    var extra = num(pageDebt.extra);
+    var sn = simulateDebts("snowball", extra), av = simulateDebts("avalanche", extra);
+    function box(name, r, sub) {
+      var m = r.months === Infinity ? "Never" : r.months + " mo";
+      var detail = r.months === Infinity ? "payments too low to clear" : "≈ " + (r.months / 12).toFixed(1) + " yrs · interest " + fmt(r.interest);
+      var ord = r.order.length ? '<div class="mini" style="margin-top:8px">Order: ' + r.order.map(esc).join(" → ") + '</div>' : "";
+      return '<div class="card"><div class="label">' + name + '</div><div class="value" style="font-size:22px">' + m + '</div><div class="sub">' + detail + '</div>' + ord + '<div class="mini" style="margin-top:6px">' + sub + '</div></div>';
+    }
+    var verdict = (av.interest < sn.interest - 0.5) ? "⛰ Avalanche saves the most interest." : (sn.interest < av.interest - 0.5 ? "❄ Snowball costs slightly less here." : "Both strategies are about the same.");
+    return '<div class="cards" style="margin-top:16px">' +
+      box("❄ Snowball", sn, "Smallest balance first — fast wins") +
+      box("⛰ Avalanche", av, "Highest rate first — least interest") +
+      '</div><div class="mini" style="margin-top:6px">' + verdict + ' (estimate)</div>';
   }
 
   /* ---------- SVG charts (no dependencies) ---------- */
@@ -260,6 +303,19 @@
     }).join("") + '</ul>';
   }
 
+  function ring(pct, color, size) {
+    size = size || 90;
+    pct = Math.max(0, pct);
+    var r = (size / 2) - 8, c = 2 * Math.PI * r, len = Math.min(100, pct) / 100 * c;
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" style="flex-shrink:0">' +
+      '<g transform="rotate(-90 ' + (size / 2) + ' ' + (size / 2) + ')">' +
+      '<circle cx="' + (size / 2) + '" cy="' + (size / 2) + '" r="' + r + '" fill="none" stroke="#0f172a" stroke-width="8"/>' +
+      '<circle cx="' + (size / 2) + '" cy="' + (size / 2) + '" r="' + r + '" fill="none" stroke="' + (color || "#2dd4bf") + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="' + len + ' ' + (c - len) + '"/>' +
+      '</g>' +
+      '<text x="' + (size / 2) + '" y="' + (size / 2 + size * 0.08) + '" text-anchor="middle" fill="#e2e8f0" font-size="' + (size * 0.22) + '" font-weight="700">' + pct.toFixed(0) + '%</text>' +
+      '</svg>';
+  }
+
   /* ---------- pages ---------- */
   function pageDashboard() {
     var t = totals();
@@ -275,7 +331,8 @@
     var comp = [
       { name: "Cash Balance", value: Math.max(0, t.balance), color: COLORS[0] },
       { name: "Goal Savings", value: t.goalSavings, color: COLORS[1] },
-      { name: "Emergency Fund", value: t.emFund, color: COLORS[2] }
+      { name: "Emergency Fund", value: t.emFund, color: COLORS[2] },
+      { name: "Trading", value: Math.max(0, t.tradingBalance), color: COLORS[3] }
     ].filter(function (x) { return x.value > 0; });
     var compMax = comp.reduce(function (m, x) { return Math.max(m, x.value); }, 1);
     var compHtml = comp.length ? comp.map(function (x) {
@@ -294,6 +351,7 @@
         card("💰 Current Balance", fmt(t.balance), "Income " + fmt(t.income) + " · Expenses " + fmt(t.expense), t.balance >= 0 ? "pos" : "neg") +
         card("◍ Total Debt", fmt(t.totalDebt), state.debts.length + " debt" + (state.debts.length !== 1 ? "s" : "") + " tracked", "neg") +
         card("⛨ Emergency Fund", fmt(t.emFund), "Target " + fmt(num(state.emergency.monthlyExpenses) * num(state.emergency.months)), "") +
+        card("💹 Trading Balance", fmt(t.tradingBalance), state.trading.trades.length + " trade" + (state.trading.trades.length !== 1 ? "s" : ""), t.tradingBalance >= 0 ? "pos" : "neg") +
         card("📈 Net Worth", fmt(t.netWorth), "Assets minus debts", t.netWorth >= 0 ? "pos" : "neg") +
       '</div>' +
       '<div class="grid2">' +
@@ -326,9 +384,10 @@
       var pct = num(g.target) > 0 ? Math.min(100, num(g.current) / num(g.target) * 100) : 0;
       return '<div class="goal"><div class="row-between"><strong style="font-size:16px">' + esc(g.name) + '</strong>' +
         '<button class="icon-btn" data-act="delGoal" data-id="' + g.id + '">✕</button></div>' +
-        '<div class="mini" style="margin:10px 0 8px">' + fmt(g.current) + ' of ' + fmt(g.target) + ' · ' + pct.toFixed(0) + '%</div>' +
-        '<div class="progress"><div style="width:' + pct + '%"></div></div>' +
-        goalTimeframe(g) +
+        '<div style="display:flex;align-items:center;gap:16px;margin:14px 0">' +
+          ring(pct, "#2dd4bf", 92) +
+          '<div style="flex:1"><div style="font-size:15px"><strong>' + fmt(g.current) + '</strong> <span class="mini">of ' + fmt(g.target) + '</span></div>' + goalTimeframe(g) + '</div>' +
+        '</div>' +
         '<div class="toolbar" style="margin-top:14px">' +
           '<button class="btn ghost sm" data-act="goal" data-id="' + g.id + '" data-amt="50">+50</button>' +
           '<button class="btn ghost sm" data-act="goal" data-id="' + g.id + '" data-amt="100">+100</button>' +
@@ -359,7 +418,7 @@
       return '<tr><td><strong>' + esc(d.creditor) + '</strong></td><td class="neg">' + fmt(d.remaining) + '</td><td>' + fmt(d.total) + '</td>' +
         '<td>' + num(d.rate).toFixed(2) + '%</td><td>' + fmt(d.payment) + '</td>' +
         '<td>' + (n === Infinity ? '<span class="neg">never</span>' : n + ' mo') + '</td>' +
-        '<td style="min-width:120px"><div class="progress"><div style="width:' + paid + '%"></div></div><div class="mini" style="margin-top:4px">' + paid.toFixed(0) + '% paid</div></td>' +
+        '<td>' + ring(paid, "#34d399", 56) + '</td>' +
         '<td><button class="icon-btn" data-act="delDebt" data-id="' + d.id + '">✕</button></td></tr>';
     }).join("") : '';
 
@@ -377,6 +436,13 @@
         '<label class="field"><span>Monthly pmt</span><input id="d_payment" type="number" placeholder="150"/></label>' +
         '<button class="btn" data-act="addDebt">+ Add</button>' +
       '</div></div>' +
+      '<div class="panel"><h3>Payoff Strategy Calculator</h3>' +
+        '<p class="mini" style="margin:-8px 0 14px">Enter any extra you can pay monthly on top of minimums, then see which strategy clears your debt faster and cheaper.</p>' +
+        '<div class="form-row" style="max-width:420px">' +
+          '<label class="field"><span>Extra per month (' + (state.currency || "$") + ')</span><input id="sn_extra" type="number" value="' + num(pageDebt.extra) + '"/></label>' +
+          '<button class="btn" data-act="calcDebt">Calculate</button>' +
+        '</div>' + debtCalcResults() +
+      '</div>' +
       '<div class="panel"><h3>Your Debts</h3>' + (rows ?
         '<div style="overflow-x:auto"><table><thead><tr><th>Creditor</th><th>Remaining</th><th>Original</th><th>Rate</th><th>Monthly</th><th>Payoff</th><th>Progress</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
         : '<div class="empty">No debts tracked. 🎉</div>') + '</div>';
@@ -445,6 +511,88 @@
       '</div>';
   }
 
+  function pageTrading() {
+    var tr = state.trading;
+    var profit = 0, loss = 0, wins = 0, losses = 0;
+    tr.trades.forEach(function (t) { if (t.result === "loss") { loss += num(t.amount); losses++; } else { profit += num(t.amount); wins++; } });
+    var net = profit - loss;
+    var balance = num(tr.startBalance) + net;
+    var total = wins + losses;
+    var winRate = total > 0 ? wins / total * 100 : 0;
+
+    var sorted = tr.trades.slice().sort(function (a, b) { return (a.date || "").localeCompare(b.date || ""); });
+    var running = num(tr.startBalance), map = {};
+    sorted.forEach(function (t) { running += t.result === "loss" ? -num(t.amount) : num(t.amount); map[t.date] = running; });
+    var series = Object.keys(map).sort().map(function (d) { return { date: d, balance: map[d] }; });
+
+    var rows = tr.trades.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); }).map(function (t) {
+      var isLoss = t.result === "loss";
+      return '<tr><td>' + esc(t.date) + '</td><td><strong>' + esc(t.symbol || "—") + '</strong></td>' +
+        '<td><span class="tag ' + (isLoss ? "expense" : "income") + '">' + t.result + '</span></td>' +
+        '<td style="text-align:right" class="' + (isLoss ? "neg" : "pos") + '">' + (isLoss ? "−" : "+") + fmt(t.amount) + '</td>' +
+        '<td class="mini">' + esc(t.note) + '</td>' +
+        '<td><button class="icon-btn" data-act="delTrade" data-id="' + t.id + '">✕</button></td></tr>';
+    }).join("");
+
+    var winsArr = tr.trades.filter(function (t) { return t.result !== "loss"; }).map(function (t) { return num(t.amount); });
+    var lossArr = tr.trades.filter(function (t) { return t.result === "loss"; }).map(function (t) { return num(t.amount); });
+    var avgWin = winsArr.length ? profit / winsArr.length : 0;
+    var avgLoss = lossArr.length ? loss / lossArr.length : 0;
+    var bigWin = winsArr.length ? Math.max.apply(null, winsArr) : 0;
+    var bigLoss = lossArr.length ? Math.max.apply(null, lossArr) : 0;
+    var profitFactor = loss > 0 ? profit / loss : (profit > 0 ? Infinity : 0);
+    var byDate = tr.trades.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
+    var streak = 0, streakType = "";
+    for (var si = 0; si < byDate.length; si++) {
+      var rr = byDate[si].result === "loss" ? "loss" : "win";
+      if (si === 0) { streakType = rr; streak = 1; } else if (rr === streakType) { streak++; } else break;
+    }
+    var streakLabel = streak ? streak + " " + (streakType === "win" ? "win" + (streak !== 1 ? "s" : "") : "loss" + (streak !== 1 ? "es" : "")) : "—";
+    var statsPanel = tr.trades.length ? '<div class="panel"><h3>Performance</h3><div class="cards" style="margin:0">' +
+      card("Avg Win", fmt(avgWin), "", "pos") +
+      card("Avg Loss", fmt(avgLoss), "", "neg") +
+      card("Biggest Win", fmt(bigWin), "", "pos") +
+      card("Biggest Loss", fmt(bigLoss), "", "neg") +
+      card("Profit Factor", profitFactor === Infinity ? "∞" : profitFactor.toFixed(2), "Profit ÷ Loss", profitFactor >= 1 ? "pos" : "neg") +
+      card("Current Streak", streakLabel, "", streakType === "win" ? "pos" : (streakType === "loss" ? "neg" : "")) +
+      '</div></div>' : "";
+
+    var symMap = {};
+    tr.trades.forEach(function (t) { var s = t.symbol || "—"; if (!symMap[s]) symMap[s] = { net: 0, n: 0 }; symMap[s].net += (t.result === "loss" ? -num(t.amount) : num(t.amount)); symMap[s].n++; });
+    var symRows = Object.keys(symMap).sort(function (a, b) { return symMap[b].net - symMap[a].net; }).map(function (s) {
+      var o = symMap[s];
+      return '<tr><td><strong>' + esc(s) + '</strong></td><td>' + o.n + '</td><td style="text-align:right" class="' + (o.net >= 0 ? "pos" : "neg") + '">' + (o.net >= 0 ? "+" : "−") + fmt(Math.abs(o.net)) + '</td></tr>';
+    }).join("");
+    var symPanel = tr.trades.length ? '<div class="panel"><h3>By Symbol</h3><div style="overflow-x:auto"><table><thead><tr><th>Symbol</th><th>Trades</th><th style="text-align:right">Net P/L</th></tr></thead><tbody>' + symRows + '</tbody></table></div></div>' : "";
+
+    return '<h1 class="page-title">Trading</h1><p class="page-sub">Log your trades and track profit, loss, and balance.</p>' +
+      '<div class="panel"><h3>Trading Capital</h3>' +
+        '<p class="mini" style="margin:-8px 0 14px">Your starting trading balance. Profits and losses below adjust it.</p>' +
+        '<div class="form-row" style="max-width:420px">' +
+          '<label class="field"><span>Starting capital (' + (state.currency || "$") + ')</span><input id="tr_start" type="number" value="' + num(tr.startBalance) + '"/></label>' +
+          '<button class="btn" data-act="setTradeStart">Save</button>' +
+        '</div></div>' +
+      '<div class="cards">' +
+        card("Trading Balance", fmt(balance), "Capital " + fmt(tr.startBalance) + " + P/L", balance >= num(tr.startBalance) ? "pos" : "neg") +
+        card("Net P/L", (net >= 0 ? "+" : "−") + fmt(Math.abs(net)), tr.trades.length + " trade" + (tr.trades.length !== 1 ? "s" : ""), net >= 0 ? "pos" : "neg") +
+        card("Total Profit", fmt(profit), wins + " win" + (wins !== 1 ? "s" : ""), "pos") +
+        card("Total Loss", fmt(loss), losses + " loss" + (losses !== 1 ? "es" : ""), "neg") +
+        card("Win Rate", winRate.toFixed(0) + "%", wins + " / " + total + " trades", "") +
+      '</div>' + statsPanel +
+      '<div class="panel"><h3>Add a Trade</h3><div class="form-row">' +
+        '<label class="field"><span>Date</span><input id="tr_date" type="date" value="' + today() + '"/></label>' +
+        '<label class="field"><span>Symbol</span><input id="tr_symbol" placeholder="BTC, AAPL…"/></label>' +
+        '<label class="field"><span>Result</span><select id="tr_result"><option value="profit">Profit</option><option value="loss">Loss</option></select></label>' +
+        '<label class="field"><span>Amount</span><input id="tr_amount" type="number" placeholder="0.00"/></label>' +
+        '<label class="field"><span>Note (optional)</span><input id="tr_note" placeholder="Scalp, swing…"/></label>' +
+        '<button class="btn" data-act="addTrade">+ Add</button>' +
+      '</div></div>' +
+      '<div class="panel"><h3>Balance Over Time</h3>' + areaChart(series) + '</div>' +
+      '<div class="panel"><h3>Trade History</h3>' + (rows ?
+        '<div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Symbol</th><th>Result</th><th style="text-align:right">Amount</th><th>Note</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+        : '<div class="empty">No trades logged yet.</div>') + '</div>' + symPanel;
+  }
+
   function cloudSection() {
     if (!fbAvailable()) {
       return '<div class="panel"><h3>☁ Cloud Sync</h3><div class="hint" style="margin:0">The cloud library couldn\'t load — you may be offline, or opening the file directly. Reconnect to the internet (and ideally host the app online) to enable sync. Your data is safe locally in the meantime.</div></div>';
@@ -489,6 +637,15 @@
 
   var actions = {
     setOB: function () { state.openingBalance = num(val("ob_input")); save(); render(); },
+    setTradeStart: function () { state.trading.startBalance = num(val("tr_start")); save(); render(); },
+    privacy: function () { privacy = !privacy; try { localStorage.setItem("ft_privacy", privacy ? "1" : "0"); } catch (e) {} render(); },
+    calcDebt: function () { pageDebt.extra = num(val("sn_extra")); render(); },
+    addTrade: function () {
+      if (!val("tr_amount")) return;
+      state.trading.trades.push({ id: uid(), date: val("tr_date") || today(), symbol: val("tr_symbol"), result: val("tr_result"), amount: num(val("tr_amount")), note: val("tr_note") });
+      save(); render();
+    },
+    delTrade: function (e) { state.trading.trades = state.trading.trades.filter(function (t) { return t.id !== e.id; }); save(); render(); },
     addGoal: function () {
       var name = val("g_name"); if (!name || !val("g_target")) return;
       state.goals.push({ id: uid(), name: name, target: num(val("g_target")), current: num(val("g_current")), deadline: val("g_deadline") || "" });
@@ -542,18 +699,21 @@
   };
 
   function render() {
-    var pages = { dashboard: pageDashboard, goals: pageGoals, debt: pageDebt, emergency: pageEmergency, transactions: pageTransactions, data: pageData };
+    var pages = { dashboard: pageDashboard, goals: pageGoals, debt: pageDebt, emergency: pageEmergency, transactions: pageTransactions, trading: pageTrading, data: pageData };
     var nav = [
       { id: "dashboard", label: "Dashboard", ico: "▥" },
       { id: "goals", label: "Goals", ico: "◎" },
       { id: "debt", label: "Debt", ico: "◍" },
       { id: "emergency", label: "Emergency Fund", ico: "⛨" },
       { id: "transactions", label: "Transactions", ico: "⇄" },
+      { id: "trading", label: "Trading", ico: "💹" },
       { id: "data", label: "Backup / Export", ico: "⤓" }
     ];
     var sidebar = '<aside class="sidebar"><div class="brand"><span class="dot"></span> Finance</div><nav class="nav">' +
       nav.map(function (n) { return '<button class="' + (currentTab === n.id ? "active" : "") + '" data-tab="' + n.id + '"><span class="ico">' + n.ico + '</span> <span class="label">' + n.label + '</span></button>'; }).join("") +
-      '</nav></aside>';
+      '</nav>' +
+      '<button class="btn ghost sm" data-act="privacy" style="margin-top:14px;width:100%">' + (privacy ? "👁 Show amounts" : "🙈 Hide amounts") + '</button>' +
+      '</aside>';
     el("root").innerHTML = '<div class="app">' + sidebar + '<main class="main">' + pages[currentTab]() + '</main></div>';
     wire();
   }
@@ -584,6 +744,7 @@
   // boot
   try {
     state = load();
+    try { privacy = localStorage.getItem("ft_privacy") === "1"; } catch (e) {}
     render();
     initCloud(); // reconnects automatically if you've set up sync before
   } catch (err) {
