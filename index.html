@@ -1037,9 +1037,10 @@
     if (state.pin) locked = true;
     render();
     initCloud(); // reconnects automatically if you've set up sync before
-    document.addEventListener("visibilitychange", function () {
-      if (document.hidden && state && state.pin && !locked) { locked = true; pinBuffer = ""; pinError = false; render(); }
-    });
+    var relock = function () { if (state && state.pin && !locked) { locked = true; pinBuffer = ""; pinError = false; render(); } };
+    document.addEventListener("visibilitychange", relock); // fires when backgrounded and when returning
+    window.addEventListener("pagehide", relock);
+    window.addEventListener("focus", relock);
   } catch (err) {
     document.getElementById("root").innerHTML = '<div style="padding:40px;color:#f87171;font-family:monospace">Error: ' + esc(err.message) + '</div>';
   }
