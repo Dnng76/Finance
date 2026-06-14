@@ -143,6 +143,7 @@
     emergency: { monthlyExpenses: 0, months: 3, current: 0 },
     trading: { startBalance: 0, trades: [] },
     payday: { date: "", amount: 0, label: "Payday" },
+    recurring: [],
     pin: "",
     currency: "$"
   };
@@ -170,6 +171,27 @@
   function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
   function fmt(n) { if (privacy) return (state.currency || "$") + "•••"; return (state.currency || "$") + num(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function today() { return new Date().toISOString().slice(0, 10); }
+  function ymOfDate(d) { return d.getFullYear() + "-" + (d.getMonth() + 1 < 10 ? "0" : "") + (d.getMonth() + 1); }
+  function nextMonth(ym) { var p = ym.split("-"); var y = +p[0], mo = +p[1] + 1; if (mo > 12) { mo = 1; y++; } return y + "-" + (mo < 10 ? "0" : "") + mo; }
+  function applyRecurring() {
+    if (!state.recurring || !state.recurring.length) return;
+    var now = new Date(today() + "T00:00:00"), nowYm = ymOfDate(now), changed = false;
+    state.recurring.forEach(function (r) {
+      var day = Math.min(28, Math.max(1, num(r.day) || 1));
+      var ym = r.lastApplied ? nextMonth(r.lastApplied) : (r.created || nowYm);
+      var guard = 0;
+      while (ym <= nowYm && guard < 240) {
+        guard++;
+        var occDate = ym + "-" + (day < 10 ? "0" : "") + day;
+        if (new Date(occDate + "T00:00:00") <= now) {
+          state.transactions.push({ id: uid(), date: occDate, type: r.type, category: r.category, amount: num(r.amount), note: (r.note ? r.note + " " : "") + "(recurring)" });
+          r.lastApplied = ym; changed = true;
+        } else { break; }
+        ym = nextMonth(ym);
+      }
+    });
+    if (changed) save();
+  }
   function el(id) { return document.getElementById(id); }
   function val(id) { var e = el(id); return e ? e.value : ""; }
   function msg(t) { var m = el("dataMsg"); if (m) m.innerHTML = '<div class="hint">' + esc(t) + '</div>'; }
@@ -347,6 +369,30 @@
     }).join("") + '</ul>';
   }
 
+  function monthShort(ym) { var p = ym.split("-"); return new Date(p[0], (+p[1]) - 1, 1).toLocaleDateString(undefined, { month: "short" }); }
+  function monthlyChart() {
+    var m = {};
+    state.transactions.forEach(function (t) { var k = (t.date || "").slice(0, 7); if (!k) return; if (!m[k]) m[k] = { inc: 0, exp: 0 }; if (t.type === "income") m[k].inc += num(t.amount); else m[k].exp += num(t.amount); });
+    var keys = Object.keys(m).sort();
+    if (!keys.length) return '<div class="empty">Add transactions to see monthly trends.</div>';
+    keys = keys.slice(-6);
+    var data = keys.map(function (k) { return { ym: k, inc: m[k].inc, exp: m[k].exp }; });
+    var w = 600, h = 240, p = 34, n = data.length;
+    var max = Math.max.apply(null, data.map(function (d) { return Math.max(d.inc, d.exp); }).concat([1]));
+    var slot = (w - 2 * p) / n, bw = Math.min(26, slot / 3.2);
+    function Y(v) { return h - p - (v / max) * (h - 2 * p); }
+    var bars = "";
+    data.forEach(function (d, i) {
+      var cx = p + slot * i + slot / 2;
+      bars += '<rect x="' + (cx - bw - 2) + '" y="' + Y(d.inc) + '" width="' + bw + '" height="' + (h - p - Y(d.inc)) + '" rx="3" fill="#34d399"/>';
+      bars += '<rect x="' + (cx + 2) + '" y="' + Y(d.exp) + '" width="' + bw + '" height="' + (h - p - Y(d.exp)) + '" rx="3" fill="#f87171"/>';
+      bars += '<text x="' + cx + '" y="' + (h - 12) + '" text-anchor="middle" fill="#94a3b8" font-size="11">' + monthShort(d.ym) + '</text>';
+    });
+    return '<div class="chart-wrap"><svg viewBox="0 0 ' + w + ' ' + h + '" width="100%">' +
+      '<line x1="' + p + '" y1="' + (h - p) + '" x2="' + (w - p) + '" y2="' + (h - p) + '" stroke="#334155"/>' + bars + '</svg></div>' +
+      '<div class="toolbar" style="margin-top:6px;font-size:12px"><span style="color:#34d399">■ Income</span><span style="color:#f87171">■ Expense</span></div>';
+  }
+
   function ring(pct, color, size) {
     size = size || 90;
     pct = Math.max(0, pct);
@@ -418,6 +464,7 @@
         '<div class="panel"><h3>Balance Over Time</h3>' + areaChart(series) + '</div>' +
         '<div class="panel"><h3>Spending by Category</h3>' + (cats.length ? donut(cats) + legend(cats) : '<div class="empty">No expenses logged yet.</div>') + '</div>' +
       '</div>' +
+      '<div class="panel"><h3>Monthly Income vs Expense</h3>' + monthlyChart() + '</div>' +
       '<div class="panel"><h3>Net Worth Composition</h3>' + compHtml + '</div>';
   }
 
@@ -728,6 +775,29 @@
         : '<div class="empty">No trades logged yet.</div>') + '</div>' + symPanel;
   }
 
+  function pageRecurring() {
+    var opts = CATEGORIES.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join("");
+    var rows = state.recurring.length ? state.recurring.map(function (r) {
+      return '<tr><td><span class="tag ' + (r.type === "income" ? "income" : "expense") + '">' + r.type + '</span></td>' +
+        '<td>' + esc(r.category) + '</td><td>Day ' + (num(r.day) || 1) + '</td>' +
+        '<td style="text-align:right" class="' + (r.type === "income" ? "pos" : "neg") + '">' + fmt(r.amount) + '</td>' +
+        '<td class="mini">' + esc(r.note) + '</td>' +
+        '<td><button class="icon-btn" data-act="delRecurring" data-id="' + r.id + '">✕</button></td></tr>';
+    }).join("") : '';
+    return '<h1 class="page-title">Recurring</h1><p class="page-sub">Set income or expenses that auto-add every month.</p>' +
+      '<div class="panel"><h3>Add Recurring Entry</h3><div class="form-row">' +
+        '<label class="field"><span>Type</span><select id="rc_type"><option value="expense">Expense</option><option value="income">Income</option></select></label>' +
+        '<label class="field"><span>Category</span><select id="rc_cat">' + opts + '</select></label>' +
+        '<label class="field"><span>Amount</span><input id="rc_amount" type="number" placeholder="0.00"/></label>' +
+        '<label class="field"><span>Day of month</span><input id="rc_day" type="number" min="1" max="28" placeholder="1"/></label>' +
+        '<label class="field"><span>Note (optional)</span><input id="rc_note" placeholder="Rent, Netflix…"/></label>' +
+        '<button class="btn" data-act="addRecurring">+ Add</button>' +
+      '</div><p class="mini" style="margin-top:10px">Each month on the chosen day, this is added to your transactions automatically when you open the app.</p></div>' +
+      '<div class="panel"><h3>Your Recurring Entries</h3>' + (rows ?
+        '<div style="overflow-x:auto"><table><thead><tr><th>Type</th><th>Category</th><th>When</th><th style="text-align:right">Amount</th><th>Note</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+        : '<div class="empty">No recurring entries yet.</div>') + '</div>';
+  }
+
   function pageCompound() {
     if (pageCompound.p == null) { pageCompound.p = 1000; pageCompound.m = 100; pageCompound.r = 7; pageCompound.y = 10; }
     var P = num(pageCompound.p), PMT = num(pageCompound.m), rate = num(pageCompound.r), years = num(pageCompound.y);
@@ -948,6 +1018,12 @@
       save(); render();
     },
     delTx: function (e) { state.transactions = state.transactions.filter(function (t) { return t.id !== e.id; }); save(); render(); },
+    addRecurring: function () {
+      if (!val("rc_amount")) return;
+      state.recurring.push({ id: uid(), type: val("rc_type"), category: val("rc_cat"), amount: num(val("rc_amount")), day: num(val("rc_day")) || 1, note: val("rc_note"), created: ymOfDate(new Date(today() + "T00:00:00")), lastApplied: "" });
+      applyRecurring(); save(); render();
+    },
+    delRecurring: function (e) { state.recurring = state.recurring.filter(function (r) { return r.id !== e.id; }); save(); render(); },
     em: function (e) { state.emergency.current = num(state.emergency.current) + num(e.amt); save(); paintEmergency(); if (el("em_cur")) el("em_cur").value = num(state.emergency.current); },
     cur: function (e) { state.currency = e.c; save(); render(); },
     expJSON: function () { download("finance-backup-" + today() + ".json", JSON.stringify(state, null, 2), "application/json"); },
@@ -983,13 +1059,14 @@
 
   function render() {
     if (locked && state.pin) { el("root").innerHTML = lockScreen(); wire(); return; }
-    var pages = { dashboard: pageDashboard, goals: pageGoals, debt: pageDebt, emergency: pageEmergency, transactions: pageTransactions, trading: pageTrading, payday: pagePayday, calc: pageCompound, data: pageData };
+    var pages = { dashboard: pageDashboard, goals: pageGoals, debt: pageDebt, emergency: pageEmergency, transactions: pageTransactions, recurring: pageRecurring, trading: pageTrading, payday: pagePayday, calc: pageCompound, data: pageData };
     var nav = [
       { id: "dashboard", label: "Dashboard", ico: "▥" },
       { id: "goals", label: "Goals", ico: "◎" },
       { id: "debt", label: "Debt", ico: "◍" },
       { id: "emergency", label: "Emergency Fund", ico: "⛨" },
       { id: "transactions", label: "Transactions", ico: "⇄" },
+      { id: "recurring", label: "Recurring", ico: "🔁" },
       { id: "trading", label: "Trading", ico: "💹" },
       { id: "payday", label: "Payday", ico: "⏰" },
       { id: "calc", label: "Calculator", ico: "🧮" },
@@ -1035,6 +1112,7 @@
     try { theme = localStorage.getItem("ft_theme") || "dark"; } catch (e) {}
     applyTheme();
     if (state.pin) locked = true;
+    applyRecurring();
     render();
     initCloud(); // reconnects automatically if you've set up sync before
     var relock = function () { if (state && state.pin && !locked) { locked = true; pinBuffer = ""; pinError = false; render(); } };
