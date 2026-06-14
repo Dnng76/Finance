@@ -116,7 +116,7 @@
     currency: "$"
   };
 
-  var state, currentTab = "dashboard", privacy = false;
+  var state, currentTab = "dashboard", privacy = false, editGoalId = null;
 
   function load() {
     try {
@@ -309,7 +309,7 @@
     var r = (size / 2) - 8, c = 2 * Math.PI * r, len = Math.min(100, pct) / 100 * c;
     return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" style="flex-shrink:0">' +
       '<g transform="rotate(-90 ' + (size / 2) + ' ' + (size / 2) + ')">' +
-      '<circle cx="' + (size / 2) + '" cy="' + (size / 2) + '" r="' + r + '" fill="none" stroke="#0f172a" stroke-width="8"/>' +
+      '<circle cx="' + (size / 2) + '" cy="' + (size / 2) + '" r="' + r + '" fill="none" stroke="#334155" stroke-width="8"/>' +
       '<circle cx="' + (size / 2) + '" cy="' + (size / 2) + '" r="' + r + '" fill="none" stroke="' + (color || "#2dd4bf") + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="' + len + ' ' + (c - len) + '"/>' +
       '</g>' +
       '<text x="' + (size / 2) + '" y="' + (size / 2 + size * 0.08) + '" text-anchor="middle" fill="#e2e8f0" font-size="' + (size * 0.22) + '" font-weight="700">' + pct.toFixed(0) + '%</text>' +
@@ -381,6 +381,16 @@
   function pageGoals() {
     var cur = state.currency || "$";
     var list = state.goals.length ? '<div class="cards">' + state.goals.map(function (g) {
+      if (editGoalId === g.id) {
+        return '<div class="goal"><div class="row-between"><strong style="font-size:16px">Edit goal</strong>' +
+          '<button class="icon-btn" data-act="editGoalCancel">✕</button></div>' +
+          '<label class="field" style="margin:12px 0 10px"><span>Name</span><input id="eg_name" value="' + esc(g.name) + '"/></label>' +
+          '<label class="field" style="margin-bottom:10px"><span>Target (' + cur + ')</span><input id="eg_target" type="number" value="' + num(g.target) + '"/></label>' +
+          '<label class="field" style="margin-bottom:10px"><span>Saved (' + cur + ')</span><input id="eg_current" type="number" value="' + num(g.current) + '"/></label>' +
+          '<label class="field" style="margin-bottom:14px"><span>Target date</span><input id="eg_deadline" type="date" value="' + esc(g.deadline || "") + '"/></label>' +
+          '<div class="toolbar"><button class="btn sm" data-act="editGoalSave" data-id="' + g.id + '">Save</button><button class="btn ghost sm" data-act="editGoalCancel">Cancel</button></div>' +
+          '</div>';
+      }
       var pct = num(g.target) > 0 ? Math.min(100, num(g.current) / num(g.target) * 100) : 0;
       return '<div class="goal"><div class="row-between"><strong style="font-size:16px">' + esc(g.name) + '</strong>' +
         '<button class="icon-btn" data-act="delGoal" data-id="' + g.id + '">✕</button></div>' +
@@ -393,6 +403,12 @@
           '<button class="btn ghost sm" data-act="goal" data-id="' + g.id + '" data-amt="100">+100</button>' +
           '<button class="btn ghost sm" data-act="goal" data-id="' + g.id + '" data-amt="500">+500</button>' +
           '<button class="btn ghost sm" data-act="goal" data-id="' + g.id + '" data-amt="-50">−50</button>' +
+          '<button class="btn ghost sm" data-act="editGoal" data-id="' + g.id + '">✎ Edit</button>' +
+        '</div>' +
+        '<div class="toolbar" style="margin-top:10px">' +
+          '<input id="gadd_' + g.id + '" type="number" placeholder="Custom amount" style="width:150px"/>' +
+          '<button class="btn sm" data-act="goalAdd" data-id="' + g.id + '">+ Add</button>' +
+          '<button class="btn ghost sm" data-act="goalSub" data-id="' + g.id + '">− Subtract</button>' +
         '</div></div>';
     }).join("") + '</div>' : '<div class="panel"><div class="empty">No goals yet — add your first above.</div></div>';
 
@@ -652,7 +668,17 @@
       save(); render();
     },
     delGoal: function (e) { state.goals = state.goals.filter(function (g) { return g.id !== e.id; }); save(); render(); },
+    editGoal: function (e) { editGoalId = e.id; render(); },
+    editGoalCancel: function () { editGoalId = null; render(); },
+    editGoalSave: function (e) {
+      state.goals.forEach(function (g) {
+        if (g.id === e.id) { g.name = val("eg_name") || g.name; g.target = num(val("eg_target")); g.current = num(val("eg_current")); g.deadline = val("eg_deadline") || ""; }
+      });
+      editGoalId = null; save(); render();
+    },
     goal: function (e) { state.goals.forEach(function (g) { if (g.id === e.id) g.current = Math.max(0, num(g.current) + num(e.amt)); }); save(); render(); },
+    goalAdd: function (e) { var a = num(val("gadd_" + e.id)); if (!a) return; state.goals.forEach(function (g) { if (g.id === e.id) g.current = Math.max(0, num(g.current) + a); }); save(); render(); },
+    goalSub: function (e) { var a = num(val("gadd_" + e.id)); if (!a) return; state.goals.forEach(function (g) { if (g.id === e.id) g.current = Math.max(0, num(g.current) - a); }); save(); render(); },
     addDebt: function () {
       var c = val("d_creditor"); if (!c || !val("d_remaining")) return;
       state.debts.push({ id: uid(), creditor: c, total: num(val("d_total") || val("d_remaining")), remaining: num(val("d_remaining")), rate: num(val("d_rate")), payment: num(val("d_payment")) });
