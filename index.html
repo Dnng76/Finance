@@ -307,6 +307,19 @@
     return '<div class="card"><div class="label">' + label + '</div><div class="value ' + (cls || "") + '">' + value + '</div>' + (sub ? '<div class="sub">' + sub + '</div>' : '') + '</div>';
   }
 
+  function goalTimeframe(g) {
+    if (!g.deadline) return "";
+    var remaining = num(g.target) - num(g.current);
+    var dl = new Date(g.deadline + "T00:00:00");
+    var label = dl.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    var days = Math.round((dl.getTime() - new Date(today() + "T00:00:00").getTime()) / 86400000);
+    if (remaining <= 0) return '<div class="mini" style="margin-top:8px;color:var(--green)">✓ Reached — target ' + label + '</div>';
+    if (days < 0) return '<div class="mini" style="margin-top:8px;color:var(--red)">⚠ Past due (' + label + ') · ' + fmt(remaining) + ' to go</div>';
+    if (days <= 31) return '<div class="mini" style="margin-top:8px">🎯 ' + label + ' · ' + days + ' day' + (days === 1 ? "" : "s") + ' left · ' + fmt(remaining) + ' to go</div>';
+    var months = days / 30.44;
+    return '<div class="mini" style="margin-top:8px">🎯 ' + label + ' · ' + Math.round(months) + ' mo left · save <strong>' + fmt(remaining / months) + '</strong>/mo</div>';
+  }
+
   function pageGoals() {
     var cur = state.currency || "$";
     var list = state.goals.length ? '<div class="cards">' + state.goals.map(function (g) {
@@ -315,6 +328,7 @@
         '<button class="icon-btn" data-act="delGoal" data-id="' + g.id + '">✕</button></div>' +
         '<div class="mini" style="margin:10px 0 8px">' + fmt(g.current) + ' of ' + fmt(g.target) + ' · ' + pct.toFixed(0) + '%</div>' +
         '<div class="progress"><div style="width:' + pct + '%"></div></div>' +
+        goalTimeframe(g) +
         '<div class="toolbar" style="margin-top:14px">' +
           '<button class="btn ghost sm" data-act="goal" data-id="' + g.id + '" data-amt="50">+50</button>' +
           '<button class="btn ghost sm" data-act="goal" data-id="' + g.id + '" data-amt="100">+100</button>' +
@@ -328,6 +342,7 @@
         '<label class="field"><span>Goal name</span><input id="g_name" placeholder="e.g. New laptop"/></label>' +
         '<label class="field"><span>Target (' + cur + ')</span><input id="g_target" type="number" placeholder="2000"/></label>' +
         '<label class="field"><span>Saved so far (' + cur + ')</span><input id="g_current" type="number" placeholder="0"/></label>' +
+        '<label class="field"><span>Target date (optional)</span><input id="g_deadline" type="date"/></label>' +
         '<button class="btn" data-act="addGoal">+ Add Goal</button>' +
       '</div></div>' + list;
   }
@@ -476,7 +491,7 @@
     setOB: function () { state.openingBalance = num(val("ob_input")); save(); render(); },
     addGoal: function () {
       var name = val("g_name"); if (!name || !val("g_target")) return;
-      state.goals.push({ id: uid(), name: name, target: num(val("g_target")), current: num(val("g_current")) });
+      state.goals.push({ id: uid(), name: name, target: num(val("g_target")), current: num(val("g_current")), deadline: val("g_deadline") || "" });
       save(); render();
     },
     delGoal: function (e) { state.goals = state.goals.filter(function (g) { return g.id !== e.id; }); save(); render(); },
