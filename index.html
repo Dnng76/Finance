@@ -120,10 +120,12 @@
     transactions: [], goals: [], debts: [],
     emergency: { monthlyExpenses: 0, months: 3, current: 0 },
     trading: { startBalance: 0, trades: [] },
+    payday: { date: "", amount: 0, label: "Payday" },
+    pin: "",
     currency: "$"
   };
 
-  var state, currentTab = "dashboard", privacy = false, editGoalId = null;
+  var state, currentTab = "dashboard", privacy = false, editGoalId = null, editDebtId = null, locked = false, pinBuffer = "", pinError = false;
 
   function load() {
     try {
@@ -207,13 +209,15 @@
     state.transactions.forEach(function (t) { if (t.type === "income") income += num(t.amount); else expense += num(t.amount); });
     var balance = num(state.openingBalance) + income - expense;
     var totalDebt = state.debts.reduce(function (s, d) { return s + num(d.remaining); }, 0);
-    var goalSavings = state.goals.reduce(function (s, g) { return s + num(g.current); }, 0);
+    var goalCashTotal = state.goals.reduce(function (s, g) { return s + goalCash(g); }, 0);
+    var goalGiftTotal = state.goals.reduce(function (s, g) { return s + goalGift(g); }, 0);
+    var goalSavings = goalCashTotal + goalGiftTotal;
     var emFund = num(state.emergency.current);
     var tProfit = 0, tLoss = 0;
     state.trading.trades.forEach(function (t) { if (t.result === "loss") tLoss += num(t.amount); else tProfit += num(t.amount); });
     var tradingBalance = num(state.trading.startBalance) + tProfit - tLoss;
-    var netWorth = balance + goalSavings + emFund + tradingBalance - totalDebt;
-    return { income: income, expense: expense, balance: balance, totalDebt: totalDebt, goalSavings: goalSavings, emFund: emFund, tradingBalance: tradingBalance, netWorth: netWorth };
+    var netWorth = balance + goalCashTotal + emFund + tradingBalance - totalDebt;
+    return { income: income, expense: expense, balance: balance, totalDebt: totalDebt, goalSavings: goalSavings, goalCash: goalCashTotal, goalGift: goalGiftTotal, emFund: emFund, tradingBalance: tradingBalance, netWorth: netWorth };
   }
 
   function payoffMonths(remaining, annualRate, payment) {
@@ -337,7 +341,7 @@
 
     var comp = [
       { name: "Cash Balance", value: Math.max(0, t.balance), color: COLORS[0] },
-      { name: "Goal Savings", value: t.goalSavings, color: COLORS[1] },
+      { name: "Goal Savings (cash)", value: t.goalCash, color: COLORS[1] },
       { name: "Emergency Fund", value: t.emFund, color: COLORS[2] },
       { name: "Trading", value: Math.max(0, t.tradingBalance), color: COLORS[3] }
     ].filter(function (x) { return x.value > 0; });
@@ -359,7 +363,8 @@
         card("◍ Total Debt", fmt(t.totalDebt), state.debts.length + " debt" + (state.debts.length !== 1 ? "s" : "") + " tracked", "neg") +
         card("⛨ Emergency Fund", fmt(t.emFund), "Target " + fmt(num(state.emergency.monthlyExpenses) * num(state.emergency.months)), "") +
         card("💹 Trading Balance", fmt(t.tradingBalance), state.trading.trades.length + " trade" + (state.trading.trades.length !== 1 ? "s" : ""), t.tradingBalance >= 0 ? "pos" : "neg") +
-        card("📈 Net Worth", fmt(t.netWorth), "Assets minus debts", t.netWorth >= 0 ? "pos" : "neg") +
+        card("🎁 Gift Saved", fmt(t.goalGift), "Not counted in net worth", "") +
+        card("📈 Net Worth", fmt(t.netWorth), "Assets minus debts (gifts excluded)", t.netWorth >= 0 ? "pos" : "neg") +
       '</div>' +
       '<div class="grid2">' +
         '<div class="panel"><h3>Balance Over Time</h3>' + areaChart(series) + '</div>' +
@@ -372,6 +377,13 @@
     return '<div class="card"><div class="label">' + label + '</div><div class="value ' + (cls || "") + '">' + value + '</div>' + (sub ? '<div class="sub">' + sub + '</div>' : '') + '</div>';
   }
 
+  function ensureGoalBuckets(g) {
+    if (g.cashSaved == null && g.giftSaved == null) { g.cashSaved = num(g.current); g.giftSaved = 0; }
+    g.cashSaved = num(g.cashSaved); g.giftSaved = num(g.giftSaved);
+  }
+  function goalCash(g) { return g.cashSaved != null ? num(g.cashSaved) : num(g.current); }
+  function goalGift(g) { return num(g.giftSaved); }
+
   function goalTimeframe(g) {
     if (!g.deadline) return "";
     var remaining = num(g.target) - num(g.current);
@@ -382,7 +394,7 @@
     if (days < 0) return '<div class="mini" style="margin-top:8px;color:var(--red)">⚠ Past due (' + label + ') · ' + fmt(remaining) + ' to go</div>';
     if (days <= 31) return '<div class="mini" style="margin-top:8px">🎯 ' + label + ' · ' + days + ' day' + (days === 1 ? "" : "s") + ' left · ' + fmt(remaining) + ' to go</div>';
     var months = days / 30.44;
-    return '<div class="mini" style="margin-top:8px">🎯 ' + label + ' · ' + Math.round(months) + ' mo left · save <strong>' + fmt(remaining / months) + '</strong>/mo</div>';
+    return '<div class="mini" style="margin-top:8px">🎯 ' + label + ' · ' + Math.round(months) + ' mo (' + days + ' days) left · save <strong>' + fmt(remaining / months) + '</strong>/mo</div>';
   }
 
   function pageGoals() {
@@ -393,7 +405,8 @@
           '<button class="icon-btn" data-act="editGoalCancel">✕</button></div>' +
           '<label class="field" style="margin:12px 0 10px"><span>Name</span><input id="eg_name" value="' + esc(g.name) + '"/></label>' +
           '<label class="field" style="margin-bottom:10px"><span>Target (' + cur + ')</span><input id="eg_target" type="number" value="' + num(g.target) + '"/></label>' +
-          '<label class="field" style="margin-bottom:10px"><span>Saved (' + cur + ')</span><input id="eg_current" type="number" value="' + num(g.current) + '"/></label>' +
+          '<label class="field" style="margin-bottom:10px"><span>💵 Cash saved (' + cur + ')</span><input id="eg_cash" type="number" value="' + goalCash(g) + '"/></label>' +
+          '<label class="field" style="margin-bottom:10px"><span>🎁 Gift saved (' + cur + ')</span><input id="eg_gift" type="number" value="' + goalGift(g) + '"/></label>' +
           '<label class="field" style="margin-bottom:14px"><span>Target date</span><input id="eg_deadline" type="date" value="' + esc(g.deadline || "") + '"/></label>' +
           '<div class="toolbar"><button class="btn sm" data-act="editGoalSave" data-id="' + g.id + '">Save</button><button class="btn ghost sm" data-act="editGoalCancel">Cancel</button></div>' +
           '</div>';
@@ -403,7 +416,8 @@
         '<button class="icon-btn" data-act="delGoal" data-id="' + g.id + '">✕</button></div>' +
         '<div style="display:flex;align-items:center;gap:16px;margin:14px 0">' +
           ring(pct, "#2dd4bf", 92) +
-          '<div style="flex:1"><div style="font-size:15px"><strong>' + fmt(g.current) + '</strong> <span class="mini">of ' + fmt(g.target) + '</span></div>' + goalTimeframe(g) + '</div>' +
+          '<div style="flex:1"><div style="font-size:15px"><strong>' + fmt(g.current) + '</strong> <span class="mini">of ' + fmt(g.target) + '</span></div>' +
+            '<div class="mini" style="margin-top:4px">💵 Cash ' + fmt(goalCash(g)) + ' · 🎁 Gift ' + fmt(goalGift(g)) + '</div>' + goalTimeframe(g) + '</div>' +
         '</div>' +
         '<div class="toolbar" style="margin-top:14px">' +
           '<button class="btn ghost sm" data-act="goal" data-id="' + g.id + '" data-amt="50">+50</button>' +
@@ -413,7 +427,8 @@
           '<button class="btn ghost sm" data-act="editGoal" data-id="' + g.id + '">✎ Edit</button>' +
         '</div>' +
         '<div class="toolbar" style="margin-top:10px">' +
-          '<input id="gadd_' + g.id + '" type="number" placeholder="Custom amount" style="width:150px"/>' +
+          '<select id="gsrc_' + g.id + '" style="width:120px"><option value="cash">💵 Cash</option><option value="gift">🎁 Gift</option></select>' +
+          '<input id="gadd_' + g.id + '" type="number" placeholder="Amount" style="width:130px"/>' +
           '<button class="btn sm" data-act="goalAdd" data-id="' + g.id + '">+ Add</button>' +
           '<button class="btn ghost sm" data-act="goalSub" data-id="' + g.id + '">− Subtract</button>' +
         '</div></div>';
@@ -423,7 +438,8 @@
       '<div class="panel"><h3>Add a Goal</h3><div class="form-row">' +
         '<label class="field"><span>Goal name</span><input id="g_name" placeholder="e.g. New laptop"/></label>' +
         '<label class="field"><span>Target (' + cur + ')</span><input id="g_target" type="number" placeholder="2000"/></label>' +
-        '<label class="field"><span>Saved so far (' + cur + ')</span><input id="g_current" type="number" placeholder="0"/></label>' +
+        '<label class="field"><span>💵 Cash saved (' + cur + ')</span><input id="g_current" type="number" placeholder="0"/></label>' +
+        '<label class="field"><span>🎁 Gift saved (' + cur + ')</span><input id="g_gift" type="number" placeholder="0"/></label>' +
         '<label class="field"><span>Target date (optional)</span><input id="g_deadline" type="date"/></label>' +
         '<button class="btn" data-act="addGoal">+ Add Goal</button>' +
       '</div></div>' + list;
@@ -436,13 +452,24 @@
     state.debts.forEach(function (d) { var n = payoffMonths(d.remaining, d.rate, d.payment); if (n === Infinity) anyNever = true; else longest = Math.max(longest, n); });
 
     var rows = state.debts.length ? state.debts.map(function (d) {
+      if (editDebtId === d.id) {
+        return '<tr>' +
+          '<td><input id="ed_creditor" value="' + esc(d.creditor) + '" style="min-width:90px"/></td>' +
+          '<td><input id="ed_remaining" type="number" value="' + num(d.remaining) + '" style="width:90px"/></td>' +
+          '<td><input id="ed_total" type="number" value="' + num(d.total) + '" style="width:90px"/></td>' +
+          '<td><input id="ed_rate" type="number" value="' + num(d.rate) + '" style="width:70px"/></td>' +
+          '<td><input id="ed_payment" type="number" value="' + num(d.payment) + '" style="width:80px"/></td>' +
+          '<td colspan="2" class="mini">Editing…</td>' +
+          '<td style="white-space:nowrap"><button class="btn sm" data-act="editDebtSave" data-id="' + d.id + '">Save</button> <button class="icon-btn" data-act="editDebtCancel">✕</button></td>' +
+        '</tr>';
+      }
       var n = payoffMonths(d.remaining, d.rate, d.payment);
       var paid = num(d.total) > 0 ? Math.min(100, (num(d.total) - num(d.remaining)) / num(d.total) * 100) : 0;
       return '<tr><td><strong>' + esc(d.creditor) + '</strong></td><td class="neg">' + fmt(d.remaining) + '</td><td>' + fmt(d.total) + '</td>' +
         '<td>' + num(d.rate).toFixed(2) + '%</td><td>' + fmt(d.payment) + '</td>' +
         '<td>' + (n === Infinity ? '<span class="neg">never</span>' : n + ' mo') + '</td>' +
         '<td>' + ring(paid, "#34d399", 56) + '</td>' +
-        '<td><button class="icon-btn" data-act="delDebt" data-id="' + d.id + '">✕</button></td></tr>';
+        '<td style="white-space:nowrap"><button class="icon-btn" data-act="editDebt" data-id="' + d.id + '">✎</button><button class="icon-btn" data-act="delDebt" data-id="' + d.id + '">✕</button></td></tr>';
     }).join("") : '';
 
     return '<h1 class="page-title">Debt Tracker</h1><p class="page-sub">Track balances, rates, and estimated payoff.</p>' +
@@ -616,6 +643,65 @@
         : '<div class="empty">No trades logged yet.</div>') + '</div>' + symPanel;
   }
 
+  function pagePayday() {
+    var p = state.payday || {};
+    var view;
+    if (!p.date) {
+      view = '<div class="panel"><div class="empty">Set your next payday above to start the countdown.</div></div>';
+    } else {
+      var dl = new Date(p.date + "T00:00:00");
+      var days = Math.round((dl.getTime() - new Date(today() + "T00:00:00").getTime()) / 86400000);
+      var dateLabel = dl.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+      var lbl = esc(p.label || "Payday");
+      var big;
+      if (days > 0) {
+        big = '<div class="card" style="text-align:center"><div class="label">' + lbl + ' in</div><div class="value" style="font-size:48px;color:var(--accent)">' + days + '</div><div class="sub">day' + (days === 1 ? "" : "s") + ' · ' + dateLabel + '</div></div>';
+      } else if (days === 0) {
+        big = '<div class="card" style="text-align:center"><div class="value" style="font-size:30px;color:var(--green)">🎉 Today is ' + lbl + '!</div><div class="sub">' + dateLabel + '</div></div>';
+      } else {
+        big = '<div class="card" style="text-align:center"><div class="label">' + lbl + ' was</div><div class="value" style="font-size:40px;color:var(--red)">' + (-days) + ' day' + ((-days) === 1 ? "" : "s") + ' ago</div><div class="sub">' + dateLabel + ' — update the date below</div></div>';
+      }
+      var weeks = days > 0 ? '<div class="card"><div class="label">That\'s about</div><div class="value">' + (days / 7).toFixed(1) + ' weeks</div></div>' : '';
+      var amt = num(p.amount) > 0 ? '<div class="card"><div class="label">Expected amount</div><div class="value pos">' + fmt(p.amount) + '</div>' + (days > 0 ? '<div class="sub">' + fmt(num(p.amount) / days) + ' / day until then</div>' : '') + '</div>' : '';
+      view = '<div class="cards">' + big + amt + weeks + '</div>';
+    }
+    return '<h1 class="page-title">Payday Countdown</h1><p class="page-sub">Count down to your next paycheck.</p>' +
+      '<div class="panel"><h3>Set Payday</h3><div class="form-row" style="max-width:640px">' +
+        '<label class="field"><span>Label</span><input id="pd_label" value="' + esc(p.label || "Payday") + '"/></label>' +
+        '<label class="field"><span>Next payday date</span><input id="pd_date" type="date" value="' + esc(p.date || "") + '"/></label>' +
+        '<label class="field"><span>Amount (' + (state.currency || "$") + ')</span><input id="pd_amount" type="number" value="' + num(p.amount) + '"/></label>' +
+        '<button class="btn" data-act="setPayday">Save</button>' +
+      '</div></div>' + view;
+  }
+
+  function lockScreen() {
+    var total = state.pin.length, filled = pinBuffer.length, dots = "";
+    for (var i = 0; i < total; i++) dots += '<span style="display:inline-block;width:16px;height:16px;border-radius:50%;margin:0 6px;border:2px solid var(--accent);background:' + (i < filled ? "var(--accent)" : "transparent") + '"></span>';
+    var keys = "";
+    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"].forEach(function (k) {
+      if (k === "") { keys += "<div></div>"; return; }
+      keys += '<button class="btn ghost" data-act="' + (k === "del" ? "pinDel" : "pinDigit") + '" data-k="' + k + '" style="height:60px;font-size:22px">' + (k === "del" ? "⌫" : k) + '</button>';
+    });
+    return '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">' +
+      '<div style="width:300px;max-width:100%;text-align:center">' +
+        '<div style="font-size:42px;margin-bottom:8px">🔒</div>' +
+        '<h2 style="margin:0 0 6px">Locked</h2>' +
+        '<p class="mini" style="' + (pinError ? "color:var(--red)" : "") + '">' + (pinError ? "Wrong PIN — try again" : "Enter your PIN") + '</p>' +
+        '<div style="margin:18px 0">' + dots + '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">' + keys + '</div>' +
+      '</div></div>';
+  }
+
+  function securitySection() {
+    if (!state.pin) {
+      return '<div class="panel"><h3>🔒 App Lock (PIN)</h3>' +
+        '<p class="mini" style="margin:-8px 0 12px">Set a numeric PIN to lock the app on open. Casual privacy lock — not bank-grade security.</p>' +
+        '<div class="form-row" style="max-width:360px"><label class="field"><span>New PIN (4+ digits)</span><input id="sp_pin" type="password" inputmode="numeric" placeholder="••••"/></label><button class="btn" data-act="setPin">Set PIN</button></div></div>';
+    }
+    return '<div class="panel"><h3>🔒 App Lock (PIN)</h3><div class="hint" style="margin:0 0 12px">✓ PIN lock is on — you\'ll be asked for it when the app opens.</div>' +
+      '<div class="toolbar"><button class="btn" data-act="lockNow">Lock now</button><button class="btn ghost" data-act="removePin">Remove PIN</button></div></div>';
+  }
+
   function cloudSection() {
     if (!fbAvailable()) {
       return '<div class="panel"><h3>☁ Cloud Sync</h3><div class="hint" style="margin:0">The cloud library couldn\'t load — you may be offline, or opening the file directly. Reconnect to the internet (and ideally host the app online) to enable sync. Your data is safe locally in the meantime.</div></div>';
@@ -641,7 +727,7 @@
     var cur = state.currency || "$";
     var currencies = ["$","€","£","₫","¥","₹"].map(function (c) { return '<button class="btn ' + (cur === c ? "" : "ghost") + ' sm" data-act="cur" data-c="' + c + '">' + c + '</button>'; }).join("");
     return '<h1 class="page-title">Backup, Export & Sync</h1><p class="page-sub">Sync across devices, or move data manually.</p>' +
-      cloudSection() +
+      cloudSection() + securitySection() +
       '<div class="panel"><h3>Currency</h3><div class="toolbar">' + currencies + '</div></div>' +
       '<div class="panel"><h3>Export</h3><div class="toolbar"><button class="btn" data-act="expJSON">⤓ Backup (JSON)</button><button class="btn ghost" data-act="expCSV">⤓ Transactions (CSV)</button></div></div>' +
       '<div class="panel"><h3>Import / Restore</h3><div class="toolbar"><button class="btn ghost" data-act="impClick">⤒ Import JSON backup</button><input id="impFile" type="file" accept="application/json" style="display:none"/></div><p class="mini" style="margin-top:10px">Importing merges the backup into your current data.</p></div>' +
@@ -661,7 +747,19 @@
   var actions = {
     setOB: function () { state.openingBalance = num(val("ob_input")); save(); render(); },
     setTradeStart: function () { state.trading.startBalance = num(val("tr_start")); save(); render(); },
+    setPayday: function () { state.payday = { label: val("pd_label") || "Payday", date: val("pd_date") || "", amount: num(val("pd_amount")) }; save(); render(); },
     privacy: function () { privacy = !privacy; try { localStorage.setItem("ft_privacy", privacy ? "1" : "0"); } catch (e) {} render(); },
+    setPin: function () { var v = (val("sp_pin") || "").replace(/\D/g, ""); if (v.length < 4) { msg("PIN must be at least 4 digits."); return; } state.pin = v; save(); render(); },
+    removePin: function () { state.pin = ""; locked = false; save(); render(); },
+    lockNow: function () { if (state.pin) { locked = true; pinBuffer = ""; pinError = false; render(); } },
+    pinDigit: function (e) {
+      pinError = false; pinBuffer += e.k;
+      if (pinBuffer.length >= state.pin.length) {
+        if (pinBuffer === state.pin) { locked = false; pinBuffer = ""; } else { pinBuffer = ""; pinError = true; }
+      }
+      render();
+    },
+    pinDel: function () { pinBuffer = pinBuffer.slice(0, -1); render(); },
     calcDebt: function () { pageDebt.extra = num(val("sn_extra")); render(); },
     addTrade: function () {
       if (!val("tr_amount")) return;
@@ -671,7 +769,8 @@
     delTrade: function (e) { state.trading.trades = state.trading.trades.filter(function (t) { return t.id !== e.id; }); save(); render(); },
     addGoal: function () {
       var name = val("g_name"); if (!name || !val("g_target")) return;
-      state.goals.push({ id: uid(), name: name, target: num(val("g_target")), current: num(val("g_current")), deadline: val("g_deadline") || "" });
+      var cash = num(val("g_current")), gift = num(val("g_gift"));
+      state.goals.push({ id: uid(), name: name, target: num(val("g_target")), cashSaved: cash, giftSaved: gift, current: cash + gift, deadline: val("g_deadline") || "" });
       save(); render();
     },
     delGoal: function (e) { state.goals = state.goals.filter(function (g) { return g.id !== e.id; }); save(); render(); },
@@ -679,19 +778,35 @@
     editGoalCancel: function () { editGoalId = null; render(); },
     editGoalSave: function (e) {
       state.goals.forEach(function (g) {
-        if (g.id === e.id) { g.name = val("eg_name") || g.name; g.target = num(val("eg_target")); g.current = num(val("eg_current")); g.deadline = val("eg_deadline") || ""; }
+        if (g.id === e.id) { g.name = val("eg_name") || g.name; g.target = num(val("eg_target")); g.cashSaved = num(val("eg_cash")); g.giftSaved = num(val("eg_gift")); g.current = g.cashSaved + g.giftSaved; g.deadline = val("eg_deadline") || ""; }
       });
       editGoalId = null; save(); render();
     },
-    goal: function (e) { state.goals.forEach(function (g) { if (g.id === e.id) g.current = Math.max(0, num(g.current) + num(e.amt)); }); save(); render(); },
-    goalAdd: function (e) { var a = num(val("gadd_" + e.id)); if (!a) return; state.goals.forEach(function (g) { if (g.id === e.id) g.current = Math.max(0, num(g.current) + a); }); save(); render(); },
-    goalSub: function (e) { var a = num(val("gadd_" + e.id)); if (!a) return; state.goals.forEach(function (g) { if (g.id === e.id) g.current = Math.max(0, num(g.current) - a); }); save(); render(); },
+    goal: function (e) { state.goals.forEach(function (g) { if (g.id === e.id) { ensureGoalBuckets(g); g.cashSaved = Math.max(0, g.cashSaved + num(e.amt)); g.current = g.cashSaved + g.giftSaved; } }); save(); render(); },
+    goalAdd: function (e) {
+      var a = num(val("gadd_" + e.id)); if (!a) return; var src = val("gsrc_" + e.id);
+      state.goals.forEach(function (g) { if (g.id === e.id) { ensureGoalBuckets(g); if (src === "gift") g.giftSaved += a; else g.cashSaved += a; g.current = g.cashSaved + g.giftSaved; } });
+      save(); render();
+    },
+    goalSub: function (e) {
+      var a = num(val("gadd_" + e.id)); if (!a) return; var src = val("gsrc_" + e.id);
+      state.goals.forEach(function (g) { if (g.id === e.id) { ensureGoalBuckets(g); if (src === "gift") g.giftSaved = Math.max(0, g.giftSaved - a); else g.cashSaved = Math.max(0, g.cashSaved - a); g.current = g.cashSaved + g.giftSaved; } });
+      save(); render();
+    },
     addDebt: function () {
       var c = val("d_creditor"); if (!c || !val("d_remaining")) return;
       state.debts.push({ id: uid(), creditor: c, total: num(val("d_total") || val("d_remaining")), remaining: num(val("d_remaining")), rate: num(val("d_rate")), payment: num(val("d_payment")) });
       save(); render();
     },
     delDebt: function (e) { state.debts = state.debts.filter(function (d) { return d.id !== e.id; }); save(); render(); },
+    editDebt: function (e) { editDebtId = e.id; render(); },
+    editDebtCancel: function () { editDebtId = null; render(); },
+    editDebtSave: function (e) {
+      state.debts.forEach(function (d) {
+        if (d.id === e.id) { d.creditor = val("ed_creditor") || d.creditor; d.remaining = num(val("ed_remaining")); d.total = num(val("ed_total")); d.rate = num(val("ed_rate")); d.payment = num(val("ed_payment")); }
+      });
+      editDebtId = null; save(); render();
+    },
     addTx: function () {
       if (!val("t_amount")) return;
       state.transactions.push({ id: uid(), date: val("t_date") || today(), type: val("t_type"), category: val("t_cat"), amount: num(val("t_amount")), note: val("t_note") });
@@ -732,7 +847,8 @@
   };
 
   function render() {
-    var pages = { dashboard: pageDashboard, goals: pageGoals, debt: pageDebt, emergency: pageEmergency, transactions: pageTransactions, trading: pageTrading, data: pageData };
+    if (locked && state.pin) { el("root").innerHTML = lockScreen(); wire(); return; }
+    var pages = { dashboard: pageDashboard, goals: pageGoals, debt: pageDebt, emergency: pageEmergency, transactions: pageTransactions, trading: pageTrading, payday: pagePayday, data: pageData };
     var nav = [
       { id: "dashboard", label: "Dashboard", ico: "▥" },
       { id: "goals", label: "Goals", ico: "◎" },
@@ -740,6 +856,7 @@
       { id: "emergency", label: "Emergency Fund", ico: "⛨" },
       { id: "transactions", label: "Transactions", ico: "⇄" },
       { id: "trading", label: "Trading", ico: "💹" },
+      { id: "payday", label: "Payday", ico: "⏰" },
       { id: "data", label: "Backup / Export", ico: "⤓" }
     ];
     var sidebar = '<aside class="sidebar"><div class="brand"><span class="dot"></span> Finance</div><nav class="nav">' +
@@ -757,7 +874,7 @@
     root.querySelectorAll("[data-act]").forEach(function (b) {
       var act = b.getAttribute("data-act");
       if (act === "filter") { b.value = pageTransactions.filter || "all"; b.onchange = function () { pageTransactions.filter = b.value; render(); }; return; }
-      if (actions[act]) b.onclick = function () { actions[act]({ id: b.getAttribute("data-id"), amt: b.getAttribute("data-amt"), c: b.getAttribute("data-c") }); };
+      if (actions[act]) b.onclick = function () { actions[act]({ id: b.getAttribute("data-id"), amt: b.getAttribute("data-amt"), c: b.getAttribute("data-c"), k: b.getAttribute("data-k") }); };
     });
     if (el("impFile")) el("impFile").onchange = function (ev) {
       var file = ev.target.files[0]; if (!file) return;
@@ -778,6 +895,7 @@
   try {
     state = load();
     try { privacy = localStorage.getItem("ft_privacy") === "1"; } catch (e) {}
+    if (state.pin) locked = true;
     render();
     initCloud(); // reconnects automatically if you've set up sync before
   } catch (err) {
