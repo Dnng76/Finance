@@ -175,6 +175,7 @@
   function today() { return new Date().toISOString().slice(0, 10); }
   function ymOfDate(d) { return d.getFullYear() + "-" + (d.getMonth() + 1 < 10 ? "0" : "") + (d.getMonth() + 1); }
   function nextMonth(ym) { var p = ym.split("-"); var y = +p[0], mo = +p[1] + 1; if (mo > 12) { mo = 1; y++; } return y + "-" + (mo < 10 ? "0" : "") + mo; }
+  function prevMonth(ym) { var p = ym.split("-"); var y = +p[0], mo = +p[1] - 1; if (mo < 1) { mo = 12; y--; } return y + "-" + (mo < 10 ? "0" : "") + mo; }
   function applyRecurring() {
     if (!state.recurring || !state.recurring.length) return;
     var now = new Date(today() + "T00:00:00"), nowYm = ymOfDate(now), changed = false;
@@ -564,7 +565,12 @@
         '<td><input id="nn_' + d.id + '" value="' + esc(pl.note || "") + '" placeholder="e.g. pay extra after bonus" style="min-width:180px"/></td></tr>';
     }).join("");
     var total = state.debts.reduce(function (s, d) { return s + ((d.plans && d.plans[planMonth]) ? num(d.plans[planMonth].amount) : 0); }, 0);
-    return '<div class="panel"><h3>Plan to Pay <input type="month" id="pln_month" value="' + planMonth + '" style="width:auto;display:inline-block;margin-left:8px"/></h3>' +
+    return '<div class="panel"><h3>Plan to Pay ' +
+      '<span style="margin-left:auto;display:inline-flex;align-items:center;gap:8px">' +
+        '<button class="btn ghost sm" data-act="planPrev">◀</button>' +
+        '<input type="month" id="pln_month" value="' + planMonth + '" style="width:auto;display:inline-block"/>' +
+        '<button class="btn ghost sm" data-act="planNext">▶</button>' +
+      '</span></h3>' +
       '<p class="mini" style="margin:-8px 0 12px">Pick a month, set how much you plan to pay each debt, plus notes. Each month is saved separately. Tap Save.</p>' +
       '<div style="overflow-x:auto"><table><thead><tr><th>Debt</th><th>Plan to pay</th><th>Note</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '<div class="row-between" style="margin-top:14px"><strong>Total planned for ' + monthLabel + ': ' + fmt(total) + '</strong><button class="btn" data-act="savePlan">Save Plan</button></div></div>';
@@ -1071,6 +1077,8 @@
     },
     delDebt: function (e) { state.debts = state.debts.filter(function (d) { return d.id !== e.id; }); save(); render(); },
     savePlan: function () { commitPlan(); render(); },
+    planPrev: function () { commitPlan(); planMonth = prevMonth(planMonth); render(); },
+    planNext: function () { commitPlan(); planMonth = nextMonth(planMonth); render(); },
     editDebt: function (e) { editDebtId = e.id; render(); },
     editDebtCancel: function () { editDebtId = null; render(); },
     editDebtSave: function (e) {
