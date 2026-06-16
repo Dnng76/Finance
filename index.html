@@ -150,7 +150,7 @@
     currency: "$"
   };
 
-  var state, currentTab = "dashboard", privacy = false, editGoalId = null, editDebtId = null, locked = false, pinBuffer = "", pinError = false, theme = "dark";
+  var state, currentTab = "dashboard", privacy = false, editGoalId = null, editDebtId = null, locked = false, pinBuffer = "", pinError = false, theme = "dark", planMonth = null;
   function applyTheme() {
     document.body.classList.toggle("light", theme === "light");
     var m = document.querySelector('meta[name="theme-color"]');
@@ -542,6 +542,34 @@
       '</div></div>' + list;
   }
 
+  function commitPlan() {
+    state.debts.forEach(function (d) {
+      if (!d.plans) d.plans = {};
+      var p = el("pn_" + d.id), n = el("nn_" + d.id);
+      var amt = p ? num(p.value) : 0, note = n ? n.value : "";
+      if (amt || note) d.plans[planMonth] = { amount: amt, note: note };
+      else if (d.plans[planMonth]) delete d.plans[planMonth];
+    });
+    save();
+  }
+  function debtPlanPanel() {
+    if (!state.debts.length) return "";
+    if (!planMonth) planMonth = nextMonth(ymOfDate(new Date(today() + "T00:00:00")));
+    var pp = planMonth.split("-");
+    var monthLabel = new Date(pp[0], (+pp[1]) - 1, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    var rows = state.debts.map(function (d) {
+      var pl = (d.plans && d.plans[planMonth]) || {};
+      return '<tr><td><strong>' + esc(d.creditor) + '</strong><div class="mini">balance ' + fmt(d.remaining) + '</div></td>' +
+        '<td><input id="pn_' + d.id + '" type="number" value="' + (num(pl.amount) ? num(pl.amount) : "") + '" placeholder="0.00" style="width:120px"/></td>' +
+        '<td><input id="nn_' + d.id + '" value="' + esc(pl.note || "") + '" placeholder="e.g. pay extra after bonus" style="min-width:180px"/></td></tr>';
+    }).join("");
+    var total = state.debts.reduce(function (s, d) { return s + ((d.plans && d.plans[planMonth]) ? num(d.plans[planMonth].amount) : 0); }, 0);
+    return '<div class="panel"><h3>Plan to Pay <input type="month" id="pln_month" value="' + planMonth + '" style="width:auto;display:inline-block;margin-left:8px"/></h3>' +
+      '<p class="mini" style="margin:-8px 0 12px">Pick a month, set how much you plan to pay each debt, plus notes. Each month is saved separately. Tap Save.</p>' +
+      '<div style="overflow-x:auto"><table><thead><tr><th>Debt</th><th>Plan to pay</th><th>Note</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="row-between" style="margin-top:14px"><strong>Total planned for ' + monthLabel + ': ' + fmt(total) + '</strong><button class="btn" data-act="savePlan">Save Plan</button></div></div>';
+  }
+
   function pageDebt() {
     var t = totals();
     var monthly = state.debts.reduce(function (s, d) { return s + num(d.payment); }, 0);
@@ -592,7 +620,7 @@
       '</div>' +
       '<div class="panel"><h3>Your Debts</h3>' + (rows ?
         '<div style="overflow-x:auto"><table><thead><tr><th>Creditor</th><th>Remaining</th><th>Original</th><th>Rate</th><th>Monthly</th><th>Payoff</th><th>Progress</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-        : '<div class="empty">No debts tracked. 🎉</div>') + '</div>';
+        : '<div class="empty">No debts tracked. 🎉</div>') + '</div>' + debtPlanPanel();
   }
 
   function pageEmergency() {
@@ -1042,6 +1070,7 @@
       save(); render();
     },
     delDebt: function (e) { state.debts = state.debts.filter(function (d) { return d.id !== e.id; }); save(); render(); },
+    savePlan: function () { commitPlan(); render(); },
     editDebt: function (e) { editDebtId = e.id; render(); },
     editDebtCancel: function () { editDebtId = null; render(); },
     editDebtSave: function (e) {
@@ -1145,6 +1174,7 @@
       reader.readAsText(file);
     };
     // emergency live inputs
+    if (el("pln_month")) el("pln_month").onchange = function () { commitPlan(); planMonth = this.value || planMonth; render(); };
     if (el("em_exp")) el("em_exp").oninput = function () { state.emergency.monthlyExpenses = num(this.value); save(); paintEmergency(); };
     if (el("em_cur")) el("em_cur").oninput = function () { state.emergency.current = num(this.value); save(); paintEmergency(); };
     if (el("em_months")) el("em_months").oninput = function () { state.emergency.months = num(this.value); save(); paintEmergency(); };
