@@ -1,1285 +1,1294 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker</title>
-<link rel="manifest" href="manifest.json" />
-<link rel="icon" type="image/png" href="data:image/png;base64,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" />
-<meta name="theme-color" content="#0b1120" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Finance" />
-<link rel="apple-touch-icon" href="data:image/png;base64,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" />
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Mastery</title>
+<meta name="theme-color" content="#0a0a0c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mastery">
+<!-- Inline SVG favicon: scalable, works offline and when opening the file locally -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Crect%20width='100'%20height='100'%20rx='22'%20fill='%230e0e11'/%3E%3Cpolygon%20points='50,34%2013,42%2013,64%2050,70'%20fill='%232ecc71'/%3E%3Cpolygon%20points='50,34%2087,42%2087,64%2050,70'%20fill='%232ecc71'/%3E%3Cg%20stroke='%230e0e11'%20stroke-width='2.6'%20stroke-linecap='round'%3E%3Cline%20x1='50'%20y1='34'%20x2='50'%20y2='70'/%3E%3Cline%20x1='43.3'%20y1='45.5'%20x2='18.2'%20y2='51'/%3E%3Cline%20x1='56.7'%20y1='45.5'%20x2='81.8'%20y2='51'/%3E%3Cline%20x1='43.3'%20y1='57'%20x2='18.2'%20y2='62.5'/%3E%3Cline%20x1='56.7'%20y1='57'%20x2='81.8'%20y2='62.5'/%3E%3C/g%3E%3C/svg%3E">
+<!-- PNG icons + manifest for installing to the phone home screen (served from the site) -->
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <style>
   :root {
-    --bg: #0b1120; --bg2: #0f172a; --panel: #1e293b; --panel2: #273449;
-    --border: #334155; --text: #e2e8f0; --muted: #94a3b8;
-    --accent: #2dd4bf; --accent2: #38bdf8;
-    --green: #34d399; --red: #f87171; --yellow: #fbbf24; --purple: #a78bfa;
+    --bg: #0a0a0c;
+    --surface: #131316;
+    --surface-2: #1b1b20;
+    --border: #26262c;
+    --text: #e8e8ea;
+    --text-dim: #8b8b93;
+    --text-faint: #5a5a62;
+    --green: #2ecc71;
+    --green-dim: #1d7a47;
+    --red: #e05252;
+    --amber: #e0a53c;
+    --cyan: #54b8c7;
+    --radius: 12px;
   }
-  body.light {
-    --bg: #f1f5f9; --bg2: #ffffff; --panel: #ffffff; --panel2: #e2e8f0;
-    --border: #cbd5e1; --text: #0f172a; --muted: #64748b;
-    --accent: #0d9488; --accent2: #0284c7;
-    --green: #16a34a; --red: #dc2626; --yellow: #d97706; --purple: #7c3aed;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
   body {
-    background: var(--bg); color: var(--text);
+    background: var(--bg);
+    color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding-bottom: 80px;
   }
-  ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 16px; }
 
-  .app { display: flex; min-height: 100vh; }
-  .sidebar { width: 240px; background: var(--bg2); border-right: 1px solid var(--border); padding: 24px 16px; position: sticky; top: 0; height: 100vh; flex-shrink: 0; }
-  .brand { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; margin-bottom: 28px; padding: 0 8px; }
-  .brand .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
-  .nav button { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: transparent; border: none; color: var(--muted); padding: 12px 14px; border-radius: 10px; font-size: 15px; cursor: pointer; margin-bottom: 4px; transition: all .15s; }
-  .nav button:hover { background: var(--panel); color: var(--text); }
-  .nav button.active { background: linear-gradient(90deg, rgba(45,212,191,.18), rgba(56,189,248,.08)); color: var(--accent); font-weight: 600; }
-  .nav button .ico { font-size: 18px; width: 22px; text-align: center; }
-
-  .main { flex: 1; padding: 32px 40px; max-width: 1200px; }
-  @media (max-width: 760px) {
-    .app { flex-direction: column; }
-    .sidebar { width: 100%; height: auto; position: static; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-    .brand { margin-bottom: 0; margin-right: auto; }
-    .nav { display: flex; flex-wrap: wrap; gap: 4px; }
-    .nav button { width: auto; padding: 8px 12px; }
-    .nav button .label { display: none; }
-    .nav button .ico { font-size: 20px; }
-    .main { padding: 20px 16px; }
+  /* ---------- Header ---------- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 0 20px;
   }
-  .page-title { font-size: 26px; font-weight: 700; margin: 0 0 4px; }
-  .page-sub { color: var(--muted); margin: 0 0 28px; font-size: 14px; }
+  header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+  header h1 span { color: var(--text-faint); font-weight: 400; }
+  .day-left { font-size: 0.72rem; color: var(--text-faint); margin-top: 2px; }
+  .day-left.urgent { color: var(--red); }
+  .header-right { display: flex; align-items: center; gap: 10px; }
 
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-bottom: 28px; }
-  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
-  .card .label { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
-  .card .value { font-size: 26px; font-weight: 700; word-break: break-word; }
-  .card .sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
-  .pos { color: var(--green); } .neg { color: var(--red); }
+  /* Progress ring */
+  .ring-box { display: flex; align-items: center; gap: 10px; }
+  .ring { width: 48px; height: 48px; }
+  .ring circle { fill: none; stroke-width: 4; }
+  .ring .track { stroke: var(--surface-2); }
+  .ring .bar {
+    stroke: var(--green);
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: center;
+    transition: stroke-dashoffset 0.4s ease;
+  }
+  .ring text {
+    fill: var(--text);
+    font-size: 11px;
+    font-weight: 700;
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+  .ring-label { font-size: 0.72rem; color: var(--text-dim); line-height: 1.3; }
 
-  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 22px; margin-bottom: 22px; }
-  .panel h3 { margin: 0 0 18px; font-size: 17px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap: wrap; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
-  @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+  /* ---------- Buttons ---------- */
+  button {
+    font: inherit;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    transition: background 0.15s, border-color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:hover { background: var(--surface-2); }
+  button.danger { color: var(--red); border-color: #3a2424; }
+  button.danger:hover { background: #241616; }
+  button.icon-btn { padding: 8px 10px; }
 
-  input, select { background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 10px; font-size: 14px; width: 100%; outline: none; font-family: inherit; }
-  input:focus, select:focus { border-color: var(--accent); }
-  label.field { display: block; }
-  label.field span { display:block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-  .form-row { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); align-items: end; }
+  /* ---------- Toolbar ---------- */
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .toolbar input[type="search"] {
+    flex: 1 1 180px;
+    min-width: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 8px 12px;
+    font: inherit;
+    font-size: 0.85rem;
+    outline: none;
+  }
+  .toolbar input[type="search"]:focus { border-color: var(--text-faint); }
 
-  button.btn { background: var(--accent); color: #04231f; border: none; padding: 11px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px; white-space: nowrap; font-family: inherit; }
-  button.btn:hover { filter: brightness(1.08); }
-  button.btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
-  button.btn.ghost:hover { background: var(--panel2); }
-  button.btn.sm { padding: 7px 12px; font-size: 13px; }
-  button.icon-btn { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 8px; }
-  button.icon-btn:hover { color: var(--red); background: rgba(248,113,113,.1); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+  .chip {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    border-radius: 999px;
+    padding: 5px 13px;
+    font-size: 0.78rem;
+  }
+  .chip.active { color: var(--bg); font-weight: 600; }
+  .chip.active.neutral { background: var(--text); border-color: var(--text); }
 
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
-  td { padding: 12px; border-bottom: 1px solid var(--border); }
-  tr:last-child td { border-bottom: none; }
-  .tag { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-  .tag.income { background: rgba(52,211,153,.15); color: var(--green); }
-  .tag.expense { background: rgba(248,113,113,.15); color: var(--red); }
+  /* ---------- Spotlight ---------- */
+  .spotlight {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--green);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 22px;
+  }
+  .spotlight .kicker {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+  }
+  .spotlight h2 { font-size: 1.15rem; margin: 4px 0 8px; letter-spacing: -0.01em; }
+  .spotlight .std { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 12px; }
+  .spotlight .spot-actions { display: flex; gap: 8px; align-items: center; }
 
-  .progress { height: 10px; background: var(--bg2); border-radius: 999px; overflow: hidden; }
-  .progress > div { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .4s; }
+  /* ---------- Book tag ---------- */
+  .book-tag {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 2px 9px;
+    border-radius: 999px;
+    color: var(--bg);
+  }
 
-  .goal { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
-  .empty { color: var(--muted); text-align: center; padding: 30px; font-size: 14px; }
-  .row-between { display:flex; align-items:center; justify-content: space-between; gap: 12px; }
-  .mini { font-size: 12px; color: var(--muted); }
-  .toolbar { display:flex; gap: 10px; flex-wrap: wrap; align-items:center; }
-  .hint { background: rgba(56,189,248,.08); border: 1px solid rgba(56,189,248,.25); color: #bae6fd; padding: 12px 16px; border-radius: 12px; font-size: 13px; margin-bottom: 22px; }
-  .legend { list-style: none; padding: 0; margin: 12px 0 0; }
-  .legend li { display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 5px 0; }
-  .legend .sw { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
-  .legend .amt { margin-left: auto; color: var(--muted); }
-  .chart-wrap { width: 100%; }
+  /* ---------- Grid & cards ---------- */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  @media (min-width: 560px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 880px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    border-left-width: 4px;
+  }
+  .card:hover { background: var(--surface-2); }
+  .card.done { opacity: 0.55; }
+  .card.done .card-title { text-decoration: line-through; text-decoration-color: var(--text-faint); }
+  .card.flash { animation: flash 1.6s ease; }
+  @keyframes flash {
+    0%, 60% { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
+    100% { box-shadow: none; }
+  }
+  .card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .card-top-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .rule-n { font-size: 0.72rem; color: var(--text-faint); font-weight: 600; white-space: nowrap; }
+  .card-title { font-size: 0.95rem; font-weight: 600; letter-spacing: -0.01em; }
+
+  .tick {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    border: 1.5px solid var(--text-faint);
+    background: transparent;
+    color: transparent;
+    font-size: 0.95rem;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tick:hover { border-color: var(--green); background: transparent; }
+  .tick.on { background: var(--green); border-color: var(--green); color: var(--bg); }
+
+  .card-body { display: none; margin-top: 12px; font-size: 0.84rem; }
+  .card.open .card-body { display: block; }
+  .card-body h4 {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin: 12px 0 5px;
+  }
+  .card-body h4:first-child { margin-top: 0; }
+  .card-body h4.gain-h { color: var(--green); }
+  .card-body h4.lose-h { color: var(--red); }
+  .card-body h4.reality-h { color: var(--amber); }
+  .card-body h4.choice-h { color: var(--cyan); }
+  .card-body ul { list-style: none; }
+  .card-body li {
+    color: var(--text-dim);
+    padding-left: 14px;
+    position: relative;
+    margin-bottom: 3px;
+  }
+  .card-body li::before { content: "–"; position: absolute; left: 0; color: var(--text-faint); }
+  .card-body .para { color: var(--text-dim); }
+  .card-body .standard-text {
+    color: var(--text);
+    font-weight: 500;
+    background: var(--surface-2);
+    border-radius: 8px;
+    padding: 9px 11px;
+  }
+
+  /* ---------- Empty / drop zone ---------- */
+  .empty {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 48px 20px;
+    text-align: center;
+    color: var(--text-dim);
+    margin-top: 10px;
+  }
+  .empty strong { color: var(--text); display: block; font-size: 1.05rem; margin-bottom: 6px; }
+  .empty p { font-size: 0.85rem; margin-bottom: 16px; }
+
+  .drop-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 10, 12, 0.92);
+    border: 3px dashed var(--green);
+    border-radius: 16px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--green);
+    pointer-events: none;
+  }
+  body.dragging .drop-overlay { display: flex; }
+
+  /* ---------- Modal (library) ---------- */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 50;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px 16px 0 0;
+    width: 100%;
+    max-width: 520px;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  @media (min-width: 560px) {
+    .modal-backdrop.show { align-items: center; }
+    .modal { border-radius: 16px; }
+  }
+  .modal h3 { font-size: 1.05rem; margin-bottom: 14px; }
+  .book-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .book-row:last-of-type { border-bottom: none; }
+  .book-row-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .book-dot { width: 12px; height: 12px; border-radius: 999px; flex-shrink: 0; }
+  .book-row-name { font-size: 0.9rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .book-row-meta { font-size: 0.72rem; color: var(--text-faint); }
+  .modal-footer { margin-top: 16px; display: flex; gap: 8px; justify-content: flex-end; }
+  .modal h3.sync-title { margin: 22px 0 4px; }
+  .sync-note { font-size: 0.78rem; color: var(--text-dim); margin: 6px 0 10px; }
+  .sync-note a { color: var(--green); }
+  .sync-err { color: var(--red); }
+  .sync-row { display: flex; gap: 8px; }
+  .gbtn {
+    display: inline-flex;
+    align-items: center;
+    background: #fff;
+    color: #1f1f1f;
+    border: none;
+    font-weight: 600;
+    padding: 9px 16px;
+  }
+  .gbtn:hover { background: #f1f1f1; }
+  .gbtn .gmark {
+    font-weight: 700;
+    font-size: 1rem;
+    background: conic-gradient(from -45deg, #ea4335 0 25%, #fbbc05 0 50%, #34a853 0 75%, #4285f4 0);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .sync-row input {
+    flex: 1;
+    min-width: 0;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 8px 12px;
+    font: inherit;
+    font-size: 0.85rem;
+    outline: none;
+  }
+
+  /* ---------- Toast ---------- */
+  #toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    z-index: 200;
+    transition: transform 0.25s ease;
+    max-width: 90vw;
+    text-align: center;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  .section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin: 4px 0 10px;
+  }
+  .count-note { font-size: 0.78rem; color: var(--text-faint); margin: 14px 0 0; text-align: center; }
 </style>
 </head>
 <body>
-<div id="root"></div>
+
+<div class="drop-overlay">Drop PDF to add to library</div>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Daily Mastery <span id="date-label"></span></h1>
+      <div class="day-left" id="countdown"></div>
+    </div>
+    <div class="header-right">
+      <div class="ring-box">
+        <svg class="ring" viewBox="0 0 48 48">
+          <circle class="track" cx="24" cy="24" r="20"></circle>
+          <circle class="bar" id="ring-bar" cx="24" cy="24" r="20"></circle>
+          <text id="ring-text" x="24" y="24">0</text>
+        </svg>
+        <div class="ring-label" id="ring-label">0 / 0<br>done today</div>
+      </div>
+    </div>
+  </header>
+
+  <div id="spotlight-box"></div>
+
+  <div class="toolbar">
+    <input type="search" id="search" placeholder="Search rules…" autocomplete="off">
+    <button id="btn-random" title="Pick a random undone rule">🎲 Random</button>
+    <button id="btn-mix" title="Shuffle the order of the cards">🔀 Mix</button>
+    <button id="btn-order" title="Back to rule-number order" hidden>1→50 Order</button>
+    <button id="btn-import">＋ Add PDF</button>
+    <button id="btn-library" class="icon-btn" title="Library">📚</button>
+    <button id="btn-reset" class="icon-btn danger" title="Reset today's ticks">↺</button>
+  </div>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="grid" id="grid"></div>
+  <div id="empty-box"></div>
+  <p class="count-note" id="count-note"></p>
+</div>
+
+<div class="modal-backdrop" id="library-modal">
+  <div class="modal">
+    <h3>📚 Library</h3>
+    <div id="book-list"></div>
+    <h3 class="sync-title">☁ Sync across devices</h3>
+    <div id="sync-box"></div>
+    <div class="modal-footer">
+      <button id="btn-modal-import">＋ Add PDF</button>
+      <button id="btn-modal-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file-input" accept="application/pdf,.pdf" multiple hidden>
+<div id="toast"></div>
 
 <script>
-"use strict";
-(function () {
-  var STORAGE_KEY = "financeTracker_v1";
-  var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
-  var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Health","Savings","Other"];
-  var CATMETA = {
-    Food: { e: "🍔", bg: "#fef3c7", ic: "#f59e0b" },
-    Rent: { e: "🏠", bg: "#ffedd5", ic: "#f97316" },
-    Utilities: { e: "💡", bg: "#fef9c3", ic: "#eab308" },
-    Transport: { e: "🚌", bg: "#dbeafe", ic: "#3b82f6" },
-    Shopping: { e: "🛍️", bg: "#fce7f3", ic: "#ec4899" },
-    Entertainment: { e: "🎮", bg: "#ede9fe", ic: "#8b5cf6" },
-    Health: { e: "🏥", bg: "#d1fae5", ic: "#10b981" },
-    Salary: { e: "💳", bg: "#d1fae5", ic: "#10b981" },
-    Investment: { e: "💰", bg: "#fef3c7", ic: "#f59e0b" },
-    Freelance: { e: "💼", bg: "#e0e7ff", ic: "#6366f1" },
-    Gift: { e: "🎁", bg: "#fce7f3", ic: "#ec4899" },
-    Savings: { e: "🏦", bg: "#cffafe", ic: "#06b6d4" },
-    Other: { e: "💸", bg: "#e2e8f0", ic: "#64748b" }
-  };
-  function catMeta(name) { return CATMETA[name] || { e: "💸", bg: "#e2e8f0", ic: "#64748b" }; }
+'use strict';
 
-  var defaultData = {
-    openingBalance: 0,
-    transactions: [], goals: [], debts: [],
-    emergency: { monthlyExpenses: 0, months: 3, current: 0 },
-    trading: { startBalance: 0, trades: [] },
-    payday: { date: "", amount: 0, label: "Payday" },
-    recurring: [],
-    subscriptions: [],
-    budgets: {},
-    nwHistory: [],
-    pin: "",
-    currency: "$"
-  };
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-  var state, currentTab = "dashboard", privacy = false, editGoalId = null, editDebtId = null, locked = false, pinBuffer = "", pinError = false, theme = "dark", planMonth = null, editTxId = null, editTradeId = null;
-  function applyTheme() {
-    document.body.classList.toggle("light", theme === "light");
-    var m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.setAttribute("content", theme === "light" ? "#f1f5f9" : "#0b1120");
-  }
+/* ================= Storage ================= */
 
-  function load() {
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return clone(defaultData);
-      var obj = JSON.parse(raw);
-      return Object.assign(clone(defaultData), obj);
-    } catch (e) { return clone(defaultData); }
-  }
-  function saveLocal() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {} }
-  function save() { saveLocal(); cloudPush(); }
-  function clone(o) { return JSON.parse(JSON.stringify(o)); }
-  function uid() { return Math.random().toString(36).slice(2, 10); }
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c]; }); }
-  function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
-  function fmt(n) { if (privacy) return (state.currency || "$") + "•••"; return (state.currency || "$") + num(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-  function today() { return new Date().toISOString().slice(0, 10); }
-  function ymOfDate(d) { return d.getFullYear() + "-" + (d.getMonth() + 1 < 10 ? "0" : "") + (d.getMonth() + 1); }
-  function nextMonth(ym) { var p = ym.split("-"); var y = +p[0], mo = +p[1] + 1; if (mo > 12) { mo = 1; y++; } return y + "-" + (mo < 10 ? "0" : "") + mo; }
-  function prevMonth(ym) { var p = ym.split("-"); var y = +p[0], mo = +p[1] - 1; if (mo < 1) { mo = 12; y--; } return y + "-" + (mo < 10 ? "0" : "") + mo; }
-  function applyRecurring() {
-    if (!state.recurring || !state.recurring.length) return;
-    var now = new Date(today() + "T00:00:00"), nowYm = ymOfDate(now), changed = false;
-    state.recurring.forEach(function (r) {
-      var day = Math.min(28, Math.max(1, num(r.day) || 1));
-      var ym = r.lastApplied ? nextMonth(r.lastApplied) : (r.created || nowYm);
-      var guard = 0;
-      while (ym <= nowYm && guard < 240) {
-        guard++;
-        var occDate = ym + "-" + (day < 10 ? "0" : "") + day;
-        if (new Date(occDate + "T00:00:00") <= now) {
-          state.transactions.push({ id: uid(), date: occDate, type: r.type, category: r.category, amount: num(r.amount), note: (r.note ? r.note + " " : "") + "(recurring)" });
-          r.lastApplied = ym; changed = true;
-        } else { break; }
-        ym = nextMonth(ym);
-      }
-    });
-    if (changed) save();
-  }
-  function recordNetWorth() {
-    if (!state.nwHistory) state.nwHistory = [];
-    var ym = ymOfDate(new Date(today() + "T00:00:00")), nv = totals().netWorth, ex = null;
-    for (var i = 0; i < state.nwHistory.length; i++) if (state.nwHistory[i].ym === ym) ex = state.nwHistory[i];
-    if (ex) { if (ex.value !== nv) { ex.value = nv; save(); } }
-    else { state.nwHistory.push({ ym: ym, value: nv }); save(); }
-  }
-  function el(id) { return document.getElementById(id); }
-  function val(id) { var e = el(id); return e ? e.value : ""; }
-  function msg(t) { var m = el("dataMsg"); if (m) m.innerHTML = '<div class="hint">' + esc(t) + '</div>'; }
+const STORE_KEY = 'mastery_data';
 
-  /* ---------- cloud sync (Firebase, optional & local-first) ---------- */
-  var cloud = { app: null, auth: null, db: null, user: null, unsub: null, ready: false };
-  var BUILT_IN_CONFIG = {
-    apiKey: "AIzaSyAs1C-3Ibb9Nnw9yVtp9r797Lz-MHssvQg",
-    authDomain: "finance-tracker-8cfe3.firebaseapp.com",
-    projectId: "finance-tracker-8cfe3",
-    storageBucket: "finance-tracker-8cfe3.firebasestorage.app",
-    messagingSenderId: "511926344039",
-    appId: "1:511926344039:web:11cf76fbe9af76b54c37c2"
-  };
-  function fbAvailable() { return typeof firebase !== "undefined" && firebase && firebase.initializeApp; }
-  function getCfg() {
-    try { var c = JSON.parse(localStorage.getItem("fb_config")); if (c && c.apiKey) return c; } catch (e) {}
-    return (BUILT_IN_CONFIG && BUILT_IN_CONFIG.apiKey) ? BUILT_IN_CONFIG : null;
-  }
+const PALETTE = [
+  '#1D9E75', '#4F8EF7', '#E0A53C', '#C75FC1',
+  '#E06552', '#54B8C7', '#8E7CF0', '#9CB23E',
+  '#E0708F', '#5FA8E0'
+];
 
-  function initCloud() {
-    if (cloud.ready) return true;
-    if (!fbAvailable()) return false;
-    var cfg = getCfg(); if (!cfg) return false;
-    try {
-      cloud.app = firebase.initializeApp(cfg);
-      cloud.auth = firebase.auth();
-      cloud.db = firebase.firestore();
-      try { cloud.db.enablePersistence({ synchronizeTabs: true }).catch(function () {}); } catch (e) {}
-      cloud.auth.onAuthStateChanged(function (u) {
-        cloud.user = u;
-        if (u) {
-          if (localStorage.getItem("ft_resetpin") === "1") {
-            try { localStorage.removeItem("ft_resetpin"); } catch (e) {}
-            state.pin = ""; locked = false; pinBuffer = ""; saveLocal(); cloudPush(); render();
-          }
-          subscribe();
-        } else if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
-        if (currentTab === "data") render();
-      });
-      cloud.ready = true;
-      return true;
-    } catch (e) { return false; }
-  }
-
-  function subscribe() {
-    if (!cloud.user || !cloud.db) return;
-    if (cloud.unsub) cloud.unsub();
-    cloud.unsub = cloud.db.collection("users").doc(cloud.user.uid).onSnapshot(function (doc) {
-      if (doc.metadata.hasPendingWrites) return; // ignore our own just-written change
-      var d = doc.data();
-      if (d && d.payload) {
-        try { state = Object.assign(clone(defaultData), JSON.parse(d.payload)); saveLocal(); render(); } catch (e) {}
-      } else { cloudPush(); } // cloud empty: seed it from this device
-    }, function (err) { if (currentTab === "data") msg("Sync error: " + err.message); });
-  }
-
-  var pushTimer = null;
-  function cloudPush() {
-    if (!cloud.user || !cloud.db) return;
-    clearTimeout(pushTimer);
-    pushTimer = setTimeout(function () {
-      cloud.db.collection("users").doc(cloud.user.uid).set({ payload: JSON.stringify(state), updated: Date.now() }).catch(function () {});
-    }, 600);
-  }
-
-  /* ---------- derived ---------- */
-  function totals() {
-    var income = 0, expense = 0;
-    state.transactions.forEach(function (t) { if (t.type === "income") income += num(t.amount); else expense += num(t.amount); });
-    var balance = num(state.openingBalance) + income - expense;
-    var totalDebt = state.debts.reduce(function (s, d) { return s + num(d.remaining); }, 0);
-    var goalCashTotal = state.goals.reduce(function (s, g) { return s + goalCash(g); }, 0);
-    var goalGiftTotal = state.goals.reduce(function (s, g) { return s + goalGift(g); }, 0);
-    var goalSavings = goalCashTotal + goalGiftTotal;
-    var emFund = num(state.emergency.current);
-    var tProfit = 0, tLoss = 0;
-    state.trading.trades.forEach(function (t) { if (t.result === "loss") tLoss += num(t.amount); else tProfit += num(t.amount); });
-    var tradingBalance = num(state.trading.startBalance) + tProfit - tLoss;
-    var netWorth = balance + goalCashTotal + emFund + tradingBalance - totalDebt;
-    return { income: income, expense: expense, balance: balance, totalDebt: totalDebt, goalSavings: goalSavings, goalCash: goalCashTotal, goalGift: goalGiftTotal, emFund: emFund, tradingBalance: tradingBalance, netWorth: netWorth };
-  }
-
-  function payoffMonths(remaining, annualRate, payment) {
-    remaining = num(remaining); payment = num(payment);
-    var r = num(annualRate) / 100 / 12;
-    if (remaining <= 0) return 0;
-    if (payment <= 0) return Infinity;
-    if (r === 0) return Math.ceil(remaining / payment);
-    if (payment <= remaining * r) return Infinity;
-    return Math.ceil(-Math.log(1 - (r * remaining) / payment) / Math.log(1 + r));
-  }
-
-  function simulateDebts(strategy, extra) {
-    var list = state.debts.map(function (d) {
-      return { remaining: num(d.remaining), rate: num(d.rate) / 100 / 12, min: num(d.payment), creditor: d.creditor };
-    }).filter(function (d) { return d.remaining > 0; });
-    if (!list.length) return { months: 0, interest: 0, order: [] };
-    var months = 0, interest = 0, order = [], guard = 0;
-    while (list.some(function (d) { return d.remaining > 0.005; }) && guard < 1200) {
-      guard++; months++;
-      list.forEach(function (d) { if (d.remaining > 0) { var i = d.remaining * d.rate; d.remaining += i; interest += i; } });
-      var pool = num(extra);
-      list.forEach(function (d) { if (d.remaining > 0) { var m = Math.min(d.min, d.remaining); d.remaining -= m; if (d.min > m) pool += (d.min - m); } });
-      var active = list.filter(function (d) { return d.remaining > 0.005; });
-      active.sort(function (a, b) { return strategy === "avalanche" ? b.rate - a.rate : a.remaining - b.remaining; });
-      for (var k = 0; k < active.length && pool > 0.005; k++) {
-        var pay = Math.min(pool, active[k].remaining);
-        active[k].remaining -= pay; pool -= pay;
-      }
-      list.forEach(function (d) { if (d.remaining <= 0.005 && order.indexOf(d.creditor) < 0) order.push(d.creditor); });
-    }
-    return { months: guard >= 1200 ? Infinity : months, interest: interest, order: order };
-  }
-
-  function debtCalcResults() {
-    if (!state.debts.length) return '<div class="empty">Add debts above to use the calculator.</div>';
-    var extra = num(pageDebt.extra);
-    var sn = simulateDebts("snowball", extra), av = simulateDebts("avalanche", extra);
-    function box(name, r, sub) {
-      var m = r.months === Infinity ? "Never" : r.months + " mo";
-      var detail = r.months === Infinity ? "payments too low to clear" : "≈ " + (r.months / 12).toFixed(1) + " yrs · interest " + fmt(r.interest);
-      var ord = r.order.length ? '<div class="mini" style="margin-top:8px">Order: ' + r.order.map(esc).join(" → ") + '</div>' : "";
-      return '<div class="card"><div class="label">' + name + '</div><div class="value" style="font-size:22px">' + m + '</div><div class="sub">' + detail + '</div>' + ord + '<div class="mini" style="margin-top:6px">' + sub + '</div></div>';
-    }
-    var verdict = (av.interest < sn.interest - 0.5) ? "⛰ Avalanche saves the most interest." : (sn.interest < av.interest - 0.5 ? "❄ Snowball costs slightly less here." : "Both strategies are about the same.");
-    return '<div class="cards" style="margin-top:16px">' +
-      box("❄ Snowball", sn, "Smallest balance first — fast wins") +
-      box("⛰ Avalanche", av, "Highest rate first — least interest") +
-      '</div><div class="mini" style="margin-top:6px">' + verdict + ' (estimate)</div>';
-  }
-
-  /* ---------- SVG charts (no dependencies) ---------- */
-  function areaChart(series) {
-    if (!series.length) return '<div class="empty">Add transactions to see your balance trend.</div>';
-    var w = 600, h = 240, p = 34;
-    var vals = series.map(function (s) { return s.balance; });
-    var min = Math.min.apply(null, vals.concat([0])), max = Math.max.apply(null, vals.concat([0]));
-    if (min === max) { max += 1; min -= 1; }
-    var n = series.length;
-    function X(i) { return p + (n === 1 ? (w - 2 * p) / 2 : (i / (n - 1)) * (w - 2 * p)); }
-    function Y(v) { return h - p - ((v - min) / (max - min)) * (h - 2 * p); }
-    var pts = series.map(function (s, i) { return X(i) + "," + Y(s.balance); });
-    var area = "M" + X(0) + "," + (h - p) + " L" + pts.join(" L") + " L" + X(n - 1) + "," + (h - p) + " Z";
-    var zeroY = Y(0);
-    var dots = series.map(function (s, i) { return '<circle cx="' + X(i) + '" cy="' + Y(s.balance) + '" r="3" fill="#2dd4bf" />'; }).join("");
-    return '<div class="chart-wrap"><svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" preserveAspectRatio="xMidYMid meet">' +
-      '<defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2dd4bf" stop-opacity="0.45"/><stop offset="100%" stop-color="#2dd4bf" stop-opacity="0"/></linearGradient></defs>' +
-      '<line x1="' + p + '" y1="' + zeroY + '" x2="' + (w - p) + '" y2="' + zeroY + '" stroke="#334155" stroke-dasharray="3 3"/>' +
-      '<path d="' + area + '" fill="url(#ga)"/>' +
-      '<polyline points="' + pts.join(" ") + '" fill="none" stroke="#2dd4bf" stroke-width="2.5"/>' + dots +
-      '<text x="' + p + '" y="16" fill="#94a3b8" font-size="11">' + fmt(max) + '</text>' +
-      '<text x="' + p + '" y="' + (h - 10) + '" fill="#94a3b8" font-size="11">' + fmt(min) + '</text>' +
-      '</svg></div>';
-  }
-
-  function donut(items, centerLabel, centerSub) {
-    var total = items.reduce(function (s, i) { return s + i.value; }, 0);
-    if (total <= 0) return '<div class="empty">No data yet.</div>';
-    var R = 60, W = 22, C = 2 * Math.PI * R, off = 0;
-    var segs = items.map(function (it, idx) {
-      var frac = it.value / total, len = frac * C;
-      var s = '<circle cx="80" cy="80" r="' + R + '" fill="none" stroke="' + it.color + '" stroke-width="' + W + '" stroke-dasharray="' + len + ' ' + (C - len) + '" stroke-dashoffset="' + (-off) + '"/>';
-      off += len; return s;
-    }).join("");
-    var center = centerLabel ? '<text x="80" y="78" text-anchor="middle" fill="' + (centerSub === "accent" ? "#2dd4bf" : "#e2e8f0") + '" font-size="26" font-weight="700">' + centerLabel + '</text>' +
-      '<text x="80" y="98" text-anchor="middle" fill="#94a3b8" font-size="11">' + (centerSub === "accent" ? "funded" : "") + '</text>' : "";
-    return '<svg viewBox="0 0 160 160" width="170" height="170" style="display:block;margin:0 auto"><g transform="rotate(-90 80 80)">' +
-      '<circle cx="80" cy="80" r="' + R + '" fill="none" stroke="var(--bg2)" stroke-width="' + W + '"/>' + segs + '</g>' + center + '</svg>';
-  }
-
-  function legend(items) {
-    return '<ul class="legend">' + items.map(function (i) {
-      return '<li><span class="sw" style="background:' + i.color + '"></span>' + esc(i.name) + '<span class="amt">' + fmt(i.value) + '</span></li>';
-    }).join("") + '</ul>';
-  }
-
-  function monthShort(ym) { var p = ym.split("-"); return new Date(p[0], (+p[1]) - 1, 1).toLocaleDateString(undefined, { month: "short" }); }
-  function monthlyChart() {
-    var m = {};
-    state.transactions.forEach(function (t) { var k = (t.date || "").slice(0, 7); if (!k) return; if (!m[k]) m[k] = { inc: 0, exp: 0 }; if (t.type === "income") m[k].inc += num(t.amount); else m[k].exp += num(t.amount); });
-    var keys = Object.keys(m).sort();
-    if (!keys.length) return '<div class="empty">Add transactions to see monthly trends.</div>';
-    keys = keys.slice(-6);
-    var data = keys.map(function (k) { return { ym: k, inc: m[k].inc, exp: m[k].exp }; });
-    var w = 600, h = 240, p = 34, n = data.length;
-    var max = Math.max.apply(null, data.map(function (d) { return Math.max(d.inc, d.exp); }).concat([1]));
-    var slot = (w - 2 * p) / n, bw = Math.min(26, slot / 3.2);
-    function Y(v) { return h - p - (v / max) * (h - 2 * p); }
-    var bars = "";
-    data.forEach(function (d, i) {
-      var cx = p + slot * i + slot / 2;
-      bars += '<rect x="' + (cx - bw - 2) + '" y="' + Y(d.inc) + '" width="' + bw + '" height="' + (h - p - Y(d.inc)) + '" rx="3" fill="#34d399"/>';
-      bars += '<rect x="' + (cx + 2) + '" y="' + Y(d.exp) + '" width="' + bw + '" height="' + (h - p - Y(d.exp)) + '" rx="3" fill="#f87171"/>';
-      bars += '<text x="' + cx + '" y="' + (h - 12) + '" text-anchor="middle" fill="#94a3b8" font-size="11">' + monthShort(d.ym) + '</text>';
-    });
-    return '<div class="chart-wrap"><svg viewBox="0 0 ' + w + ' ' + h + '" width="100%">' +
-      '<line x1="' + p + '" y1="' + (h - p) + '" x2="' + (w - p) + '" y2="' + (h - p) + '" stroke="#334155"/>' + bars + '</svg></div>' +
-      '<div class="toolbar" style="margin-top:6px;font-size:12px"><span style="color:#34d399">■ Income</span><span style="color:#f87171">■ Expense</span></div>';
-  }
-
-  function ring(pct, color, size) {
-    size = size || 90;
-    pct = Math.max(0, pct);
-    var r = (size / 2) - 8, c = 2 * Math.PI * r, len = Math.min(100, pct) / 100 * c;
-    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" style="flex-shrink:0">' +
-      '<g transform="rotate(-90 ' + (size / 2) + ' ' + (size / 2) + ')">' +
-      '<circle cx="' + (size / 2) + '" cy="' + (size / 2) + '" r="' + r + '" fill="none" stroke="var(--border)" stroke-width="8"/>' +
-      '<circle cx="' + (size / 2) + '" cy="' + (size / 2) + '" r="' + r + '" fill="none" stroke="' + (color || "#2dd4bf") + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="' + len + ' ' + (c - len) + '"/>' +
-      '</g>' +
-      '<text x="' + (size / 2) + '" y="' + (size / 2 + size * 0.08) + '" text-anchor="middle" fill="#e2e8f0" font-size="' + (size * 0.22) + '" font-weight="700">' + pct.toFixed(0) + '%</text>' +
-      '</svg>';
-  }
-
-  /* ---------- pages ---------- */
-  function pageDashboard() {
-    var t = totals();
-    var sorted = state.transactions.slice().sort(function (a, b) { return (a.date || "").localeCompare(b.date || ""); });
-    var running = num(state.openingBalance), map = {};
-    sorted.forEach(function (tx) { running += tx.type === "income" ? num(tx.amount) : -num(tx.amount); map[tx.date] = running; });
-    var series = Object.keys(map).sort().map(function (d) { return { date: d, balance: map[d] }; });
-
-    var catMap = {};
-    state.transactions.forEach(function (tx) { if (tx.type === "expense") { var c = tx.category || "Other"; catMap[c] = (catMap[c] || 0) + num(tx.amount); } });
-    var cats = Object.keys(catMap).map(function (k, i) { return { name: k, value: catMap[k], color: COLORS[i % COLORS.length] }; });
-
-    var comp = [
-      { name: "Cash Balance", value: Math.max(0, t.balance), color: COLORS[0] },
-      { name: "Goal Savings (cash)", value: t.goalCash, color: COLORS[1] },
-      { name: "Emergency Fund", value: t.emFund, color: COLORS[2] },
-      { name: "Trading", value: Math.max(0, t.tradingBalance), color: COLORS[3] }
-    ].filter(function (x) { return x.value > 0; });
-    var compMax = comp.reduce(function (m, x) { return Math.max(m, x.value); }, 1);
-    var compHtml = comp.length ? comp.map(function (x) {
-      return '<div style="margin-bottom:14px"><div class="row-between" style="margin-bottom:6px"><span>' + x.name + '</span><strong>' + fmt(x.value) + '</strong></div>' +
-        '<div class="progress"><div style="width:' + (x.value / compMax * 100) + '%;background:' + x.color + '"></div></div></div>';
-    }).join("") : '<div class="empty">Add data to see your net worth breakdown.</div>';
-
-    var emTarget = num(state.emergency.monthlyExpenses) * num(state.emergency.months);
-    var emPct = emTarget > 0 ? Math.min(100, t.emFund / emTarget * 100) : 0;
-    var goalTargetTotal = state.goals.reduce(function (s, g) { return s + num(g.target); }, 0);
-    var goalCurTotal = state.goals.reduce(function (s, g) { return s + num(g.current); }, 0);
-    var goalPct = goalTargetTotal > 0 ? Math.min(100, goalCurTotal / goalTargetTotal * 100) : 0;
-    var debtOrig = state.debts.reduce(function (s, d) { return s + num(d.total); }, 0);
-    var debtRem = state.debts.reduce(function (s, d) { return s + num(d.remaining); }, 0);
-    var debtPct = debtOrig > 0 ? Math.min(100, (debtOrig - debtRem) / debtOrig * 100) : 0;
-    function ptile(pct, color, label) { return '<div>' + ring(pct, color, 110) + '<div class="mini" style="margin-top:8px">' + label + '</div></div>'; }
-    var ptiles = [];
-    if (emTarget > 0) ptiles.push(ptile(emPct, "#2dd4bf", "Emergency Fund"));
-    if (goalTargetTotal > 0) ptiles.push(ptile(goalPct, "#38bdf8", "Goals Saved"));
-    if (debtOrig > 0) ptiles.push(ptile(debtPct, "#34d399", "Debt Paid Off"));
-    var progressPanel = ptiles.length ? '<div class="panel"><h3>Progress at a Glance</h3><div style="display:flex;gap:30px;flex-wrap:wrap;justify-content:space-around;text-align:center">' + ptiles.join("") + '</div></div>' : "";
-
-    var curYm = ymOfDate(new Date(today() + "T00:00:00"));
-    var subsMonthly = state.subscriptions.reduce(function (s, x) { return s + (x.cycle === "yearly" ? num(x.amount) / 12 : num(x.amount)); }, 0);
-    var plannedDebt = state.debts.reduce(function (s, d) { return s + ((d.plans && d.plans[curYm]) ? num(d.plans[curYm].amount) : 0); }, 0);
-    var safe = t.balance - subsMonthly - plannedDebt;
-    var nwSeries = (state.nwHistory || []).slice().sort(function (a, b) { return a.ym.localeCompare(b.ym); }).map(function (h) { return { date: monthShort(h.ym), balance: h.value }; });
-    var nwPanel = nwSeries.length >= 2 ? '<div class="panel"><h3>Net Worth Over Time</h3>' + areaChart(nwSeries) + '</div>' : "";
-
-    return '<h1 class="page-title">Dashboard</h1><p class="page-sub">Your complete financial picture at a glance.</p>' +
-      '<div class="panel"><h3>Starting Balance</h3>' +
-        '<p class="mini" style="margin:-8px 0 14px">Enter the cash you have right now. Your balance below = this + income − expenses.</p>' +
-        '<div class="form-row" style="max-width:420px">' +
-          '<label class="field"><span>Current cash on hand (' + (state.currency || "$") + ')</span><input id="ob_input" type="number" value="' + num(state.openingBalance) + '"/></label>' +
-          '<button class="btn" data-act="setOB">Save</button>' +
-        '</div></div>' +
-      '<div class="cards">' +
-        card("💰 Current Balance", fmt(t.balance), "Income " + fmt(t.income) + " · Expenses " + fmt(t.expense), t.balance >= 0 ? "pos" : "neg") +
-        card("◍ Total Debt", fmt(t.totalDebt), state.debts.length + " debt" + (state.debts.length !== 1 ? "s" : "") + " tracked", "neg") +
-        card("⛨ Emergency Fund", fmt(t.emFund), "Target " + fmt(num(state.emergency.monthlyExpenses) * num(state.emergency.months)), "") +
-        card("💹 Trading Balance", fmt(t.tradingBalance), state.trading.trades.length + " trade" + (state.trading.trades.length !== 1 ? "s" : ""), t.tradingBalance >= 0 ? "pos" : "neg") +
-        card("🎁 Gift Saved", fmt(t.goalGift), "Not counted in net worth", "") +
-        card("📈 Net Worth", fmt(t.netWorth), "Assets minus debts (gifts excluded)", t.netWorth >= 0 ? "pos" : "neg") +
-        card("💸 Safe to Spend", fmt(safe), "Balance − subscriptions − planned debt", safe >= 0 ? "pos" : "neg") +
-      '</div>' + progressPanel +
-      '<div class="grid2">' +
-        '<div class="panel"><h3>Balance Over Time</h3>' + areaChart(series) + '</div>' +
-        '<div class="panel"><h3>Spending by Category</h3>' + (cats.length ? donut(cats) + legend(cats) : '<div class="empty">No expenses logged yet.</div>') + '</div>' +
-      '</div>' +
-      '<div class="panel"><h3>Monthly Income vs Expense</h3>' + monthlyChart() + '</div>' + nwPanel +
-      '<div class="panel"><h3>Net Worth Composition</h3>' + compHtml + '</div>';
-  }
-
-  function card(label, value, sub, cls) {
-    return '<div class="card"><div class="label">' + label + '</div><div class="value ' + (cls || "") + '">' + value + '</div>' + (sub ? '<div class="sub">' + sub + '</div>' : '') + '</div>';
-  }
-
-  function ensureGoalBuckets(g) {
-    if (g.cashSaved == null && g.giftSaved == null) { g.cashSaved = num(g.current); g.giftSaved = 0; }
-    g.cashSaved = num(g.cashSaved); g.giftSaved = num(g.giftSaved);
-  }
-  function goalCash(g) { return g.cashSaved != null ? num(g.cashSaved) : num(g.current); }
-  function goalGift(g) { return num(g.giftSaved); }
-
-  function goalTimeframe(g) {
-    if (!g.deadline) return "";
-    var remaining = num(g.target) - num(g.current);
-    var dl = new Date(g.deadline + "T00:00:00");
-    var label = dl.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-    var days = Math.round((dl.getTime() - new Date(today() + "T00:00:00").getTime()) / 86400000);
-    if (remaining <= 0) return '<div class="mini" style="margin-top:8px;color:var(--green)">✓ Reached — target ' + label + '</div>';
-    if (days < 0) return '<div class="mini" style="margin-top:8px;color:var(--red)">⚠ Past due (' + label + ') · ' + fmt(remaining) + ' to go</div>';
-    if (days <= 31) return '<div class="mini" style="margin-top:8px">🎯 ' + label + ' · ' + days + ' day' + (days === 1 ? "" : "s") + ' left · ' + fmt(remaining) + ' to go</div>';
-    var months = days / 30.44;
-    return '<div class="mini" style="margin-top:8px">🎯 ' + label + ' · ' + Math.round(months) + ' mo (' + days + ' days) left · save <strong>' + fmt(remaining / months) + '</strong>/mo</div>';
-  }
-
-  function pageGoals() {
-    var cur = state.currency || "$";
-    var list = state.goals.length ? '<div class="cards">' + state.goals.map(function (g) {
-      if (editGoalId === g.id) {
-        return '<div class="goal"><div class="row-between"><strong style="font-size:16px">Edit goal</strong>' +
-          '<button class="icon-btn" data-act="editGoalCancel">✕</button></div>' +
-          '<label class="field" style="margin:12px 0 10px"><span>Name</span><input id="eg_name" value="' + esc(g.name) + '"/></label>' +
-          '<label class="field" style="margin-bottom:10px"><span>Target (' + cur + ')</span><input id="eg_target" type="number" value="' + num(g.target) + '"/></label>' +
-          '<label class="field" style="margin-bottom:10px"><span>💵 Cash saved (' + cur + ')</span><input id="eg_cash" type="number" value="' + goalCash(g) + '"/></label>' +
-          '<label class="field" style="margin-bottom:10px"><span>🎁 Gift saved (' + cur + ')</span><input id="eg_gift" type="number" value="' + goalGift(g) + '"/></label>' +
-          '<label class="field" style="margin-bottom:14px"><span>Target date</span><input id="eg_deadline" type="date" value="' + esc(g.deadline || "") + '"/></label>' +
-          '<div class="toolbar"><button class="btn sm" data-act="editGoalSave" data-id="' + g.id + '">Save</button><button class="btn ghost sm" data-act="editGoalCancel">Cancel</button></div>' +
-          '</div>';
-      }
-      var pct = num(g.target) > 0 ? Math.min(100, num(g.current) / num(g.target) * 100) : 0;
-      return '<div class="goal"><div class="row-between"><strong style="font-size:16px">' + esc(g.name) + '</strong>' +
-        '<button class="icon-btn" data-act="delGoal" data-id="' + g.id + '">✕</button></div>' +
-        '<div style="display:flex;align-items:center;gap:16px;margin:14px 0">' +
-          ring(pct, "#2dd4bf", 92) +
-          '<div style="flex:1"><div style="font-size:15px"><strong>' + fmt(g.current) + '</strong> <span class="mini">of ' + fmt(g.target) + '</span></div>' +
-            '<div class="mini" style="margin-top:4px">💵 Cash ' + fmt(goalCash(g)) + ' · 🎁 Gift ' + fmt(goalGift(g)) + '</div>' + goalTimeframe(g) + '</div>' +
-        '</div>' +
-        '<div class="toolbar" style="margin-top:14px">' +
-          '<button class="btn ghost sm" data-act="goal" data-id="' + g.id + '" data-amt="50">+50</button>' +
-          '<button class="btn ghost sm" data-act="goal" data-id="' + g.id + '" data-amt="100">+100</button>' +
-          '<button class="btn ghost sm" data-act="goal" data-id="' + g.id + '" data-amt="500">+500</button>' +
-          '<button class="btn ghost sm" data-act="goal" data-id="' + g.id + '" data-amt="-50">−50</button>' +
-          '<button class="btn ghost sm" data-act="editGoal" data-id="' + g.id + '">✎ Edit</button>' +
-        '</div>' +
-        '<div class="toolbar" style="margin-top:10px">' +
-          '<select id="gsrc_' + g.id + '" style="width:120px"><option value="cash">💵 Cash</option><option value="gift">🎁 Gift</option></select>' +
-          '<input id="gadd_' + g.id + '" type="number" placeholder="Amount" style="width:130px"/>' +
-          '<button class="btn sm" data-act="goalAdd" data-id="' + g.id + '">+ Add</button>' +
-          '<button class="btn ghost sm" data-act="goalSub" data-id="' + g.id + '">− Subtract</button>' +
-        '</div></div>';
-    }).join("") + '</div>' : '<div class="panel"><div class="empty">No goals yet — add your first above.</div></div>';
-
-    return '<h1 class="page-title">Savings Goals</h1><p class="page-sub">Set targets and watch your progress grow.</p>' +
-      '<div class="panel"><h3>Add a Goal</h3><div class="form-row">' +
-        '<label class="field"><span>Goal name</span><input id="g_name" placeholder="e.g. New laptop"/></label>' +
-        '<label class="field"><span>Target (' + cur + ')</span><input id="g_target" type="number" placeholder="2000"/></label>' +
-        '<label class="field"><span>💵 Cash saved (' + cur + ')</span><input id="g_current" type="number" placeholder="0"/></label>' +
-        '<label class="field"><span>🎁 Gift saved (' + cur + ')</span><input id="g_gift" type="number" placeholder="0"/></label>' +
-        '<label class="field"><span>Target date (optional)</span><input id="g_deadline" type="date"/></label>' +
-        '<button class="btn" data-act="addGoal">+ Add Goal</button>' +
-      '</div></div>' + list;
-  }
-
-  function commitPlan() {
-    state.debts.forEach(function (d) {
-      if (!d.plans) d.plans = {};
-      var p = el("pn_" + d.id), n = el("nn_" + d.id);
-      var amt = p ? num(p.value) : 0, note = n ? n.value : "";
-      if (amt || note) d.plans[planMonth] = { amount: amt, note: note };
-      else if (d.plans[planMonth]) delete d.plans[planMonth];
-    });
-    save();
-  }
-  function debtPlanPanel() {
-    if (!state.debts.length) return "";
-    if (!planMonth) planMonth = nextMonth(ymOfDate(new Date(today() + "T00:00:00")));
-    var pp = planMonth.split("-");
-    var monthLabel = new Date(pp[0], (+pp[1]) - 1, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
-    var rows = state.debts.map(function (d) {
-      var pl = (d.plans && d.plans[planMonth]) || {};
-      return '<tr><td><strong>' + esc(d.creditor) + '</strong><div class="mini">balance ' + fmt(d.remaining) + '</div></td>' +
-        '<td><input id="pn_' + d.id + '" type="number" value="' + (num(pl.amount) ? num(pl.amount) : "") + '" placeholder="0.00" style="width:120px"/></td>' +
-        '<td><input id="nn_' + d.id + '" value="' + esc(pl.note || "") + '" placeholder="e.g. pay extra after bonus" style="min-width:180px"/></td></tr>';
-    }).join("");
-    var total = state.debts.reduce(function (s, d) { return s + ((d.plans && d.plans[planMonth]) ? num(d.plans[planMonth].amount) : 0); }, 0);
-    return '<div class="panel"><h3>Plan to Pay ' +
-      '<span style="margin-left:auto;display:inline-flex;align-items:center;gap:8px">' +
-        '<button class="btn ghost sm" data-act="planPrev">◀</button>' +
-        '<input type="month" id="pln_month" value="' + planMonth + '" style="width:auto;display:inline-block"/>' +
-        '<button class="btn ghost sm" data-act="planNext">▶</button>' +
-      '</span></h3>' +
-      '<p class="mini" style="margin:-8px 0 12px">Pick a month, set how much you plan to pay each debt, plus notes. Each month is saved separately. Tap Save.</p>' +
-      '<div style="overflow-x:auto"><table><thead><tr><th>Debt</th><th>Plan to pay</th><th>Note</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
-      '<div class="row-between" style="margin-top:14px"><strong>Total planned for ' + monthLabel + ': ' + fmt(total) + '</strong><button class="btn" data-act="savePlan">Save Plan</button></div></div>';
-  }
-
-  function pageDebt() {
-    var t = totals();
-    var monthly = state.debts.reduce(function (s, d) { return s + num(d.payment); }, 0);
-    var anyNever = false, longest = 0;
-    state.debts.forEach(function (d) { var n = payoffMonths(d.remaining, d.rate, d.payment); if (n === Infinity) anyNever = true; else longest = Math.max(longest, n); });
-
-    var rows = state.debts.length ? state.debts.map(function (d) {
-      if (editDebtId === d.id) {
-        return '<tr>' +
-          '<td><input id="ed_creditor" value="' + esc(d.creditor) + '" style="min-width:90px"/></td>' +
-          '<td><input id="ed_remaining" type="number" value="' + num(d.remaining) + '" style="width:90px"/></td>' +
-          '<td><input id="ed_total" type="number" value="' + num(d.total) + '" style="width:90px"/></td>' +
-          '<td><input id="ed_rate" type="number" value="' + num(d.rate) + '" style="width:70px"/></td>' +
-          '<td><input id="ed_payment" type="number" value="' + num(d.payment) + '" style="width:80px"/></td>' +
-          '<td colspan="2" class="mini">Editing…</td>' +
-          '<td style="white-space:nowrap"><button class="btn sm" data-act="editDebtSave" data-id="' + d.id + '">Save</button> <button class="icon-btn" data-act="editDebtCancel">✕</button></td>' +
-        '</tr>';
-      }
-      var n = payoffMonths(d.remaining, d.rate, d.payment);
-      var paid = num(d.total) > 0 ? Math.min(100, (num(d.total) - num(d.remaining)) / num(d.total) * 100) : 0;
-      return '<tr><td><strong>' + esc(d.creditor) + '</strong></td><td class="neg">' + fmt(d.remaining) + '</td><td>' + fmt(d.total) + '</td>' +
-        '<td>' + num(d.rate).toFixed(2) + '%</td><td>' + fmt(d.payment) + '</td>' +
-        '<td>' + (n === Infinity ? '<span class="neg">never</span>' : n + ' mo') + '</td>' +
-        '<td>' + ring(paid, "#34d399", 56) + '</td>' +
-        '<td style="white-space:nowrap"><button class="icon-btn" data-act="editDebt" data-id="' + d.id + '">✎</button><button class="icon-btn" data-act="delDebt" data-id="' + d.id + '">✕</button></td></tr>';
-    }).join("") : '';
-
-    return '<h1 class="page-title">Debt Tracker</h1><p class="page-sub">Track balances, rates, and estimated payoff.</p>' +
-      '<div class="cards">' +
-        card("Total Debt", fmt(t.totalDebt), "", "neg") +
-        card("Monthly Payments", fmt(monthly), "", "") +
-        card("Est. Debt-Free In", anyNever ? "—" : (longest > 0 ? longest + " mo" : "0 mo"), anyNever ? "A payment is too low to ever clear" : (longest > 0 ? "≈ " + (longest / 12).toFixed(1) + " years" : "All clear"), "") +
-      '</div>' +
-      '<div class="panel"><h3>Add a Debt</h3><div class="form-row">' +
-        '<label class="field"><span>Creditor</span><input id="d_creditor" placeholder="Visa"/></label>' +
-        '<label class="field"><span>Original total</span><input id="d_total" type="number" placeholder="5000"/></label>' +
-        '<label class="field"><span>Remaining</span><input id="d_remaining" type="number" placeholder="3200"/></label>' +
-        '<label class="field"><span>Interest %</span><input id="d_rate" type="number" placeholder="19.99"/></label>' +
-        '<label class="field"><span>Monthly pmt</span><input id="d_payment" type="number" placeholder="150"/></label>' +
-        '<button class="btn" data-act="addDebt">+ Add</button>' +
-      '</div></div>' +
-      '<div class="panel"><h3>Payoff Strategy Calculator</h3>' +
-        '<p class="mini" style="margin:-8px 0 14px">Enter any extra you can pay monthly on top of minimums, then see which strategy clears your debt faster and cheaper.</p>' +
-        '<div class="form-row" style="max-width:420px">' +
-          '<label class="field"><span>Extra per month (' + (state.currency || "$") + ')</span><input id="sn_extra" type="number" value="' + num(pageDebt.extra) + '"/></label>' +
-          '<button class="btn" data-act="calcDebt">Calculate</button>' +
-        '</div>' + debtCalcResults() +
-      '</div>' +
-      '<div class="panel"><h3>Your Debts</h3>' + (rows ?
-        '<div style="overflow-x:auto"><table><thead><tr><th>Creditor</th><th>Remaining</th><th>Original</th><th>Rate</th><th>Monthly</th><th>Payoff</th><th>Progress</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-        : '<div class="empty">No debts tracked. 🎉</div>') + '</div>' + debtPlanPanel();
-  }
-
-  function pageEmergency() {
-    var em = state.emergency;
-    var target = num(em.monthlyExpenses) * num(em.months);
-    var pct = target > 0 ? Math.min(100, num(em.current) / target * 100) : 0;
-    var covered = num(em.monthlyExpenses) > 0 ? num(em.current) / num(em.monthlyExpenses) : 0;
-    var gauge = [{ name: "saved", value: pct, color: "#2dd4bf" }, { name: "rest", value: 100 - pct, color: "var(--bg2)" }];
-
-    return '<h1 class="page-title">Emergency Fund</h1><p class="page-sub">A safety net of 3–6 months of expenses is the usual goal.</p>' +
-      '<div class="grid2">' +
-        '<div class="panel"><h3>Configure</h3>' +
-          '<label class="field" style="margin-bottom:14px"><span>Monthly expenses</span><input id="em_exp" type="number" value="' + num(em.monthlyExpenses) + '"/></label>' +
-          '<label class="field" style="margin-bottom:14px"><span>Months of cushion: <strong id="em_mlabel">' + em.months + '</strong></span><input id="em_months" type="range" min="1" max="12" value="' + em.months + '"/></label>' +
-          '<label class="field"><span>Amount saved</span><input id="em_cur" type="number" value="' + num(em.current) + '"/></label>' +
-          '<div class="toolbar" style="margin-top:14px"><button class="btn ghost sm" data-act="em" data-amt="100">+100</button><button class="btn ghost sm" data-act="em" data-amt="500">+500</button></div>' +
-        '</div>' +
-        '<div class="panel"><h3>Progress</h3><div id="em_gauge">' + donut(gauge, pct.toFixed(0) + "%", "accent") + '</div>' +
-          '<div class="cards" style="margin:18px 0 0">' +
-            '<div class="card"><div class="label">Saved</div><div class="value" id="em_saved" style="font-size:20px">' + fmt(em.current) + '</div></div>' +
-            '<div class="card"><div class="label">Target</div><div class="value" id="em_target" style="font-size:20px">' + fmt(target) + '</div></div>' +
-            '<div class="card"><div class="label">Covers</div><div class="value" id="em_covers" style="font-size:20px">' + covered.toFixed(1) + ' mo</div></div>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-  }
-
-  function paintEmergency() {
-    var em = state.emergency;
-    var target = num(em.monthlyExpenses) * num(em.months);
-    var pct = target > 0 ? Math.min(100, num(em.current) / target * 100) : 0;
-    var covered = num(em.monthlyExpenses) > 0 ? num(em.current) / num(em.monthlyExpenses) : 0;
-    var gauge = [{ name: "saved", value: pct, color: "#2dd4bf" }, { name: "rest", value: 100 - pct, color: "var(--bg2)" }];
-    if (el("em_gauge")) el("em_gauge").innerHTML = donut(gauge, pct.toFixed(0) + "%", "accent");
-    if (el("em_saved")) el("em_saved").textContent = fmt(em.current);
-    if (el("em_target")) el("em_target").textContent = fmt(target);
-    if (el("em_covers")) el("em_covers").textContent = covered.toFixed(1) + " mo";
-    if (el("em_mlabel")) el("em_mlabel").textContent = em.months;
-  }
-
-  function catCard(name, amount, maxv) {
-    var m = catMeta(name), pct = maxv > 0 ? Math.min(100, amount / maxv * 100) : 0;
-    return '<div style="flex:1 1 140px;max-width:200px;background:' + m.bg + ';border-radius:18px;padding:18px 16px;text-align:center;color:#1e293b">' +
-      '<div style="font-weight:600;margin-bottom:12px">' + esc(name) + '</div>' +
-      '<div style="width:54px;height:54px;border-radius:50%;background:' + m.ic + ';display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px">' + m.e + '</div>' +
-      '<div style="font-size:20px;font-weight:700">' + fmt(amount) + '</div>' +
-      '<div class="progress" style="margin-top:12px;height:8px;background:rgba(0,0,0,.12)"><div style="width:' + pct + '%;background:' + m.ic + '"></div></div>' +
-      '</div>';
-  }
-  function categorySummary() {
-    var exp = {}, inc = {};
-    state.transactions.forEach(function (t) { var bucket = t.type === "income" ? inc : exp; var c = t.category || "Other"; bucket[c] = (bucket[c] || 0) + num(t.amount); });
-    var ek = Object.keys(exp), ik = Object.keys(inc);
-    if (!ek.length && !ik.length) return "";
-    var t = totals();
-    var stat = function (label, value, cls) { return '<div><div class="mini">' + label + '</div><div style="font-size:22px;font-weight:700" class="' + (cls || "") + '">' + value + '</div></div>'; };
-    var net = t.income - t.expense;
-    var summary = '<div style="display:flex;gap:30px;flex-wrap:wrap;margin-bottom:22px">' +
-      stat("Income", fmt(t.income), "pos") + stat("Expense", fmt(t.expense), "neg") +
-      stat("Net (in − out)", fmt(net), net >= 0 ? "pos" : "neg") +
-      stat("Balance", fmt(t.balance), t.balance >= 0 ? "pos" : "neg") + '</div>';
-    var flex = "display:flex;flex-wrap:wrap;gap:14px";
-    var html = summary;
-    if (ek.length) {
-      var et = ek.reduce(function (s, k) { return s + exp[k]; }, 0), em = Math.max.apply(null, ek.map(function (k) { return exp[k]; }));
-      html += '<h3 style="margin:0 0 14px">Expense ' + fmt(et) + '</h3><div style="' + flex + '">' +
-        ek.sort(function (a, b) { return exp[b] - exp[a]; }).map(function (k) { return catCard(k, exp[k], em); }).join("") + '</div>';
-    }
-    if (ik.length) {
-      var it = ik.reduce(function (s, k) { return s + inc[k]; }, 0), im = Math.max.apply(null, ik.map(function (k) { return inc[k]; }));
-      html += '<h3 style="margin:24px 0 14px">Income ' + fmt(it) + '</h3><div style="' + flex + '">' +
-        ik.sort(function (a, b) { return inc[b] - inc[a]; }).map(function (k) { return catCard(k, inc[k], im); }).join("") + '</div>';
-    }
-    return '<div class="panel">' + html + '</div>';
-  }
-
-  function budgetPanel() {
-    var curYm = ymOfDate(new Date(today() + "T00:00:00"));
-    var spent = {};
-    state.transactions.forEach(function (t) { if (t.type === "expense" && (t.date || "").slice(0, 7) === curYm) { var c = t.category || "Other"; spent[c] = (spent[c] || 0) + num(t.amount); } });
-    var b = state.budgets || {}, keys = Object.keys(b);
-    var list = keys.length ? keys.map(function (c) {
-      var lim = num(b[c]), sp = spent[c] || 0, pct = lim > 0 ? Math.min(100, sp / lim * 100) : 0, over = sp > lim;
-      return '<div style="margin-bottom:14px"><div class="row-between" style="margin-bottom:6px"><span>' + catMeta(c).e + ' ' + esc(c) + '</span>' +
-        '<span class="' + (over ? "neg" : "") + '">' + fmt(sp) + ' / ' + fmt(lim) + (over ? ' ⚠' : '') + ' <button class="icon-btn" data-act="delBudget" data-c="' + c + '">✕</button></span></div>' +
-        '<div class="progress"><div style="width:' + pct + '%;background:' + (over ? "#f87171" : "#34d399") + '"></div></div></div>';
-    }).join("") : '<div class="empty">No budgets set yet.</div>';
-    var opts = CATEGORIES.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join("");
-    return '<div class="panel"><h3>Monthly Budgets <span class="mini" style="font-weight:400">(this month)</span></h3>' +
-      '<div class="form-row" style="max-width:480px"><label class="field"><span>Category</span><select id="bg_cat">' + opts + '</select></label>' +
-      '<label class="field"><span>Monthly limit</span><input id="bg_amount" type="number" placeholder="0.00"/></label>' +
-      '<button class="btn" data-act="setBudget">Set</button></div>' +
-      '<div style="margin-top:18px">' + list + '</div></div>';
-  }
-
-  function pageTransactions() {
-    var rows = state.transactions.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
-    var f = pageTransactions.filter || "all";
-    if (f !== "all") rows = rows.filter(function (t) { return t.type === f; });
-    var body = rows.length ? rows.map(function (t) {
-      if (editTxId === t.id) {
-        return '<tr>' +
-          '<td><input id="et_date" type="date" value="' + esc(t.date) + '" style="width:150px"/></td>' +
-          '<td><select id="et_type"><option value="expense"' + (t.type === "expense" ? " selected" : "") + '>Expense</option><option value="income"' + (t.type === "income" ? " selected" : "") + '>Income</option></select></td>' +
-          '<td><select id="et_cat">' + CATEGORIES.map(function (c) { return '<option value="' + c + '"' + (t.category === c ? " selected" : "") + '>' + c + '</option>'; }).join("") + '</select></td>' +
-          '<td><input id="et_note" value="' + esc(t.note || "") + '" style="min-width:110px"/></td>' +
-          '<td><input id="et_amount" type="number" value="' + num(t.amount) + '" style="width:100px;text-align:right"/></td>' +
-          '<td style="white-space:nowrap"><button class="btn sm" data-act="editTxSave" data-id="' + t.id + '">Save</button> <button class="icon-btn" data-act="editTxCancel">✕</button></td></tr>';
-      }
-      return '<tr><td>' + esc(t.date) + '</td><td><span class="tag ' + t.type + '">' + t.type + '</span></td><td>' + esc(t.category) + '</td>' +
-        '<td class="mini">' + esc(t.note) + '</td><td style="text-align:right" class="' + (t.type === "income" ? "pos" : "neg") + '">' + (t.type === "income" ? "+" : "−") + fmt(t.amount) + '</td>' +
-        '<td style="white-space:nowrap"><button class="icon-btn" data-act="editTx" data-id="' + t.id + '">✎</button><button class="icon-btn" data-act="delTx" data-id="' + t.id + '">✕</button></td></tr>';
-    }).join("") : '';
-    var opts = CATEGORIES.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join("");
-
-    return '<h1 class="page-title">Transactions</h1><p class="page-sub">Log income and expenses to keep your balance accurate.</p>' +
-      categorySummary() + budgetPanel() +
-      '<div class="panel"><h3>Add Transaction</h3><div class="form-row">' +
-        '<label class="field"><span>Date</span><input id="t_date" type="date" value="' + today() + '"/></label>' +
-        '<label class="field"><span>Type</span><select id="t_type"><option value="expense">Expense</option><option value="income">Income</option></select></label>' +
-        '<label class="field"><span>Category</span><select id="t_cat">' + opts + '</select></label>' +
-        '<label class="field"><span>Amount</span><input id="t_amount" type="number" placeholder="0.00"/></label>' +
-        '<label class="field"><span>Note (optional)</span><input id="t_note" placeholder="Lunch"/></label>' +
-        '<button class="btn" data-act="addTx">+ Add</button>' +
-      '</div></div>' +
-      '<div class="panel"><h3>History <select id="t_filter" data-act="filter" style="width:140px"><option value="all">All</option><option value="income">Income</option><option value="expense">Expenses</option></select></h3>' +
-        (body ? '<div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Note</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>' + body + '</tbody></table></div>' : '<div class="empty">No transactions yet.</div>') +
-      '</div>';
-  }
-
-  function pageTrading() {
-    var tr = state.trading;
-    var profit = 0, loss = 0, wins = 0, losses = 0;
-    tr.trades.forEach(function (t) { if (t.result === "loss") { loss += num(t.amount); losses++; } else { profit += num(t.amount); wins++; } });
-    var net = profit - loss;
-    var balance = num(tr.startBalance) + net;
-    var total = wins + losses;
-    var winRate = total > 0 ? wins / total * 100 : 0;
-
-    var sorted = tr.trades.slice().sort(function (a, b) { return (a.date || "").localeCompare(b.date || ""); });
-    var running = num(tr.startBalance), map = {};
-    sorted.forEach(function (t) { running += t.result === "loss" ? -num(t.amount) : num(t.amount); map[t.date] = running; });
-    var series = Object.keys(map).sort().map(function (d) { return { date: d, balance: map[d] }; });
-
-    var rows = tr.trades.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); }).map(function (t) {
-      if (editTradeId === t.id) {
-        return '<tr>' +
-          '<td><input id="etr_date" type="date" value="' + esc(t.date) + '" style="width:150px"/></td>' +
-          '<td><input id="etr_symbol" value="' + esc(t.symbol || "") + '" style="width:90px"/></td>' +
-          '<td><select id="etr_result"><option value="profit"' + (t.result !== "loss" ? " selected" : "") + '>Profit</option><option value="loss"' + (t.result === "loss" ? " selected" : "") + '>Loss</option></select></td>' +
-          '<td><input id="etr_amount" type="number" value="' + num(t.amount) + '" style="width:100px;text-align:right"/></td>' +
-          '<td><input id="etr_note" value="' + esc(t.note || "") + '" style="min-width:110px"/></td>' +
-          '<td style="white-space:nowrap"><button class="btn sm" data-act="editTradeSave" data-id="' + t.id + '">Save</button> <button class="icon-btn" data-act="editTradeCancel">✕</button></td></tr>';
-      }
-      var isLoss = t.result === "loss";
-      return '<tr><td>' + esc(t.date) + '</td><td><strong>' + esc(t.symbol || "—") + '</strong></td>' +
-        '<td><span class="tag ' + (isLoss ? "expense" : "income") + '">' + t.result + '</span></td>' +
-        '<td style="text-align:right" class="' + (isLoss ? "neg" : "pos") + '">' + (isLoss ? "−" : "+") + fmt(t.amount) + '</td>' +
-        '<td class="mini">' + esc(t.note) + '</td>' +
-        '<td style="white-space:nowrap"><button class="icon-btn" data-act="editTrade" data-id="' + t.id + '">✎</button><button class="icon-btn" data-act="delTrade" data-id="' + t.id + '">✕</button></td></tr>';
-    }).join("");
-
-    var winsArr = tr.trades.filter(function (t) { return t.result !== "loss"; }).map(function (t) { return num(t.amount); });
-    var lossArr = tr.trades.filter(function (t) { return t.result === "loss"; }).map(function (t) { return num(t.amount); });
-    var avgWin = winsArr.length ? profit / winsArr.length : 0;
-    var avgLoss = lossArr.length ? loss / lossArr.length : 0;
-    var bigWin = winsArr.length ? Math.max.apply(null, winsArr) : 0;
-    var bigLoss = lossArr.length ? Math.max.apply(null, lossArr) : 0;
-    var profitFactor = loss > 0 ? profit / loss : (profit > 0 ? Infinity : 0);
-    var byDate = tr.trades.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
-    var streak = 0, streakType = "";
-    for (var si = 0; si < byDate.length; si++) {
-      var rr = byDate[si].result === "loss" ? "loss" : "win";
-      if (si === 0) { streakType = rr; streak = 1; } else if (rr === streakType) { streak++; } else break;
-    }
-    var streakLabel = streak ? streak + " " + (streakType === "win" ? "win" + (streak !== 1 ? "s" : "") : "loss" + (streak !== 1 ? "es" : "")) : "—";
-    var statsPanel = tr.trades.length ? '<div class="panel"><h3>Performance</h3><div class="cards" style="margin:0">' +
-      card("Avg Win", fmt(avgWin), "", "pos") +
-      card("Avg Loss", fmt(avgLoss), "", "neg") +
-      card("Biggest Win", fmt(bigWin), "", "pos") +
-      card("Biggest Loss", fmt(bigLoss), "", "neg") +
-      card("Profit Factor", profitFactor === Infinity ? "∞" : profitFactor.toFixed(2), "Profit ÷ Loss", profitFactor >= 1 ? "pos" : "neg") +
-      card("Current Streak", streakLabel, "", streakType === "win" ? "pos" : (streakType === "loss" ? "neg" : "")) +
-      '</div></div>' : "";
-
-    var symMap = {};
-    tr.trades.forEach(function (t) { var s = t.symbol || "—"; if (!symMap[s]) symMap[s] = { net: 0, n: 0 }; symMap[s].net += (t.result === "loss" ? -num(t.amount) : num(t.amount)); symMap[s].n++; });
-    var symRows = Object.keys(symMap).sort(function (a, b) { return symMap[b].net - symMap[a].net; }).map(function (s) {
-      var o = symMap[s];
-      return '<tr><td><strong>' + esc(s) + '</strong></td><td>' + o.n + '</td><td style="text-align:right" class="' + (o.net >= 0 ? "pos" : "neg") + '">' + (o.net >= 0 ? "+" : "−") + fmt(Math.abs(o.net)) + '</td></tr>';
-    }).join("");
-    var symPanel = tr.trades.length ? '<div class="panel"><h3>By Symbol</h3><div style="overflow-x:auto"><table><thead><tr><th>Symbol</th><th>Trades</th><th style="text-align:right">Net P/L</th></tr></thead><tbody>' + symRows + '</tbody></table></div></div>' : "";
-
-    return '<h1 class="page-title">Trading</h1><p class="page-sub">Log your trades and track profit, loss, and balance.</p>' +
-      '<div class="panel"><h3>Trading Capital</h3>' +
-        '<p class="mini" style="margin:-8px 0 14px">Your starting trading balance. Profits and losses below adjust it.</p>' +
-        '<div class="form-row" style="max-width:420px">' +
-          '<label class="field"><span>Starting capital (' + (state.currency || "$") + ')</span><input id="tr_start" type="number" value="' + num(tr.startBalance) + '"/></label>' +
-          '<button class="btn" data-act="setTradeStart">Save</button>' +
-        '</div></div>' +
-      '<div class="cards">' +
-        card("Trading Balance", fmt(balance), "Capital " + fmt(tr.startBalance) + " + P/L", balance >= num(tr.startBalance) ? "pos" : "neg") +
-        card("Net P/L", (net >= 0 ? "+" : "−") + fmt(Math.abs(net)), tr.trades.length + " trade" + (tr.trades.length !== 1 ? "s" : ""), net >= 0 ? "pos" : "neg") +
-        card("Total Profit", fmt(profit), wins + " win" + (wins !== 1 ? "s" : ""), "pos") +
-        card("Total Loss", fmt(loss), losses + " loss" + (losses !== 1 ? "es" : ""), "neg") +
-        card("Win Rate", winRate.toFixed(0) + "%", wins + " / " + total + " trades", "") +
-      '</div>' + statsPanel +
-      '<div class="panel"><h3>Add a Trade</h3><div class="form-row">' +
-        '<label class="field"><span>Date</span><input id="tr_date" type="date" value="' + today() + '"/></label>' +
-        '<label class="field"><span>Symbol</span><input id="tr_symbol" placeholder="BTC, AAPL…"/></label>' +
-        '<label class="field"><span>Result</span><select id="tr_result"><option value="profit">Profit</option><option value="loss">Loss</option></select></label>' +
-        '<label class="field"><span>Amount</span><input id="tr_amount" type="number" placeholder="0.00"/></label>' +
-        '<label class="field"><span>Note (optional)</span><input id="tr_note" placeholder="Scalp, swing…"/></label>' +
-        '<button class="btn" data-act="addTrade">+ Add</button>' +
-      '</div></div>' +
-      '<div class="panel"><h3>Balance Over Time</h3>' + areaChart(series) + '</div>' +
-      '<div class="panel"><h3>Trade History</h3>' + (rows ?
-        '<div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Symbol</th><th>Result</th><th style="text-align:right">Amount</th><th>Note</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-        : '<div class="empty">No trades logged yet.</div>') + '</div>' + symPanel;
-  }
-
-  function pageRecurring() {
-    var opts = CATEGORIES.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join("");
-    var rows = state.recurring.length ? state.recurring.map(function (r) {
-      return '<tr><td><span class="tag ' + (r.type === "income" ? "income" : "expense") + '">' + r.type + '</span></td>' +
-        '<td>' + esc(r.category) + '</td><td>Day ' + (num(r.day) || 1) + '</td>' +
-        '<td style="text-align:right" class="' + (r.type === "income" ? "pos" : "neg") + '">' + fmt(r.amount) + '</td>' +
-        '<td class="mini">' + esc(r.note) + '</td>' +
-        '<td><button class="icon-btn" data-act="delRecurring" data-id="' + r.id + '">✕</button></td></tr>';
-    }).join("") : '';
-    return '<h1 class="page-title">Recurring</h1><p class="page-sub">Set income or expenses that auto-add every month.</p>' +
-      '<div class="panel"><h3>Add Recurring Entry</h3><div class="form-row">' +
-        '<label class="field"><span>Type</span><select id="rc_type"><option value="expense">Expense</option><option value="income">Income</option></select></label>' +
-        '<label class="field"><span>Category</span><select id="rc_cat">' + opts + '</select></label>' +
-        '<label class="field"><span>Amount</span><input id="rc_amount" type="number" placeholder="0.00"/></label>' +
-        '<label class="field"><span>Day of month</span><input id="rc_day" type="number" min="1" max="28" placeholder="1"/></label>' +
-        '<label class="field"><span>Note (optional)</span><input id="rc_note" placeholder="Rent, Netflix…"/></label>' +
-        '<button class="btn" data-act="addRecurring">+ Add</button>' +
-      '</div><p class="mini" style="margin-top:10px">Each month on the chosen day, this is added to your transactions automatically when you open the app.</p></div>' +
-      '<div class="panel"><h3>Your Recurring Entries</h3>' + (rows ?
-        '<div style="overflow-x:auto"><table><thead><tr><th>Type</th><th>Category</th><th>When</th><th style="text-align:right">Amount</th><th>Note</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-        : '<div class="empty">No recurring entries yet.</div>') + '</div>';
-  }
-
-  function pageSubscriptions() {
-    var subs = state.subscriptions;
-    var monthly = subs.reduce(function (s, x) { return s + (x.cycle === "yearly" ? num(x.amount) / 12 : num(x.amount)); }, 0);
-    var yearly = monthly * 12;
-    var sorted = subs.slice().sort(function (a, b) { return (a.nextDate || "9999").localeCompare(b.nextDate || "9999"); });
-    var rows = subs.length ? sorted.map(function (x) {
-      var when = "—";
-      if (x.nextDate) {
-        var d = new Date(x.nextDate + "T00:00:00");
-        var days = Math.round((d.getTime() - new Date(today() + "T00:00:00").getTime()) / 86400000);
-        var lab = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-        when = days < 0 ? '<span class="neg">overdue</span>' : days === 0 ? '<span class="pos">today</span>' : 'in ' + days + 'd · ' + lab;
-      }
-      return '<tr><td><strong>' + esc(x.name) + '</strong></td>' +
-        '<td class="neg">' + fmt(x.amount) + ' <span class="mini">/' + (x.cycle === "yearly" ? "yr" : "mo") + '</span></td>' +
-        '<td>' + when + '</td>' +
-        '<td><button class="icon-btn" data-act="delSub" data-id="' + x.id + '">✕</button></td></tr>';
-    }).join("") : '';
-    return '<h1 class="page-title">Subscriptions</h1><p class="page-sub">Track your recurring services and what they cost.</p>' +
-      '<div class="cards">' +
-        card("Monthly Cost", fmt(monthly), subs.length + " active", "neg") +
-        card("Yearly Cost", fmt(yearly), "Across all subscriptions", "neg") +
-        card("Active", String(subs.length), "subscriptions", "") +
-      '</div>' +
-      '<div class="panel"><h3>Add Subscription</h3><div class="form-row">' +
-        '<label class="field"><span>Name</span><input id="sub_name" placeholder="Netflix, Spotify…"/></label>' +
-        '<label class="field"><span>Amount</span><input id="sub_amount" type="number" placeholder="0.00"/></label>' +
-        '<label class="field"><span>Billing</span><select id="sub_cycle"><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></label>' +
-        '<label class="field"><span>Next renewal</span><input id="sub_date" type="date"/></label>' +
-        '<button class="btn" data-act="addSub">+ Add</button>' +
-      '</div></div>' +
-      '<div class="panel"><h3>Your Subscriptions</h3>' + (rows ?
-        '<div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Cost</th><th>Next renewal</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-        : '<div class="empty">No subscriptions yet.</div>') + '</div>';
-  }
-
-  function pageCompound() {
-    if (pageCompound.p == null) { pageCompound.p = 1000; pageCompound.m = 100; pageCompound.r = 7; pageCompound.y = 10; }
-    var P = num(pageCompound.p), PMT = num(pageCompound.m), rate = num(pageCompound.r), years = num(pageCompound.y);
-    var r = rate / 100 / 12, months = Math.round(years * 12);
-    var series = [], bal = P, fv;
-    if (months > 0) {
-      for (var i = 1; i <= months; i++) { bal = bal * (1 + r) + PMT; if (i % 12 === 0 || i === months) series.push({ date: "Y" + Math.ceil(i / 12), balance: bal }); }
-      fv = bal;
-    } else { fv = P; series = [{ date: "Y0", balance: P }]; }
-    var contrib = P + PMT * months;
-    var interest = fv - contrib;
-    var cur = state.currency || "$";
-
-    return '<h1 class="page-title">Compound Interest</h1><p class="page-sub">See how your money can grow over time.</p>' +
-      '<div class="panel"><h3>Inputs</h3><div class="form-row">' +
-        '<label class="field"><span>Starting amount (' + cur + ')</span><input id="ci_p" type="number" value="' + P + '"/></label>' +
-        '<label class="field"><span>Monthly contribution (' + cur + ')</span><input id="ci_m" type="number" value="' + PMT + '"/></label>' +
-        '<label class="field"><span>Annual interest rate %</span><input id="ci_r" type="number" value="' + rate + '"/></label>' +
-        '<label class="field"><span>Years</span><input id="ci_y" type="number" value="' + years + '"/></label>' +
-        '<button class="btn" data-act="calcCompound">Calculate</button>' +
-      '</div><p class="mini" style="margin-top:10px">Assumes interest compounds monthly and contributions are added each month.</p></div>' +
-      '<div class="cards">' +
-        card("Future Value", fmt(fv), "After " + years + " year" + (years === 1 ? "" : "s"), "pos") +
-        card("Total Contributions", fmt(contrib), "What you put in", "") +
-        card("Interest Earned", fmt(interest), "Growth from compounding", "pos") +
-        card("Growth", contrib > 0 ? (fv / contrib).toFixed(2) + "×" : "—", "Value ÷ contributions", "") +
-      '</div>' +
-      '<div class="panel"><h3>Projected Growth</h3>' + areaChart(series) + '</div>';
-  }
-
-  function pagePayday() {
-    var p = state.payday || {};
-    var view;
-    if (!p.date) {
-      view = '<div class="panel"><div class="empty">Set your next payday above to start the countdown.</div></div>';
-    } else {
-      var dl = new Date(p.date + "T00:00:00");
-      var days = Math.round((dl.getTime() - new Date(today() + "T00:00:00").getTime()) / 86400000);
-      var dateLabel = dl.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-      var lbl = esc(p.label || "Payday");
-      var big;
-      if (days > 0) {
-        big = '<div class="card" style="text-align:center"><div class="label">' + lbl + ' in</div><div class="value" style="font-size:48px;color:var(--accent)">' + days + '</div><div class="sub">day' + (days === 1 ? "" : "s") + ' · ' + dateLabel + '</div></div>';
-      } else if (days === 0) {
-        big = '<div class="card" style="text-align:center"><div class="value" style="font-size:30px;color:var(--green)">🎉 Today is ' + lbl + '!</div><div class="sub">' + dateLabel + '</div></div>';
-      } else {
-        big = '<div class="card" style="text-align:center"><div class="label">' + lbl + ' was</div><div class="value" style="font-size:40px;color:var(--red)">' + (-days) + ' day' + ((-days) === 1 ? "" : "s") + ' ago</div><div class="sub">' + dateLabel + ' — update the date below</div></div>';
-      }
-      var weeks = days > 0 ? '<div class="card"><div class="label">That\'s about</div><div class="value">' + (days / 7).toFixed(1) + ' weeks</div></div>' : '';
-      var amt = num(p.amount) > 0 ? '<div class="card"><div class="label">Expected amount</div><div class="value pos">' + fmt(p.amount) + '</div>' + (days > 0 ? '<div class="sub">' + fmt(num(p.amount) / days) + ' / day until then</div>' : '') + '</div>' : '';
-      view = '<div class="cards">' + big + amt + weeks + '</div>';
-    }
-    return '<h1 class="page-title">Payday Countdown</h1><p class="page-sub">Count down to your next paycheck.</p>' +
-      '<div class="panel"><h3>Set Payday</h3><div class="form-row" style="max-width:640px">' +
-        '<label class="field"><span>Label</span><input id="pd_label" value="' + esc(p.label || "Payday") + '"/></label>' +
-        '<label class="field"><span>Next payday date</span><input id="pd_date" type="date" value="' + esc(p.date || "") + '"/></label>' +
-        '<label class="field"><span>Amount (' + (state.currency || "$") + ')</span><input id="pd_amount" type="number" value="' + num(p.amount) + '"/></label>' +
-        '<button class="btn" data-act="setPayday">Save</button>' +
-      '</div></div>' + view;
-  }
-
-  function lockScreen() {
-    var total = state.pin.length, filled = pinBuffer.length, dots = "";
-    for (var i = 0; i < total; i++) dots += '<span style="display:inline-block;width:16px;height:16px;border-radius:50%;margin:0 6px;border:2px solid var(--accent);background:' + (i < filled ? "var(--accent)" : "transparent") + '"></span>';
-    var keys = "";
-    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"].forEach(function (k) {
-      if (k === "") { keys += "<div></div>"; return; }
-      keys += '<button class="btn ghost" data-act="' + (k === "del" ? "pinDel" : "pinDigit") + '" data-k="' + k + '" style="height:60px;font-size:22px">' + (k === "del" ? "⌫" : k) + '</button>';
-    });
-    return '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">' +
-      '<div style="width:300px;max-width:100%;text-align:center">' +
-        '<div style="font-size:42px;margin-bottom:8px">🔒</div>' +
-        '<h2 style="margin:0 0 6px">Locked</h2>' +
-        '<p class="mini" style="' + (pinError ? "color:var(--red)" : "") + '">' + (pinError ? "Wrong PIN — try again" : "Enter your PIN") + '</p>' +
-        '<div style="margin:18px 0">' + dots + '</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">' + keys + '</div>' +
-        '<button class="btn ghost sm" data-act="forgotPin" style="margin-top:18px">Forgot PIN? Reset with Google</button>' +
-        '<div class="mini" id="pinMsg" style="margin-top:10px"></div>' +
-      '</div></div>';
-  }
-
-  function securitySection() {
-    if (!state.pin) {
-      return '<div class="panel"><h3>🔒 App Lock (PIN)</h3>' +
-        '<p class="mini" style="margin:-8px 0 12px">Set a numeric PIN to lock the app on open. Casual privacy lock — not bank-grade security.</p>' +
-        '<div class="form-row" style="max-width:360px"><label class="field"><span>New PIN (4+ digits)</span><input id="sp_pin" type="password" inputmode="numeric" placeholder="••••"/></label><button class="btn" data-act="setPin">Set PIN</button></div></div>';
-    }
-    return '<div class="panel"><h3>🔒 App Lock (PIN)</h3><div class="hint" style="margin:0 0 12px">✓ PIN lock is on — you\'ll be asked for it when the app opens. Forgot it? Tap <strong>“Forgot PIN? Reset with Google”</strong> on the lock screen to reset using your Google account.</div>' +
-      '<div class="toolbar"><button class="btn" data-act="lockNow">Lock now</button><button class="btn ghost" data-act="removePin">Remove PIN</button></div></div>';
-  }
-
-  function cloudSection() {
-    if (!fbAvailable()) {
-      return '<div class="panel"><h3>☁ Cloud Sync</h3><div class="hint" style="margin:0">The cloud library couldn\'t load — you may be offline, or opening the file directly. Reconnect to the internet (and ideally host the app online) to enable sync. Your data is safe locally in the meantime.</div></div>';
-    }
-    var cfg = getCfg();
-    if (!cfg) {
-      return '<div class="panel"><h3>☁ Cloud Sync — Step 1: Connect Firebase</h3>' +
-        '<p class="mini" style="margin:-6px 0 12px">Paste your Firebase <strong>config object</strong> below (one-time). Setup steps are in the guide I gave you.</p>' +
-        '<textarea id="fb_cfg" style="width:100%;min-height:140px;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-family:monospace;font-size:13px" placeholder=\'{\n  apiKey: "...",\n  authDomain: "...",\n  projectId: "...",\n  ...\n}\'></textarea>' +
-        '<div class="toolbar" style="margin-top:12px"><button class="btn" data-act="saveCfg">Connect</button></div></div>';
-    }
-    if (!cloud.user) {
-      return '<div class="panel"><h3>☁ Cloud Sync — Step 2: Sign In</h3>' +
-        '<p class="mini" style="margin:-6px 0 12px">Sign in with the <strong>same Google account</strong> on every device to share your data. (Works once the app is hosted online — see the guide.)</p>' +
-        '<div class="toolbar" style="margin-top:12px"><button class="btn" data-act="signInGoogle">Sign in with Google</button><button class="btn ghost" data-act="editCfg">Change Firebase config</button></div></div>';
-    }
-    return '<div class="panel"><h3>☁ Cloud Sync — Active</h3>' +
-      '<div class="hint" style="margin:0 0 12px">✓ Synced as <strong>' + esc(cloud.user.email) + '</strong>. Changes save to the cloud automatically and appear on your other signed-in devices.</div>' +
-      '<div class="toolbar"><button class="btn ghost" data-act="signOut">Sign out</button></div></div>';
-  }
-
-  function pageData() {
-    var cur = state.currency || "$";
-    var currencies = ["$","€","£","₫","¥","₹"].map(function (c) { return '<button class="btn ' + (cur === c ? "" : "ghost") + ' sm" data-act="cur" data-c="' + c + '">' + c + '</button>'; }).join("");
-    return '<h1 class="page-title">Backup, Export & Sync</h1><p class="page-sub">Sync across devices, or move data manually.</p>' +
-      cloudSection() + securitySection() +
-      '<div class="panel"><h3>Currency</h3><div class="toolbar">' + currencies + '</div></div>' +
-      '<div class="panel"><h3>Export</h3><div class="toolbar"><button class="btn" data-act="expJSON">⤓ Backup (JSON)</button><button class="btn ghost" data-act="expCSV">⤓ Transactions (CSV)</button></div></div>' +
-      '<div class="panel"><h3>Import / Restore</h3><div class="toolbar"><button class="btn ghost" data-act="impClick">⤒ Import JSON backup</button><input id="impFile" type="file" accept="application/json" style="display:none"/></div><p class="mini" style="margin-top:10px">Importing merges the backup into your current data.</p></div>' +
-      '<div class="panel"><h3>Danger Zone</h3><button class="btn ghost" style="border-color:var(--red);color:var(--red)" data-act="clear">Erase all data</button></div>' +
-      '<div id="dataMsg"></div>';
-  }
-
-  /* ---------- actions ---------- */
-  function download(filename, text, type) {
-    var blob = new Blob([text], { type: type || "text/plain" });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement("a");
-    a.href = url; a.download = filename; document.body.appendChild(a); a.click();
-    document.body.removeChild(a); URL.revokeObjectURL(url);
-  }
-
-  var actions = {
-    setOB: function () { state.openingBalance = num(val("ob_input")); save(); render(); },
-    setTradeStart: function () { state.trading.startBalance = num(val("tr_start")); save(); render(); },
-    setPayday: function () { state.payday = { label: val("pd_label") || "Payday", date: val("pd_date") || "", amount: num(val("pd_amount")) }; save(); render(); },
-    calcCompound: function () { pageCompound.p = num(val("ci_p")); pageCompound.m = num(val("ci_m")); pageCompound.r = num(val("ci_r")); pageCompound.y = num(val("ci_y")); render(); },
-    privacy: function () { privacy = !privacy; try { localStorage.setItem("ft_privacy", privacy ? "1" : "0"); } catch (e) {} render(); },
-    theme: function () { theme = theme === "light" ? "dark" : "light"; try { localStorage.setItem("ft_theme", theme); } catch (e) {} applyTheme(); render(); },
-    setPin: function () { var v = (val("sp_pin") || "").replace(/\D/g, ""); if (v.length < 4) { msg("PIN must be at least 4 digits."); return; } state.pin = v; save(); render(); },
-    removePin: function () { state.pin = ""; locked = false; save(); render(); },
-    lockNow: function () { if (state.pin) { locked = true; pinBuffer = ""; pinError = false; render(); } },
-    pinDigit: function (e) {
-      pinError = false; pinBuffer += e.k;
-      if (pinBuffer.length >= state.pin.length) {
-        if (pinBuffer === state.pin) { locked = false; pinBuffer = ""; } else { pinBuffer = ""; pinError = true; }
-      }
-      render();
-    },
-    pinDel: function () { pinBuffer = pinBuffer.slice(0, -1); render(); },
-    forgotPin: function () {
-      var note = function (t) { if (el("pinMsg")) el("pinMsg").textContent = t; };
-      if (location.protocol === "file:") { note("Reset only works on the hosted app (your github.io link), not the local file. Open the app online to reset."); return; }
-      if (!fbAvailable()) { note("You appear to be offline. Connect to the internet and try again."); return; }
-      if (!initCloud()) { note("Cloud not available — try again online."); return; }
-      note("Opening Google sign-in…");
-      var provider = new firebase.auth.GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: "select_account" });
-      cloud.auth.signInWithPopup(provider).then(function () {
-        state.pin = ""; pinBuffer = ""; pinError = false; locked = false; save(); render();
-      }).catch(function (e) {
-        if (e && e.code === "auth/popup-closed-by-user") { note("Sign-in cancelled. Tap to try again."); return; }
-        try { localStorage.setItem("ft_resetpin", "1"); } catch (err) {}
-        cloud.auth.signInWithRedirect(provider).catch(function () { note("Couldn't open Google sign-in. Use the hosted app online to reset."); });
-      });
-    },
-    calcDebt: function () { pageDebt.extra = num(val("sn_extra")); render(); },
-    addTrade: function () {
-      if (!val("tr_amount")) return;
-      state.trading.trades.push({ id: uid(), date: val("tr_date") || today(), symbol: val("tr_symbol"), result: val("tr_result"), amount: num(val("tr_amount")), note: val("tr_note") });
-      save(); render();
-    },
-    delTrade: function (e) { state.trading.trades = state.trading.trades.filter(function (t) { return t.id !== e.id; }); save(); render(); },
-    addGoal: function () {
-      var name = val("g_name"); if (!name || !val("g_target")) return;
-      var cash = num(val("g_current")), gift = num(val("g_gift"));
-      state.goals.push({ id: uid(), name: name, target: num(val("g_target")), cashSaved: cash, giftSaved: gift, current: cash + gift, deadline: val("g_deadline") || "" });
-      save(); render();
-    },
-    delGoal: function (e) { state.goals = state.goals.filter(function (g) { return g.id !== e.id; }); save(); render(); },
-    editGoal: function (e) { editGoalId = e.id; render(); },
-    editGoalCancel: function () { editGoalId = null; render(); },
-    editGoalSave: function (e) {
-      state.goals.forEach(function (g) {
-        if (g.id === e.id) { g.name = val("eg_name") || g.name; g.target = num(val("eg_target")); g.cashSaved = num(val("eg_cash")); g.giftSaved = num(val("eg_gift")); g.current = g.cashSaved + g.giftSaved; g.deadline = val("eg_deadline") || ""; }
-      });
-      editGoalId = null; save(); render();
-    },
-    goal: function (e) { state.goals.forEach(function (g) { if (g.id === e.id) { ensureGoalBuckets(g); g.cashSaved = Math.max(0, g.cashSaved + num(e.amt)); g.current = g.cashSaved + g.giftSaved; } }); save(); render(); },
-    goalAdd: function (e) {
-      var a = num(val("gadd_" + e.id)); if (!a) return; var src = val("gsrc_" + e.id);
-      state.goals.forEach(function (g) { if (g.id === e.id) { ensureGoalBuckets(g); if (src === "gift") g.giftSaved += a; else g.cashSaved += a; g.current = g.cashSaved + g.giftSaved; } });
-      save(); render();
-    },
-    goalSub: function (e) {
-      var a = num(val("gadd_" + e.id)); if (!a) return; var src = val("gsrc_" + e.id);
-      state.goals.forEach(function (g) { if (g.id === e.id) { ensureGoalBuckets(g); if (src === "gift") g.giftSaved = Math.max(0, g.giftSaved - a); else g.cashSaved = Math.max(0, g.cashSaved - a); g.current = g.cashSaved + g.giftSaved; } });
-      save(); render();
-    },
-    addDebt: function () {
-      var c = val("d_creditor"); if (!c || !val("d_remaining")) return;
-      state.debts.push({ id: uid(), creditor: c, total: num(val("d_total") || val("d_remaining")), remaining: num(val("d_remaining")), rate: num(val("d_rate")), payment: num(val("d_payment")) });
-      save(); render();
-    },
-    delDebt: function (e) { state.debts = state.debts.filter(function (d) { return d.id !== e.id; }); save(); render(); },
-    savePlan: function () { commitPlan(); render(); },
-    planPrev: function () { commitPlan(); planMonth = prevMonth(planMonth); render(); },
-    planNext: function () { commitPlan(); planMonth = nextMonth(planMonth); render(); },
-    editDebt: function (e) { editDebtId = e.id; render(); },
-    editDebtCancel: function () { editDebtId = null; render(); },
-    editDebtSave: function (e) {
-      state.debts.forEach(function (d) {
-        if (d.id === e.id) { d.creditor = val("ed_creditor") || d.creditor; d.remaining = num(val("ed_remaining")); d.total = num(val("ed_total")); d.rate = num(val("ed_rate")); d.payment = num(val("ed_payment")); }
-      });
-      editDebtId = null; save(); render();
-    },
-    addTx: function () {
-      if (!val("t_amount")) return;
-      state.transactions.push({ id: uid(), date: val("t_date") || today(), type: val("t_type"), category: val("t_cat"), amount: num(val("t_amount")), note: val("t_note") });
-      save(); render();
-    },
-    delTx: function (e) { state.transactions = state.transactions.filter(function (t) { return t.id !== e.id; }); save(); render(); },
-    editTx: function (e) { editTxId = e.id; render(); },
-    editTxCancel: function () { editTxId = null; render(); },
-    editTxSave: function (e) {
-      state.transactions.forEach(function (t) { if (t.id === e.id) { t.date = val("et_date") || t.date; t.type = val("et_type"); t.category = val("et_cat"); t.amount = num(val("et_amount")); t.note = val("et_note"); } });
-      editTxId = null; save(); render();
-    },
-    editTrade: function (e) { editTradeId = e.id; render(); },
-    editTradeCancel: function () { editTradeId = null; render(); },
-    editTradeSave: function (e) {
-      state.trading.trades.forEach(function (t) { if (t.id === e.id) { t.date = val("etr_date") || t.date; t.symbol = val("etr_symbol"); t.result = val("etr_result"); t.amount = num(val("etr_amount")); t.note = val("etr_note"); } });
-      editTradeId = null; save(); render();
-    },
-    setBudget: function () { var c = val("bg_cat"), a = num(val("bg_amount")); if (!c || !a) return; if (!state.budgets) state.budgets = {}; state.budgets[c] = a; save(); render(); },
-    delBudget: function (e) { if (state.budgets) delete state.budgets[e.c]; save(); render(); },
-    addRecurring: function () {
-      if (!val("rc_amount")) return;
-      state.recurring.push({ id: uid(), type: val("rc_type"), category: val("rc_cat"), amount: num(val("rc_amount")), day: num(val("rc_day")) || 1, note: val("rc_note"), created: ymOfDate(new Date(today() + "T00:00:00")), lastApplied: "" });
-      applyRecurring(); save(); render();
-    },
-    delRecurring: function (e) { state.recurring = state.recurring.filter(function (r) { return r.id !== e.id; }); save(); render(); },
-    addSub: function () {
-      var n = val("sub_name"); if (!n || !val("sub_amount")) return;
-      state.subscriptions.push({ id: uid(), name: n, amount: num(val("sub_amount")), cycle: val("sub_cycle") || "monthly", nextDate: val("sub_date") || "" });
-      save(); render();
-    },
-    delSub: function (e) { state.subscriptions = state.subscriptions.filter(function (x) { return x.id !== e.id; }); save(); render(); },
-    em: function (e) { state.emergency.current = num(state.emergency.current) + num(e.amt); save(); paintEmergency(); if (el("em_cur")) el("em_cur").value = num(state.emergency.current); },
-    cur: function (e) { state.currency = e.c; save(); render(); },
-    expJSON: function () { download("finance-backup-" + today() + ".json", JSON.stringify(state, null, 2), "application/json"); },
-    expCSV: function () {
-      var head = "Date,Type,Category,Amount,Note\n";
-      var body = state.transactions.map(function (t) { return [t.date, t.type, t.category, t.amount, '"' + String(t.note || "").replace(/"/g, '""') + '"'].join(","); }).join("\n");
-      download("transactions-" + today() + ".csv", head + body, "text/csv");
-    },
-    saveCfg: function () {
-      var raw = val("fb_cfg") || ""; var s = raw.indexOf("{"), e = raw.lastIndexOf("}");
-      if (s < 0 || e < 0) { msg("Paste your firebaseConfig object (the part with { ... })."); return; }
-      try {
-        var obj = (new Function("return (" + raw.slice(s, e + 1) + ")"))();
-        if (!obj || !obj.apiKey || !obj.projectId) { msg("That config is missing apiKey or projectId."); return; }
-        localStorage.setItem("fb_config", JSON.stringify(obj));
-        initCloud(); render();
-      } catch (err) { msg("Could not read that config: " + err.message); }
-    },
-    signInGoogle: function () {
-      if (!initCloud()) { msg("Cloud not ready."); return; }
-      var provider = new firebase.auth.GoogleAuthProvider();
-      cloud.auth.signInWithPopup(provider).catch(function (e) {
-        if (e.code === "auth/popup-blocked" || e.code === "auth/cancelled-popup-request" || e.code === "auth/operation-not-supported-in-this-environment") {
-          cloud.auth.signInWithRedirect(provider);
-        } else { msg(e.message); }
-      });
-    },
-    signOut: function () { if (cloud.auth) cloud.auth.signOut(); },
-    editCfg: function () { localStorage.removeItem("fb_config"); location.reload(); },
-    impClick: function () { if (el("impFile")) el("impFile").click(); },
-    clear: function () { if (confirm("Erase ALL data on this device? Export a backup first if unsure.")) { state = clone(defaultData); save(); render(); } }
-  };
-
-  function render() {
-    if (locked && state.pin) { el("root").innerHTML = lockScreen(); wire(); return; }
-    var pages = { dashboard: pageDashboard, goals: pageGoals, debt: pageDebt, emergency: pageEmergency, transactions: pageTransactions, recurring: pageRecurring, subs: pageSubscriptions, trading: pageTrading, payday: pagePayday, calc: pageCompound, data: pageData };
-    var nav = [
-      { id: "dashboard", label: "Dashboard", ico: "▥" },
-      { id: "goals", label: "Goals", ico: "◎" },
-      { id: "debt", label: "Debt", ico: "◍" },
-      { id: "emergency", label: "Emergency Fund", ico: "⛨" },
-      { id: "transactions", label: "Transactions", ico: "⇄" },
-      { id: "recurring", label: "Recurring", ico: "🔁" },
-      { id: "subs", label: "Subscriptions", ico: "🧾" },
-      { id: "trading", label: "Trading", ico: "💹" },
-      { id: "payday", label: "Payday", ico: "⏰" },
-      { id: "calc", label: "Calculator", ico: "🧮" },
-      { id: "data", label: "Backup / Export", ico: "⤓" }
-    ];
-    var sidebar = '<aside class="sidebar"><div class="brand"><span class="dot"></span> Finance</div><nav class="nav">' +
-      nav.map(function (n) { return '<button class="' + (currentTab === n.id ? "active" : "") + '" data-tab="' + n.id + '"><span class="ico">' + n.ico + '</span> <span class="label">' + n.label + '</span></button>'; }).join("") +
-      '</nav>' +
-      '<button class="btn ghost sm" data-act="privacy" style="margin-top:14px;width:100%">' + (privacy ? "👁 Show amounts" : "🙈 Hide amounts") + '</button>' +
-      '<button class="btn ghost sm" data-act="theme" style="margin-top:8px;width:100%">' + (theme === "light" ? "🌙 Dark mode" : "☀ Light mode") + '</button>' +
-      '</aside>';
-    el("root").innerHTML = '<div class="app">' + sidebar + '<main class="main">' + pages[currentTab]() + '</main></div>';
-    wire();
-  }
-
-  function wire() {
-    var root = el("root");
-    root.querySelectorAll("[data-tab]").forEach(function (b) { b.onclick = function () { currentTab = b.getAttribute("data-tab"); render(); }; });
-    root.querySelectorAll("[data-act]").forEach(function (b) {
-      var act = b.getAttribute("data-act");
-      if (act === "filter") { b.value = pageTransactions.filter || "all"; b.onchange = function () { pageTransactions.filter = b.value; render(); }; return; }
-      if (actions[act]) b.onclick = function () { actions[act]({ id: b.getAttribute("data-id"), amt: b.getAttribute("data-amt"), c: b.getAttribute("data-c"), k: b.getAttribute("data-k") }); };
-    });
-    if (el("impFile")) el("impFile").onchange = function (ev) {
-      var file = ev.target.files[0]; if (!file) return;
-      var reader = new FileReader();
-      reader.onload = function (e) {
-        try { var obj = JSON.parse(e.target.result); state = Object.assign(clone(defaultData), obj); save(); render(); el("dataMsg").innerHTML = '<div class="hint">✓ Data restored successfully.</div>'; }
-        catch (err) { if (el("dataMsg")) el("dataMsg").innerHTML = '<div class="hint" style="color:#fca5a5">✕ Could not read that file.</div>'; }
-      };
-      reader.readAsText(file);
-    };
-    // emergency live inputs
-    if (el("pln_month")) el("pln_month").onchange = function () { commitPlan(); planMonth = this.value || planMonth; render(); };
-    if (el("em_exp")) el("em_exp").oninput = function () { state.emergency.monthlyExpenses = num(this.value); save(); paintEmergency(); };
-    if (el("em_cur")) el("em_cur").oninput = function () { state.emergency.current = num(this.value); save(); paintEmergency(); };
-    if (el("em_months")) el("em_months").oninput = function () { state.emergency.months = num(this.value); save(); paintEmergency(); };
-  }
-
-  // boot
+function load() {
   try {
-    state = load();
-    try { privacy = localStorage.getItem("ft_privacy") === "1"; } catch (e) {}
-    try { theme = localStorage.getItem("ft_theme") || "dark"; } catch (e) {}
-    applyTheme();
-    if (state.pin) locked = true;
-    applyRecurring();
-    recordNetWorth();
-    render();
-    initCloud(); // reconnects automatically if you've set up sync before
-    var relock = function () { if (state && state.pin && !locked) { locked = true; pinBuffer = ""; pinError = false; render(); } };
-    document.addEventListener("visibilitychange", relock); // fires when backgrounded and when returning
-    window.addEventListener("pagehide", relock);
-    window.addEventListener("focus", relock);
-  } catch (err) {
-    document.getElementById("root").innerHTML = '<div style="padding:40px;color:#f87171;font-family:monospace">Error: ' + esc(err.message) + '</div>';
-  }
-})();
-</script>
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (d && Array.isArray(d.books)) return d;
+    }
+  } catch (e) { /* corrupted store — start fresh */ }
+  return { books: [] };
 }
+
+let data = load();
+
+function save() {
+  data.updatedAt = Date.now();
+  localStorage.setItem(STORE_KEY, JSON.stringify(data));
+  scheduleSync();
+}
+
+function uuid() {
+  return (crypto.randomUUID) ? crypto.randomUUID()
+    : 'b-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9);
+}
+
+function dateKey(d) {
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+function todayKey() { return dateKey(new Date()); }
+
+const HISTORY_DAYS = 60; // how long tick history is kept (drives the smart spotlight)
+
+let currentDay = todayKey();
+
+function ticksKey() { return 'ticks_' + currentDay; }
+function getTicks() { return data[ticksKey()] || []; }
+function setTicks(arr) {
+  data[ticksKey()] = arr;
+  data.tickStamp = { [currentDay]: Date.now() }; // per-day timestamp drives sync conflict resolution
+  // keep history (for the smart spotlight), but prune anything older than HISTORY_DAYS
+  const cutoff = dateKey(new Date(Date.now() - HISTORY_DAYS * 86400000));
+  for (const k of Object.keys(data)) {
+    if (k.startsWith('ticks_') && k.slice(6) < cutoff) delete data[k];
+  }
+  save();
+}
+
+/* ================= Derived state ================= */
+
+// Flat ordered list of every rule across every book
+function allRules() {
+  const out = [];
+  for (const book of data.books) {
+    for (const rule of book.rules) {
+      out.push({ book, rule, uid: book.id + ':' + rule.n });
+    }
+  }
+  return out;
+}
+
+function isDone(uid) { return getTicks().includes(uid); }
+
+// ticks that still point at an existing rule (stale ids can appear after a book is re-imported on another device)
+function validTicks() {
+  const uids = new Set(allRules().map(r => r.uid));
+  return getTicks().filter(u => uids.has(u));
+}
+
+const NEVER_TICKED = 9999;
+const SPOT_OVERRIDE_KEY = 'mastery_spot_override'; // local-only, not synced
+
+function getSpotOverride() {
+  try {
+    const o = JSON.parse(localStorage.getItem(SPOT_OVERRIDE_KEY));
+    return (o && o.day === currentDay) ? o : null;
+  } catch (e) { return null; }
+}
+
+function shuffleSpotlight() {
+  const all = allRules();
+  if (all.length < 2) return;
+  const cur = spotlightRule();
+  let pick;
+  do { pick = all[Math.floor(Math.random() * all.length)]; } while (cur && pick.uid === cur.uid);
+  localStorage.setItem(SPOT_OVERRIDE_KEY, JSON.stringify({ day: currentDay, uid: pick.uid }));
+  renderSpotlight();
+}
+
+function smartSpotlight() {
+  localStorage.removeItem(SPOT_OVERRIDE_KEY);
+  renderSpotlight();
+}
+
+// Smart spotlight: surface the rule that has gone unticked the longest.
+// Selection only looks at history before today, so it stays stable all day
+// and is identical on every synced device. Ties rotate by date.
+function spotlightRule() {
+  const all = allRules();
+  if (!all.length) return null;
+  const dayN = Math.floor(Date.parse(currentDay + 'T00:00:00') / 86400000);
+
+  const lastTicked = {}; // uid -> day number of most recent past tick
+  for (const k of Object.keys(data)) {
+    if (!k.startsWith('ticks_')) continue;
+    const day = k.slice(6);
+    if (day >= currentDay) continue;
+    const dn = Math.floor(Date.parse(day + 'T00:00:00') / 86400000);
+    for (const uid of data[k] || []) {
+      if (!(uid in lastTicked) || dn > lastTicked[uid]) lastTicked[uid] = dn;
+    }
+  }
+
+  const o = getSpotOverride();
+  if (o) {
+    const hit = all.find(r => r.uid === o.uid);
+    if (hit) return { ...hit, score: -1, random: true };
+  }
+
+  let best = [], bestScore = -1;
+  for (const r of all) {
+    const score = (r.uid in lastTicked) ? Math.min(dayN - lastTicked[r.uid], NEVER_TICKED) : NEVER_TICKED;
+    if (score > bestScore) { bestScore = score; best = [r]; }
+    else if (score === bestScore) best.push(r);
+  }
+  const pick = best[dayN % best.length];
+  return { ...pick, score: bestScore };
+}
+
+/* ================= UI state ================= */
+
+let filter = 'all';        // 'all' | 'todo' | 'done' | book id
+let searchTerm = '';
+const expanded = new Set();
+
+/* ================= Rendering ================= */
+
+const $ = (id) => document.getElementById(id);
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function bookTag(book) {
+  return `<span class="book-tag" style="background:${book.color}">${esc(book.name)}</span>`;
+}
+
+function renderProgress() {
+  const total = allRules().length;
+  const done = validTicks().length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  const r = 20, circ = 2 * Math.PI * r;
+  const bar = $('ring-bar');
+  bar.style.strokeDasharray = circ;
+  bar.style.strokeDashoffset = total ? circ * (1 - done / total) : circ;
+  $('ring-text').textContent = pct + '%';
+  $('ring-label').innerHTML = `${done} / ${total}<br>done today`;
+}
+
+function renderSpotlight() {
+  const spot = spotlightRule();
+  const box = $('spotlight-box');
+  if (!spot) { box.innerHTML = ''; return; }
+  const done = isDone(spot.uid);
+  const why = spot.random ? 'random pick'
+    : spot.score >= NEVER_TICKED ? 'never ticked yet'
+    : spot.score === 1 ? 'last done yesterday'
+    : `not done in ${spot.score} days`;
+  box.innerHTML = `
+    <div class="spotlight" style="border-left-color:${spot.book.color}">
+      <div class="kicker">★ Today's Spotlight · ${why}</div>
+      ${bookTag(spot.book)}
+      <h2>Rule ${spot.rule.n} — ${esc(spot.rule.title)}</h2>
+      <div class="std">${esc(spot.rule.standard)}</div>
+      <div class="spot-actions">
+        <button id="spot-jump">Jump to rule ↓</button>
+        <button id="spot-shuffle" title="Show a random rule instead">🎲</button>
+        ${spot.random ? '<button id="spot-smart" title="Back to the rule picked for you">★ Smart pick</button>' : ''}
+        <button class="tick ${done ? 'on' : ''}" id="spot-tick" title="Mark done">✓</button>
+      </div>
+    </div>`;
+  $('spot-jump').onclick = () => jumpTo(spot.uid);
+  $('spot-shuffle').onclick = shuffleSpotlight;
+  if (spot.random) $('spot-smart').onclick = smartSpotlight;
+  $('spot-tick').onclick = () => toggleTick(spot.uid);
+}
+
+function renderChips() {
+  const chips = [
+    { id: 'all', label: 'All' },
+    { id: 'todo', label: 'To Do' },
+    { id: 'done', label: 'Done' },
+    ...data.books.map(b => ({ id: b.id, label: b.name, color: b.color }))
+  ];
+  $('chips').innerHTML = chips.map(c => {
+    const active = filter === c.id;
+    const style = (active && c.color)
+      ? `style="background:${c.color};border-color:${c.color}"` : '';
+    return `<button class="chip ${active ? 'active' : ''} ${c.color ? '' : 'neutral'}"
+      data-filter="${c.id}" ${style}>${esc(c.label)}</button>`;
+  }).join('');
+  for (const el of $('chips').querySelectorAll('.chip')) {
+    el.onclick = () => { filter = el.dataset.filter; renderAll(); };
+  }
+}
+
+// Optional shuffled card order — per device, persists until "Order" is pressed
+const MIX_KEY = 'mastery_mix_order';
+let mixOrder = null;
+try { mixOrder = JSON.parse(localStorage.getItem(MIX_KEY)); } catch (e) { /* ignore */ }
+
+function applyMix(rules) {
+  if (!Array.isArray(mixOrder)) return rules;
+  const pos = new Map(mixOrder.map((uid, i) => [uid, i]));
+  // rules not in the stored order (e.g. newly imported) keep their place at the end
+  return [...rules].sort((a, b) =>
+    (pos.has(a.uid) ? pos.get(a.uid) : Infinity) - (pos.has(b.uid) ? pos.get(b.uid) : Infinity));
+}
+
+function updateMixButtons() {
+  const mixed = Array.isArray(mixOrder);
+  $('btn-order').hidden = !mixed;
+  $('btn-mix').textContent = mixed ? '🔀 Re-mix' : '🔀 Mix';
+}
+
+function mixCards() {
+  const uids = allRules().map(r => r.uid);
+  for (let i = uids.length - 1; i > 0; i--) {   // Fisher–Yates
+    const j = Math.floor(Math.random() * (i + 1));
+    [uids[i], uids[j]] = [uids[j], uids[i]];
+  }
+  mixOrder = uids;
+  localStorage.setItem(MIX_KEY, JSON.stringify(mixOrder));
+  updateMixButtons();
+  renderGrid();
+  toast('Cards mixed — press "1→50 Order" to restore');
+}
+
+function orderCards() {
+  mixOrder = null;
+  localStorage.removeItem(MIX_KEY);
+  updateMixButtons();
+  renderGrid();
+}
+
+function visibleRules() {
+  const term = searchTerm.trim().toLowerCase();
+  return applyMix(allRules()).filter(({ book, rule, uid }) => {
+    if (filter === 'todo' && isDone(uid)) return false;
+    if (filter === 'done' && !isDone(uid)) return false;
+    if (filter !== 'all' && filter !== 'todo' && filter !== 'done' && book.id !== filter) return false;
+    if (term) {
+      const hay = (rule.title + ' ' + rule.standard).toLowerCase();
+      if (!hay.includes(term)) return false;
+    }
+    return true;
+  });
+}
+
+function renderGrid() {
+  const rules = visibleRules();
+  const total = allRules().length;
+
+  if (!total) {
+    $('grid').innerHTML = '';
+    $('empty-box').innerHTML = `
+      <div class="empty">
+        <strong>Your library is empty</strong>
+        <p>Drop a rules PDF anywhere on this page, or pick a file to import your first book.</p>
+        <button onclick="document.getElementById('file-input').click()">＋ Import a PDF</button>
+      </div>`;
+    $('count-note').textContent = '';
+    return;
+  }
+
+  $('empty-box').innerHTML = '';
+  $('grid').innerHTML = rules.map(({ book, rule, uid }) => {
+    const done = isDone(uid);
+    const open = expanded.has(uid);
+    return `
+    <div class="card ${done ? 'done' : ''} ${open ? 'open' : ''}"
+         id="card-${cssId(uid)}" data-uid="${uid}" style="border-left-color:${book.color}">
+      <div class="card-top">
+        <div class="card-top-left">
+          ${bookTag(book)}
+          <span class="rule-n">RULE ${rule.n}</span>
+        </div>
+        <button class="tick ${done ? 'on' : ''}" data-tick="${uid}" title="Mark done">✓</button>
+      </div>
+      <div class="card-title">${esc(rule.title)}</div>
+      <div class="card-body">
+        ${rule.gain.length ? `<h4 class="gain-h">What you gain</h4>
+          <ul>${rule.gain.map(g => `<li>${esc(g)}</li>`).join('')}</ul>` : ''}
+        ${rule.lose.length ? `<h4 class="lose-h">What you lose if you ignore this</h4>
+          <ul>${rule.lose.map(l => `<li>${esc(l)}</li>`).join('')}</ul>` : ''}
+        ${rule.reality ? `<h4 class="reality-h">Reality Check</h4>
+          <p class="para">${esc(rule.reality)}</p>` : ''}
+        ${rule.choice ? `<h4 class="choice-h">The Choice</h4>
+          <p class="para">${esc(rule.choice)}</p>` : ''}
+        ${rule.standard ? `<h4>The Standard</h4>
+          <div class="standard-text">${esc(rule.standard)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  $('count-note').textContent = rules.length === total
+    ? `${total} rules · ${data.books.length} book${data.books.length === 1 ? '' : 's'}`
+    : `Showing ${rules.length} of ${total} rules`;
+
+  for (const card of $('grid').querySelectorAll('.card')) {
+    card.onclick = (e) => {
+      if (e.target.closest('[data-tick]')) return;
+      const uid = card.dataset.uid;
+      expanded.has(uid) ? expanded.delete(uid) : expanded.add(uid);
+      card.classList.toggle('open');
+    };
+  }
+  for (const btn of $('grid').querySelectorAll('[data-tick]')) {
+    btn.onclick = (e) => { e.stopPropagation(); toggleTick(btn.dataset.tick); };
+  }
+}
+
+function cssId(uid) { return uid.replace(/[^a-zA-Z0-9_-]/g, '_'); }
+
+function renderLibrary() {
+  const list = $('book-list');
+  if (!data.books.length) {
+    list.innerHTML = `<p style="color:var(--text-dim);font-size:0.85rem">No books imported yet.</p>`;
+    return;
+  }
+  list.innerHTML = data.books.map(b => `
+    <div class="book-row">
+      <div class="book-row-left">
+        <span class="book-dot" style="background:${b.color}"></span>
+        <div>
+          <div class="book-row-name">${esc(b.name)}</div>
+          <div class="book-row-meta">${b.rules.length} rules · imported ${esc(b.importedAt)}</div>
+        </div>
+      </div>
+      <button class="danger" data-remove="${b.id}">Remove</button>
+    </div>`).join('');
+  for (const btn of list.querySelectorAll('[data-remove]')) {
+    btn.onclick = () => removeBook(btn.dataset.remove);
+  }
+}
+
+function renderCountdown() {
+  const now = new Date();
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const mins = Math.max(0, Math.floor((midnight - now) / 60000));
+  const h = Math.floor(mins / 60), m = mins % 60;
+  const el = $('countdown');
+  const undone = allRules().length - validTicks().length;
+  el.textContent = (h ? `${h}h ${m}m` : `${m}m`) + ' left today' +
+    (undone > 0 ? ` · ${undone} to go` : ' · all done 🎉');
+  el.classList.toggle('urgent', h < 2 && undone > 0);
+}
+
+function renderAll() {
+  checkDayRollover();
+  $('date-label').textContent = '· ' + currentDay;
+  renderCountdown();
+  renderProgress();
+  renderSpotlight();
+  renderChips();
+  renderGrid();
+  renderLibrary();
+  renderSyncUI();
+}
+
+/* ================= Actions ================= */
+
+function toggleTick(uid) {
+  const ticks = getTicks();
+  const i = ticks.indexOf(uid);
+  if (i >= 0) ticks.splice(i, 1); else ticks.push(uid);
+  setTicks(ticks);
+  renderAll();
+}
+
+function jumpTo(uid) {
+  expanded.add(uid);
+  renderGrid();
+  const el = $('card-' + cssId(uid));
+  if (!el) { toast('Rule is hidden by the current filter'); return; }
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
+}
+
+function randomRule() {
+  const undone = allRules().filter(r => !isDone(r.uid));
+  if (!undone.length) { toast(allRules().length ? 'Everything is done today 🎉' : 'Library is empty'); return; }
+  const pick = undone[Math.floor(Math.random() * undone.length)];
+  // make sure it's visible
+  if (filter === 'done' || (filter !== 'all' && filter !== 'todo' && filter !== pick.book.id)) {
+    filter = 'all';
+  }
+  searchTerm = '';
+  $('search').value = '';
+  renderAll();
+  jumpTo(pick.uid);
+}
+
+function removeBook(id) {
+  const book = data.books.find(b => b.id === id);
+  if (!book) return;
+  if (!confirm(`Remove "${book.name}" and its ${book.rules.length} rules?`)) return;
+  data.books = data.books.filter(b => b.id !== id);
+  setTicks(getTicks().filter(uid => !uid.startsWith(id + ':')));
+  if (filter === id) filter = 'all';
+  save();
+  renderAll();
+  toast(`Removed "${book.name}"`);
+}
+
+function resetToday() {
+  if (!getTicks().length) { toast('Nothing ticked today yet'); return; }
+  if (!confirm("Reset all of today's ticks?")) return;
+  setTicks([]);
+  renderAll();
+  toast("Today's ticks reset");
+}
+
+function checkDayRollover() {
+  const now = todayKey();
+  if (now !== currentDay) {
+    currentDay = now; // ticks key changes → fresh day, old keys pruned on next tick
+  }
+}
+
+/* ================= PDF parsing ================= */
+
+const GAIN_RE    = /^WHAT\s+YOU\s+GAIN/i;
+const LOSE_RE    = /^WHAT\s+YOU\s+LOSE/i;
+const REALITY_RE = /^REALITY\s+CHECK/i;
+const CHOICE_RE  = /^THE\s+CHOICE/i;
+const STD_RE     = /^THE\s+STANDARD/i;
+const RULE_RE    = /^RULE\s+(\d+)/i;
+// lines that are only a bullet marker (+, ✗, ×, •, dash …) or page furniture
+const MARKER_ONLY_RE = /^[+xX•▪●○◦‣·\-–—*✗✘×✕✖�\s]{1,3}$/;
+const FURNITURE_RE   = /^(\d+|\d+\s+of\s+\d+|MASTERY\s+RULES)$/i;
+
+async function extractPageLines(page) {
+  const content = await page.getTextContent();
+  // Group text items into lines by their y coordinate
+  const lines = [];
+  for (const item of content.items) {
+    if (!item.str || !item.str.trim()) continue;
+    const y = item.transform[5];
+    const x = item.transform[4];
+    let line = lines.find(l => Math.abs(l.y - y) < 3);
+    if (!line) { line = { y, parts: [] }; lines.push(line); }
+    line.parts.push({ x, str: item.str });
+  }
+  lines.sort((a, b) => b.y - a.y); // top of page first
+  return lines.map(l =>
+    l.parts.sort((a, b) => a.x - b.x).map(p => p.str).join(' ')
+      .replace(/\s+/g, ' ').trim()
+  ).filter(Boolean);
+}
+
+function stripBullet(line) {
+  return line.replace(/^[+•▪●○◦‣·\-–—*✗✘×✕✖�]+\s*/, '').trim();
+}
+
+function parseRuleFromLines(lines) {
+  let n = null, title = '';
+  const gain = [], lose = [], reality = [], choice = [], stdParts = [];
+  let section = 'pre'; // pre | title | gain | lose | reality | choice | std
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line || FURNITURE_RE.test(line)) continue;
+
+    if (section === 'pre') {
+      const m = line.match(RULE_RE);
+      if (m) {
+        n = parseInt(m[1], 10);
+        // title may share the line: "RULE 4 — Fit is king"
+        const rest = line.replace(RULE_RE, '').replace(/^[\s:—–\-.]+/, '').trim();
+        if (rest) title = rest;
+        section = 'title';
+      }
+      continue;
+    }
+    if (GAIN_RE.test(line))    { section = 'gain';    continue; }
+    if (LOSE_RE.test(line))    { section = 'lose';    continue; }
+    if (REALITY_RE.test(line)) { section = 'reality'; continue; }
+    if (CHOICE_RE.test(line))  { section = 'choice';  continue; }
+    if (STD_RE.test(line))     { section = 'std';     continue; }
+    if (MARKER_ONLY_RE.test(line)) continue; // bullet glyph on its own line
+
+    switch (section) {
+      case 'title':   title = title ? title + ' ' + stripBullet(line) : stripBullet(line); break;
+      case 'gain':    gain.push(stripBullet(line)); break;
+      case 'lose':    lose.push(stripBullet(line)); break;
+      case 'reality': reality.push(line); break;
+      case 'choice':  choice.push(line); break;
+      case 'std':     stdParts.push(line); break;
+    }
+  }
+
+  if (n === null || !title) return null;
+  return {
+    n, title, gain, lose,
+    reality: reality.join(' ').trim(),
+    choice: choice.join(' ').trim(),
+    standard: stdParts.join(' ').trim()
+  };
+}
+
+function titleCase(s) {
+  return s.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase());
+}
+
+function bookNameFromFile(filename, coverLines) {
+  // Prefer the cover page title (first content line that isn't series boilerplate);
+  // coverLines is only passed when page 1 contained no rule.
+  if (coverLines) {
+    const cand = coverLines.find(l => {
+      const t = l.trim();
+      return t && !FURNITURE_RE.test(t) && !/^(MASTERY|RULES)$/i.test(t) && !RULE_RE.test(t);
+    });
+    if (cand && cand.length <= 40) {
+      return cand === cand.toUpperCase() ? titleCase(cand) : cand;
+    }
+  }
+  const name = filename.replace(/\.pdf$/i, '').replace(/[_\-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return name || 'Untitled Book';
+}
+
+async function importPdf(file) {
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+
+  const rules = [];
+  let coverLines = null; // page-1 lines, kept only if page 1 is a cover (no rule on it)
+  for (let p = 1; p <= pdf.numPages; p++) {
+    try {
+      const page = await pdf.getPage(p);
+      const lines = await extractPageLines(page);
+      const rule = parseRuleFromLines(lines);
+      if (p === 1 && !rule) coverLines = lines;
+      if (rule) rules.push(rule);
+    } catch (e) {
+      // skip unparseable page gracefully
+      console.warn(`Skipped page ${p} of ${file.name}:`, e);
+    }
+  }
+
+  if (!rules.length) {
+    toast(`No rules found in "${file.name}" — check the PDF format`);
+    return { status: 'empty' };
+  }
+
+  // detect an already-imported book by its content (catches the same PDF even if renamed)
+  const dup = data.books.find(b => contentSignature(b.rules) === contentSignature(rules));
+  if (dup) {
+    const again = confirm(
+      `"${dup.name}" looks like it's already in your library (${dup.rules.length} rules).\n\n` +
+      `Import it again as a separate copy?`);
+    if (!again) return { status: 'duplicate', name: dup.name };
+  }
+
+  data.books.push({
+    id: uuid(),
+    name: bookNameFromFile(file.name, coverLines),
+    color: PALETTE[data.books.length % PALETTE.length],
+    importedAt: todayKey(),
+    rules
+  });
+  save();
+  return { status: 'added', count: rules.length };
+}
+
+// fingerprint of a book's contents (rule count + each rule's number and title)
+function contentSignature(rules) {
+  return rules.length + '#' + rules.map(r =>
+    r.n + ':' + (r.title || '').toLowerCase().replace(/\s+/g, ' ').trim()).join('|');
+}
+
+async function importFiles(fileList) {
+  const files = [...fileList].filter(f =>
+    f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+  if (!files.length) { toast('Drop a PDF file'); return; }
+
+  let added = 0, books = 0, dups = 0;
+  for (const f of files) {
+    try {
+      const res = await importPdf(f);
+      if (res.status === 'added') { added += res.count; books++; }
+      else if (res.status === 'duplicate') dups++;
+    } catch (e) {
+      console.error(e);
+      toast(`Couldn't read "${f.name}"`);
+    }
+  }
+  if (books) {
+    renderAll();
+    let msg = `Imported ${added} rule${added === 1 ? '' : 's'} from ${books} book${books === 1 ? '' : 's'}`;
+    if (dups) msg += ` · skipped ${dups} duplicate${dups === 1 ? '' : 's'}`;
+    toast(msg);
+  } else if (dups) {
+    toast(`Already in your library — nothing added`);
+  }
+}
+
+/* ================= Cloud sync (Firebase / Google sign-in) ================= */
+
+const firebaseConfig = {
+  apiKey: "AIzaSyByqmdqsCIE5OXVqLdp0hT6MP92Ne-AF3E",
+  authDomain: "daily-mastery-52267.firebaseapp.com",
+  projectId: "daily-mastery-52267",
+  storageBucket: "daily-mastery-52267.firebasestorage.app",
+  messagingSenderId: "89249995066",
+  appId: "1:89249995066:web:ab81fe2b700ac367f91803"
+};
+
+let fbAuth = null, fbDb = null, fbUser = null, fbUnsub = null;
+let syncStatus = { state: 'off', lastSync: null, error: null }; // off | syncing | ok | error
+let pushTimer = null;
+
+function fbReady() { return typeof firebase !== 'undefined' && firebase.apps; }
+
+function initFirebase() {
+  if (!fbReady()) { renderSyncUI(); return; }
+  try {
+    firebase.initializeApp(firebaseConfig);
+    fbAuth = firebase.auth();
+    fbDb = firebase.firestore();
+    fbAuth.onAuthStateChanged(onAuthChange);
+    fbAuth.getRedirectResult().catch(() => {}); // completes a mobile redirect sign-in
+  } catch (e) {
+    console.warn('Firebase init failed:', e);
+    renderSyncUI();
+  }
+}
+
+function onAuthChange(user) {
+  fbUser = user;
+  if (fbUnsub) { fbUnsub(); fbUnsub = null; }
+  if (user) {
+    syncStatus = { state: 'syncing', lastSync: null, error: null };
+    renderSyncUI();
+    // live listener: pushes from other devices arrive automatically
+    fbUnsub = fbDb.collection('users').doc(user.uid)
+      .onSnapshot(onRemoteSnapshot, onRemoteError);
+  } else {
+    syncStatus = { state: 'off', lastSync: null, error: null };
+    renderSyncUI();
+  }
+}
+
+async function pushRemote() {
+  if (!fbUser) return;
+  await fbDb.collection('users').doc(fbUser.uid)
+    .set({ json: JSON.stringify(data), updatedAt: data.updatedAt || Date.now() });
+}
+
+// does the cloud copy lack a tick we have locally? (order-independent — avoids sync ping-pong)
+function remoteMissingOurTicks(remote) {
+  for (const k of Object.keys(data)) {
+    if (!k.startsWith('ticks_')) continue;
+    const rem = new Set(remote[k] || []);
+    for (const u of data[k] || []) if (!rem.has(u)) return true;
+  }
+  return false;
+}
+
+function onRemoteSnapshot(snap) {
+  const d = snap.data();
+  if (!d || !d.json) {            // first sign-in on this account → seed cloud with local data
+    pushRemote()
+      .then(() => { syncStatus = { state: 'ok', lastSync: new Date(), error: null }; renderSyncUI(); })
+      .catch(onRemoteError);
+    return;
+  }
+  let remote;
+  try { remote = JSON.parse(d.json); } catch (e) { return; }
+  if (!remote || !Array.isArray(remote.books)) return;
+
+  const localNewer = (data.updatedAt || 0) > (remote.updatedAt || 0);
+  const before = JSON.stringify(data);
+  mergeRemote(remote);
+  if (JSON.stringify(data) !== before) renderAll();
+  if (localNewer || remoteMissingOurTicks(remote)) pushRemote().catch(onRemoteError);
+
+  syncStatus = { state: 'ok', lastSync: new Date(), error: null };
+  renderSyncUI();
+}
+
+function onRemoteError(err) {
+  syncStatus = { state: 'error', lastSync: syncStatus.lastSync, error: (err && err.message) || 'Sync error' };
+  renderSyncUI();
+}
+
+// Whole-state last-write-wins; ticks resolved per day by their own timestamp so
+// unticking/resetting propagates, while a day's ticks are unioned when neither side is newer.
+function mergeRemote(remote) {
+  if (!remote) return;
+  const base = (data.updatedAt || 0) >= (remote.updatedAt || 0) ? data : remote;
+  const merged = { ...base };
+  const ls = data.tickStamp || {}, rs = remote.tickStamp || {};
+  const stamps = {};
+  const keys = [...new Set([...Object.keys(data), ...Object.keys(remote)])].filter(k => k.startsWith('ticks_'));
+  for (const k of keys) {
+    const day = k.slice('ticks_'.length);
+    const lt = ls[day] || 0, rt = rs[day] || 0;
+    if (lt === rt) merged[k] = [...new Set([...(data[k] || []), ...(remote[k] || [])])];
+    else merged[k] = (lt > rt ? data[k] : remote[k]) || [];
+    stamps[day] = Math.max(lt, rt);
+  }
+  merged.tickStamp = stamps;
+  data = merged;
+  localStorage.setItem(STORE_KEY, JSON.stringify(data)); // direct write: no save() to avoid re-scheduling sync
+}
+
+// called by save() after every local change
+function scheduleSync() {
+  if (!fbUser) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => pushRemote().catch(onRemoteError), 1200);
+}
+
+async function signIn() {
+  if (!fbReady() || !fbAuth) { toast('Sync is still loading — try again in a moment'); return; }
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try {
+    await fbAuth.signInWithPopup(provider);
+  } catch (e) {
+    const code = e && e.code;
+    if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment'
+        || code === 'auth/cancelled-popup-request') {
+      try { await fbAuth.signInWithRedirect(provider); } catch (e2) { toast('Sign-in failed: ' + e2.message); }
+    } else if (code !== 'auth/popup-closed-by-user') {
+      toast('Sign-in failed: ' + (e.message || code));
+    }
+  }
+}
+
+async function signOutSync() {
+  try { await fbAuth.signOut(); toast('Signed out on this device'); } catch (e) { /* ignore */ }
+}
+
+function renderSyncUI() {
+  const box = $('sync-box');
+  if (!box) return;
+  if (!fbReady()) {
+    box.innerHTML = `<p class="sync-note">Sync needs an internet connection. If this persists, reload the page.</p>`;
+    return;
+  }
+  if (!fbUser) {
+    box.innerHTML = `
+      <p class="sync-note">Sign in with Google to keep your library and daily ticks the same on every device.
+        Your data stays private to your own account and syncs automatically.</p>
+      <div class="sync-row">
+        <button id="btn-google" class="gbtn"><span class="gmark">G</span>&nbsp;Sign in with Google</button>
+      </div>`;
+    $('btn-google').onclick = signIn;
+  } else {
+    const when = syncStatus.lastSync
+      ? syncStatus.lastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+    const who = esc(fbUser.email || fbUser.displayName || 'your account');
+    const line = syncStatus.state === 'syncing' ? '⏳ Connecting…'
+      : syncStatus.state === 'error' ? `<span class="sync-err">⚠ ${esc(syncStatus.error)}</span>`
+      : `✓ Synced as ${who} · ${when}`;
+    box.innerHTML = `
+      <p class="sync-note">${line}</p>
+      <div class="sync-row">
+        <button id="btn-signout" class="danger">Sign out</button>
+      </div>`;
+    $('btn-signout').onclick = signOutSync;
+  }
+}
+
+/* ================= Toast ================= */
+
+let toastTimer = null;
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ================= Wiring ================= */
+
+$('search').addEventListener('input', (e) => {
+  searchTerm = e.target.value;
+  renderGrid();
+});
+$('btn-random').onclick = randomRule;
+$('btn-mix').onclick = mixCards;
+$('btn-order').onclick = orderCards;
+updateMixButtons();
+$('btn-reset').onclick = resetToday;
+$('btn-import').onclick = () => $('file-input').click();
+$('btn-modal-import').onclick = () => $('file-input').click();
+$('file-input').addEventListener('change', (e) => {
+  importFiles(e.target.files);
+  e.target.value = '';
+});
+
+$('btn-library').onclick = () => $('library-modal').classList.add('show');
+$('btn-modal-close').onclick = () => $('library-modal').classList.remove('show');
+$('library-modal').addEventListener('click', (e) => {
+  if (e.target === $('library-modal')) $('library-modal').classList.remove('show');
+});
+
+// Drag & drop anywhere on the page
+let dragDepth = 0;
+document.addEventListener('dragenter', (e) => {
+  e.preventDefault();
+  dragDepth++;
+  document.body.classList.add('dragging');
+});
+document.addEventListener('dragleave', () => {
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (!dragDepth) document.body.classList.remove('dragging');
+});
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dragDepth = 0;
+  document.body.classList.remove('dragging');
+  if (e.dataTransfer && e.dataTransfer.files.length) importFiles(e.dataTransfer.files);
+});
+
+// Tick the countdown every minute; full re-render at day rollover
+setInterval(() => {
+  if (todayKey() !== currentDay) renderAll();
+  else renderCountdown();
+}, 60 * 1000);
+
+renderAll();
+initFirebase();
 </script>
 </body>
 </html>
