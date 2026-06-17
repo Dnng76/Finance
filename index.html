@@ -146,11 +146,13 @@
     payday: { date: "", amount: 0, label: "Payday" },
     recurring: [],
     subscriptions: [],
+    budgets: {},
+    nwHistory: [],
     pin: "",
     currency: "$"
   };
 
-  var state, currentTab = "dashboard", privacy = false, editGoalId = null, editDebtId = null, locked = false, pinBuffer = "", pinError = false, theme = "dark", planMonth = null;
+  var state, currentTab = "dashboard", privacy = false, editGoalId = null, editDebtId = null, locked = false, pinBuffer = "", pinError = false, theme = "dark", planMonth = null, editTxId = null, editTradeId = null;
   function applyTheme() {
     document.body.classList.toggle("light", theme === "light");
     var m = document.querySelector('meta[name="theme-color"]');
@@ -194,6 +196,13 @@
       }
     });
     if (changed) save();
+  }
+  function recordNetWorth() {
+    if (!state.nwHistory) state.nwHistory = [];
+    var ym = ymOfDate(new Date(today() + "T00:00:00")), nv = totals().netWorth, ex = null;
+    for (var i = 0; i < state.nwHistory.length; i++) if (state.nwHistory[i].ym === ym) ex = state.nwHistory[i];
+    if (ex) { if (ex.value !== nv) { ex.value = nv; save(); } }
+    else { state.nwHistory.push({ ym: ym, value: nv }); save(); }
   }
   function el(id) { return document.getElementById(id); }
   function val(id) { var e = el(id); return e ? e.value : ""; }
@@ -448,6 +457,13 @@
     if (debtOrig > 0) ptiles.push(ptile(debtPct, "#34d399", "Debt Paid Off"));
     var progressPanel = ptiles.length ? '<div class="panel"><h3>Progress at a Glance</h3><div style="display:flex;gap:30px;flex-wrap:wrap;justify-content:space-around;text-align:center">' + ptiles.join("") + '</div></div>' : "";
 
+    var curYm = ymOfDate(new Date(today() + "T00:00:00"));
+    var subsMonthly = state.subscriptions.reduce(function (s, x) { return s + (x.cycle === "yearly" ? num(x.amount) / 12 : num(x.amount)); }, 0);
+    var plannedDebt = state.debts.reduce(function (s, d) { return s + ((d.plans && d.plans[curYm]) ? num(d.plans[curYm].amount) : 0); }, 0);
+    var safe = t.balance - subsMonthly - plannedDebt;
+    var nwSeries = (state.nwHistory || []).slice().sort(function (a, b) { return a.ym.localeCompare(b.ym); }).map(function (h) { return { date: monthShort(h.ym), balance: h.value }; });
+    var nwPanel = nwSeries.length >= 2 ? '<div class="panel"><h3>Net Worth Over Time</h3>' + areaChart(nwSeries) + '</div>' : "";
+
     return '<h1 class="page-title">Dashboard</h1><p class="page-sub">Your complete financial picture at a glance.</p>' +
       '<div class="panel"><h3>Starting Balance</h3>' +
         '<p class="mini" style="margin:-8px 0 14px">Enter the cash you have right now. Your balance below = this + income − expenses.</p>' +
@@ -462,12 +478,13 @@
         card("💹 Trading Balance", fmt(t.tradingBalance), state.trading.trades.length + " trade" + (state.trading.trades.length !== 1 ? "s" : ""), t.tradingBalance >= 0 ? "pos" : "neg") +
         card("🎁 Gift Saved", fmt(t.goalGift), "Not counted in net worth", "") +
         card("📈 Net Worth", fmt(t.netWorth), "Assets minus debts (gifts excluded)", t.netWorth >= 0 ? "pos" : "neg") +
+        card("💸 Safe to Spend", fmt(safe), "Balance − subscriptions − planned debt", safe >= 0 ? "pos" : "neg") +
       '</div>' + progressPanel +
       '<div class="grid2">' +
         '<div class="panel"><h3>Balance Over Time</h3>' + areaChart(series) + '</div>' +
         '<div class="panel"><h3>Spending by Category</h3>' + (cats.length ? donut(cats) + legend(cats) : '<div class="empty">No expenses logged yet.</div>') + '</div>' +
       '</div>' +
-      '<div class="panel"><h3>Monthly Income vs Expense</h3>' + monthlyChart() + '</div>' +
+      '<div class="panel"><h3>Monthly Income vs Expense</h3>' + monthlyChart() + '</div>' + nwPanel +
       '<div class="panel"><h3>Net Worth Composition</h3>' + compHtml + '</div>';
   }
 
@@ -703,19 +720,47 @@
     return '<div class="panel">' + html + '</div>';
   }
 
+  function budgetPanel() {
+    var curYm = ymOfDate(new Date(today() + "T00:00:00"));
+    var spent = {};
+    state.transactions.forEach(function (t) { if (t.type === "expense" && (t.date || "").slice(0, 7) === curYm) { var c = t.category || "Other"; spent[c] = (spent[c] || 0) + num(t.amount); } });
+    var b = state.budgets || {}, keys = Object.keys(b);
+    var list = keys.length ? keys.map(function (c) {
+      var lim = num(b[c]), sp = spent[c] || 0, pct = lim > 0 ? Math.min(100, sp / lim * 100) : 0, over = sp > lim;
+      return '<div style="margin-bottom:14px"><div class="row-between" style="margin-bottom:6px"><span>' + catMeta(c).e + ' ' + esc(c) + '</span>' +
+        '<span class="' + (over ? "neg" : "") + '">' + fmt(sp) + ' / ' + fmt(lim) + (over ? ' ⚠' : '') + ' <button class="icon-btn" data-act="delBudget" data-c="' + c + '">✕</button></span></div>' +
+        '<div class="progress"><div style="width:' + pct + '%;background:' + (over ? "#f87171" : "#34d399") + '"></div></div></div>';
+    }).join("") : '<div class="empty">No budgets set yet.</div>';
+    var opts = CATEGORIES.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join("");
+    return '<div class="panel"><h3>Monthly Budgets <span class="mini" style="font-weight:400">(this month)</span></h3>' +
+      '<div class="form-row" style="max-width:480px"><label class="field"><span>Category</span><select id="bg_cat">' + opts + '</select></label>' +
+      '<label class="field"><span>Monthly limit</span><input id="bg_amount" type="number" placeholder="0.00"/></label>' +
+      '<button class="btn" data-act="setBudget">Set</button></div>' +
+      '<div style="margin-top:18px">' + list + '</div></div>';
+  }
+
   function pageTransactions() {
     var rows = state.transactions.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
     var f = pageTransactions.filter || "all";
     if (f !== "all") rows = rows.filter(function (t) { return t.type === f; });
     var body = rows.length ? rows.map(function (t) {
+      if (editTxId === t.id) {
+        return '<tr>' +
+          '<td><input id="et_date" type="date" value="' + esc(t.date) + '" style="width:150px"/></td>' +
+          '<td><select id="et_type"><option value="expense"' + (t.type === "expense" ? " selected" : "") + '>Expense</option><option value="income"' + (t.type === "income" ? " selected" : "") + '>Income</option></select></td>' +
+          '<td><select id="et_cat">' + CATEGORIES.map(function (c) { return '<option value="' + c + '"' + (t.category === c ? " selected" : "") + '>' + c + '</option>'; }).join("") + '</select></td>' +
+          '<td><input id="et_note" value="' + esc(t.note || "") + '" style="min-width:110px"/></td>' +
+          '<td><input id="et_amount" type="number" value="' + num(t.amount) + '" style="width:100px;text-align:right"/></td>' +
+          '<td style="white-space:nowrap"><button class="btn sm" data-act="editTxSave" data-id="' + t.id + '">Save</button> <button class="icon-btn" data-act="editTxCancel">✕</button></td></tr>';
+      }
       return '<tr><td>' + esc(t.date) + '</td><td><span class="tag ' + t.type + '">' + t.type + '</span></td><td>' + esc(t.category) + '</td>' +
         '<td class="mini">' + esc(t.note) + '</td><td style="text-align:right" class="' + (t.type === "income" ? "pos" : "neg") + '">' + (t.type === "income" ? "+" : "−") + fmt(t.amount) + '</td>' +
-        '<td><button class="icon-btn" data-act="delTx" data-id="' + t.id + '">✕</button></td></tr>';
+        '<td style="white-space:nowrap"><button class="icon-btn" data-act="editTx" data-id="' + t.id + '">✎</button><button class="icon-btn" data-act="delTx" data-id="' + t.id + '">✕</button></td></tr>';
     }).join("") : '';
     var opts = CATEGORIES.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join("");
 
     return '<h1 class="page-title">Transactions</h1><p class="page-sub">Log income and expenses to keep your balance accurate.</p>' +
-      categorySummary() +
+      categorySummary() + budgetPanel() +
       '<div class="panel"><h3>Add Transaction</h3><div class="form-row">' +
         '<label class="field"><span>Date</span><input id="t_date" type="date" value="' + today() + '"/></label>' +
         '<label class="field"><span>Type</span><select id="t_type"><option value="expense">Expense</option><option value="income">Income</option></select></label>' +
@@ -744,12 +789,21 @@
     var series = Object.keys(map).sort().map(function (d) { return { date: d, balance: map[d] }; });
 
     var rows = tr.trades.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); }).map(function (t) {
+      if (editTradeId === t.id) {
+        return '<tr>' +
+          '<td><input id="etr_date" type="date" value="' + esc(t.date) + '" style="width:150px"/></td>' +
+          '<td><input id="etr_symbol" value="' + esc(t.symbol || "") + '" style="width:90px"/></td>' +
+          '<td><select id="etr_result"><option value="profit"' + (t.result !== "loss" ? " selected" : "") + '>Profit</option><option value="loss"' + (t.result === "loss" ? " selected" : "") + '>Loss</option></select></td>' +
+          '<td><input id="etr_amount" type="number" value="' + num(t.amount) + '" style="width:100px;text-align:right"/></td>' +
+          '<td><input id="etr_note" value="' + esc(t.note || "") + '" style="min-width:110px"/></td>' +
+          '<td style="white-space:nowrap"><button class="btn sm" data-act="editTradeSave" data-id="' + t.id + '">Save</button> <button class="icon-btn" data-act="editTradeCancel">✕</button></td></tr>';
+      }
       var isLoss = t.result === "loss";
       return '<tr><td>' + esc(t.date) + '</td><td><strong>' + esc(t.symbol || "—") + '</strong></td>' +
         '<td><span class="tag ' + (isLoss ? "expense" : "income") + '">' + t.result + '</span></td>' +
         '<td style="text-align:right" class="' + (isLoss ? "neg" : "pos") + '">' + (isLoss ? "−" : "+") + fmt(t.amount) + '</td>' +
         '<td class="mini">' + esc(t.note) + '</td>' +
-        '<td><button class="icon-btn" data-act="delTrade" data-id="' + t.id + '">✕</button></td></tr>';
+        '<td style="white-space:nowrap"><button class="icon-btn" data-act="editTrade" data-id="' + t.id + '">✎</button><button class="icon-btn" data-act="delTrade" data-id="' + t.id + '">✕</button></td></tr>';
     }).join("");
 
     var winsArr = tr.trades.filter(function (t) { return t.result !== "loss"; }).map(function (t) { return num(t.amount); });
@@ -1093,6 +1147,20 @@
       save(); render();
     },
     delTx: function (e) { state.transactions = state.transactions.filter(function (t) { return t.id !== e.id; }); save(); render(); },
+    editTx: function (e) { editTxId = e.id; render(); },
+    editTxCancel: function () { editTxId = null; render(); },
+    editTxSave: function (e) {
+      state.transactions.forEach(function (t) { if (t.id === e.id) { t.date = val("et_date") || t.date; t.type = val("et_type"); t.category = val("et_cat"); t.amount = num(val("et_amount")); t.note = val("et_note"); } });
+      editTxId = null; save(); render();
+    },
+    editTrade: function (e) { editTradeId = e.id; render(); },
+    editTradeCancel: function () { editTradeId = null; render(); },
+    editTradeSave: function (e) {
+      state.trading.trades.forEach(function (t) { if (t.id === e.id) { t.date = val("etr_date") || t.date; t.symbol = val("etr_symbol"); t.result = val("etr_result"); t.amount = num(val("etr_amount")); t.note = val("etr_note"); } });
+      editTradeId = null; save(); render();
+    },
+    setBudget: function () { var c = val("bg_cat"), a = num(val("bg_amount")); if (!c || !a) return; if (!state.budgets) state.budgets = {}; state.budgets[c] = a; save(); render(); },
+    delBudget: function (e) { if (state.budgets) delete state.budgets[e.c]; save(); render(); },
     addRecurring: function () {
       if (!val("rc_amount")) return;
       state.recurring.push({ id: uid(), type: val("rc_type"), category: val("rc_cat"), amount: num(val("rc_amount")), day: num(val("rc_day")) || 1, note: val("rc_note"), created: ymOfDate(new Date(today() + "T00:00:00")), lastApplied: "" });
@@ -1196,6 +1264,7 @@
     applyTheme();
     if (state.pin) locked = true;
     applyRecurring();
+    recordNetWorth();
     render();
     initCloud(); // reconnects automatically if you've set up sync before
     var relock = function () { if (state && state.pin && !locked) { locked = true; pinBuffer = ""; pinError = false; render(); } };
