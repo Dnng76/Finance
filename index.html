@@ -119,6 +119,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
+  var VERSION = "build 12 · tabs+budgets";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Health","Savings","Other"];
   var CATMETA = {
@@ -1255,6 +1256,7 @@
       '</nav>' +
       '<button class="btn ghost sm" data-act="privacy" style="margin-top:14px;width:100%">' + (privacy ? "👁 Show amounts" : "🙈 Hide amounts") + '</button>' +
       '<button class="btn ghost sm" data-act="theme" style="margin-top:8px;width:100%">' + (theme === "light" ? "🌙 Dark mode" : "☀ Light mode") + '</button>' +
+      '<div class="mini" style="margin-top:12px;text-align:center;opacity:.55">' + VERSION + '</div>' +
       '</aside>';
     el("root").innerHTML = '<div class="app">' + sidebar + '<main class="main">' + pages[currentTab]() + '</main></div>';
     wire();
@@ -1311,9 +1313,11 @@
 })();
 </script>
 <script>
+/* Remove any old service worker + caches so the app always loads the freshest version */
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+  navigator.serviceWorker.getRegistrations().then(function (regs) { regs.forEach(function (r) { r.unregister(); }); }).catch(function () {});
 }
+if (window.caches && caches.keys) { caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); }).catch(function () {}); }
 </script>
 </body>
 </html>
