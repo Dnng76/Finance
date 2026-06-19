@@ -148,6 +148,7 @@
     subscriptions: [],
     budgets: {},
     nwHistory: [],
+    tabOrder: [],
     pin: "",
     currency: "$"
   };
@@ -1040,7 +1041,7 @@
     var cur = state.currency || "$";
     var currencies = ["$","€","£","₫","¥","₹"].map(function (c) { return '<button class="btn ' + (cur === c ? "" : "ghost") + ' sm" data-act="cur" data-c="' + c + '">' + c + '</button>'; }).join("");
     return '<h1 class="page-title">Backup, Export & Sync</h1><p class="page-sub">Sync across devices, or move data manually.</p>' +
-      cloudSection() + securitySection() +
+      cloudSection() + securitySection() + tabOrderPanel() +
       '<div class="panel"><h3>Currency</h3><div class="toolbar">' + currencies + '</div></div>' +
       '<div class="panel"><h3>Export</h3><div class="toolbar"><button class="btn" data-act="expJSON">⤓ Backup (JSON)</button><button class="btn ghost" data-act="expCSV">⤓ Transactions (CSV)</button></div></div>' +
       '<div class="panel"><h3>Import / Restore</h3><div class="toolbar"><button class="btn ghost" data-act="impClick">⤒ Import JSON backup</button><input id="impFile" type="file" accept="application/json" style="display:none"/></div><p class="mini" style="margin-top:10px">Importing merges the backup into your current data.</p></div>' +
@@ -1175,6 +1176,11 @@
     delSub: function (e) { state.subscriptions = state.subscriptions.filter(function (x) { return x.id !== e.id; }); save(); render(); },
     em: function (e) { state.emergency.current = num(state.emergency.current) + num(e.amt); save(); paintEmergency(); if (el("em_cur")) el("em_cur").value = num(state.emergency.current); },
     cur: function (e) { state.currency = e.c; save(); render(); },
+    moveTab: function (e) {
+      var ids = orderedNav().map(function (n) { return n.id; });
+      var i = ids.indexOf(e.id), j = i + (e.amt === "up" ? -1 : 1);
+      if (i >= 0 && j >= 0 && j < ids.length) { var t = ids[i]; ids[i] = ids[j]; ids[j] = t; state.tabOrder = ids; save(); render(); }
+    },
     expJSON: function () { download("finance-backup-" + today() + ".json", JSON.stringify(state, null, 2), "application/json"); },
     expCSV: function () {
       var head = "Date,Type,Category,Amount,Note\n";
@@ -1206,10 +1212,8 @@
     clear: function () { if (confirm("Erase ALL data on this device? Export a backup first if unsure.")) { state = clone(defaultData); save(); render(); } }
   };
 
-  function render() {
-    if (locked && state.pin) { el("root").innerHTML = lockScreen(); wire(); return; }
-    var pages = { dashboard: pageDashboard, goals: pageGoals, debt: pageDebt, emergency: pageEmergency, transactions: pageTransactions, recurring: pageRecurring, subs: pageSubscriptions, trading: pageTrading, payday: pagePayday, calc: pageCompound, data: pageData };
-    var nav = [
+  function navBase() {
+    return [
       { id: "dashboard", label: "Dashboard", ico: "▥" },
       { id: "goals", label: "Goals", ico: "◎" },
       { id: "debt", label: "Debt", ico: "◍" },
@@ -1222,6 +1226,30 @@
       { id: "calc", label: "Calculator", ico: "🧮" },
       { id: "data", label: "Backup / Export", ico: "⤓" }
     ];
+  }
+  function orderedNav() {
+    var base = navBase(), byId = {};
+    base.forEach(function (n) { byId[n.id] = n; });
+    var out = [];
+    (state.tabOrder || []).forEach(function (id) { if (byId[id]) { out.push(byId[id]); delete byId[id]; } });
+    base.forEach(function (n) { if (byId[n.id]) out.push(n); });
+    return out;
+  }
+  function tabOrderPanel() {
+    var items = orderedNav();
+    var rows = items.map(function (n, i) {
+      return '<div class="row-between" style="padding:8px 2px;border-bottom:1px solid var(--border)"><span>' + n.ico + ' ' + n.label + '</span><span style="white-space:nowrap">' +
+        '<button class="icon-btn" data-act="moveTab" data-id="' + n.id + '" data-amt="up"' + (i === 0 ? ' disabled style="opacity:.3"' : '') + '>▲</button>' +
+        '<button class="icon-btn" data-act="moveTab" data-id="' + n.id + '" data-amt="down"' + (i === items.length - 1 ? ' disabled style="opacity:.3"' : '') + '>▼</button>' +
+        '</span></div>';
+    }).join("");
+    return '<div class="panel"><h3>Tab Order</h3><p class="mini" style="margin:-8px 0 10px">Use ▲▼ to reorder the sidebar tabs.</p>' + rows + '</div>';
+  }
+
+  function render() {
+    if (locked && state.pin) { el("root").innerHTML = lockScreen(); wire(); return; }
+    var pages = { dashboard: pageDashboard, goals: pageGoals, debt: pageDebt, emergency: pageEmergency, transactions: pageTransactions, recurring: pageRecurring, subs: pageSubscriptions, trading: pageTrading, payday: pagePayday, calc: pageCompound, data: pageData };
+    var nav = orderedNav();
     var sidebar = '<aside class="sidebar"><div class="brand"><span class="dot"></span> Finance</div><nav class="nav">' +
       nav.map(function (n) { return '<button class="' + (currentTab === n.id ? "active" : "") + '" data-tab="' + n.id + '"><span class="ico">' + n.ico + '</span> <span class="label">' + n.label + '</span></button>'; }).join("") +
       '</nav>' +
@@ -1267,10 +1295,16 @@
     recordNetWorth();
     render();
     initCloud(); // reconnects automatically if you've set up sync before
-    var relock = function () { if (state && state.pin && !locked) { locked = true; pinBuffer = ""; pinError = false; render(); } };
-    document.addEventListener("visibilitychange", relock); // fires when backgrounded and when returning
-    window.addEventListener("pagehide", relock);
-    window.addEventListener("focus", relock);
+    var shield = document.createElement("div");
+    shield.id = "ftShield";
+    shield.style.cssText = "position:fixed;inset:0;background:#0b1120;display:none;align-items:center;justify-content:center;z-index:99999;font-size:64px";
+    shield.textContent = "🔒";
+    document.body.appendChild(shield);
+    var coverNow = function () { shield.style.display = "flex"; if (state && state.pin) { locked = true; pinBuffer = ""; pinError = false; } };
+    var uncover = function () { shield.style.display = "none"; render(); };
+    document.addEventListener("visibilitychange", function () { if (document.hidden) coverNow(); else uncover(); });
+    window.addEventListener("pagehide", coverNow);
+    window.addEventListener("pageshow", uncover);
   } catch (err) {
     document.getElementById("root").innerHTML = '<div style="padding:40px;color:#f87171;font-family:monospace">Error: ' + esc(err.message) + '</div>';
   }
