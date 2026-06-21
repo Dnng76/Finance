@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Finance Tracker</title>
 <link rel="manifest" href="manifest.json" />
-<link rel="icon" type="image/png" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMyZGQ0YmYiLz48c3RvcCBvZmZzZXQ9IjAuNTUiIHN0b3AtY29sb3I9IiMwZWE1ZTkiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM2MzY2ZjEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgcng9IjU4IiBmaWxsPSJ1cmwoI2cpIi8+PHBvbHlsaW5lIHBvaW50cz0iNTUsMTc1IDEwNSwxMjAgMTUwLDE1MCAyMDAsNzUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBvbHlsaW5lIHBvaW50cz0iMTY4LDc1IDIwMCw3NSAyMDAsMTA3IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxjaXJjbGUgY3g9IjU1IiBjeT0iMTc1IiByPSIxMCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==" />
+<link rel="icon" type="image/png" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMxNGI4YTYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwMjg0YzciLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgcng9IjU4IiBmaWxsPSJ1cmwoI2cpIi8+PHJlY3QgeD0iNTAiIHk9Ijg0IiB3aWR0aD0iMTU2IiBoZWlnaHQ9Ijk4IiByeD0iMjIiIGZpbGw9IiNmZmYiLz48cmVjdCB4PSIxMjQiIHk9IjExNiIgd2lkdGg9IjgyIiBoZWlnaHQ9IjUwIiByeD0iMTYiIGZpbGw9IiMwMjg0YzciLz48Y2lyY2xlIGN4PSIxNTAiIGN5PSIxNDEiIHI9IjExIiBmaWxsPSIjZmZmIi8+PC9zdmc+" />
 <meta name="theme-color" content="#0b1120" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Finance" />
-<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMyZGQ0YmYiLz48c3RvcCBvZmZzZXQ9IjAuNTUiIHN0b3AtY29sb3I9IiMwZWE1ZTkiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM2MzY2ZjEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgcng9IjU4IiBmaWxsPSJ1cmwoI2cpIi8+PHBvbHlsaW5lIHBvaW50cz0iNTUsMTc1IDEwNSwxMjAgMTUwLDE1MCAyMDAsNzUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBvbHlsaW5lIHBvaW50cz0iMTY4LDc1IDIwMCw3NSAyMDAsMTA3IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxjaXJjbGUgY3g9IjU1IiBjeT0iMTc1IiByPSIxMCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==" />
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMxNGI4YTYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwMjg0YzciLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgcng9IjU4IiBmaWxsPSJ1cmwoI2cpIi8+PHJlY3QgeD0iNTAiIHk9Ijg0IiB3aWR0aD0iMTU2IiBoZWlnaHQ9Ijk4IiByeD0iMjIiIGZpbGw9IiNmZmYiLz48cmVjdCB4PSIxMjQiIHk9IjExNiIgd2lkdGg9IjgyIiBoZWlnaHQ9IjUwIiByeD0iMTYiIGZpbGw9IiMwMjg0YzciLz48Y2lyY2xlIGN4PSIxNTAiIGN5PSIxNDEiIHI9IjExIiBmaWxsPSIjZmZmIi8+PC9zdmc+" />
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -119,7 +119,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 15 · new icon";
+  var VERSION = "build 16 · wallet icon";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Health","Savings","Other"];
   var CATMETA = {
@@ -1337,15 +1337,13 @@ if (window.caches && caches.keys) { caches.keys().then(function (ks) { ks.forEac
   try {
     var c = document.createElement("canvas"); c.width = 256; c.height = 256;
     var x = c.getContext("2d"), r = 58;
+    function rr(rx, ry, rw, rh, rd) { x.beginPath(); x.moveTo(rx + rd, ry); x.arcTo(rx + rw, ry, rx + rw, ry + rh, rd); x.arcTo(rx + rw, ry + rh, rx, ry + rh, rd); x.arcTo(rx, ry + rh, rx, ry, rd); x.arcTo(rx, ry, rx + rw, ry, rd); x.closePath(); }
     var grd = x.createLinearGradient(0, 0, 256, 256);
-    grd.addColorStop(0, "#2dd4bf"); grd.addColorStop(0.55, "#0ea5e9"); grd.addColorStop(1, "#6366f1");
-    x.beginPath();
-    x.moveTo(r, 0); x.arcTo(256, 0, 256, 256, r); x.arcTo(256, 256, 0, 256, r); x.arcTo(0, 256, 0, 0, r); x.arcTo(0, 0, 256, 0, r); x.closePath();
-    x.fillStyle = grd; x.fill();
-    x.strokeStyle = "#fff"; x.lineWidth = 16; x.lineCap = "round"; x.lineJoin = "round";
-    x.beginPath(); x.moveTo(55, 175); x.lineTo(105, 120); x.lineTo(150, 150); x.lineTo(200, 75); x.stroke();
-    x.beginPath(); x.moveTo(168, 75); x.lineTo(200, 75); x.lineTo(200, 107); x.stroke();
-    x.beginPath(); x.arc(55, 175, 10, 0, Math.PI * 2); x.fillStyle = "#fff"; x.fill();
+    grd.addColorStop(0, "#14b8a6"); grd.addColorStop(1, "#0284c7");
+    rr(0, 0, 256, 256, r); x.fillStyle = grd; x.fill();
+    rr(50, 84, 156, 98, 22); x.fillStyle = "#ffffff"; x.fill();
+    rr(124, 116, 82, 50, 16); x.fillStyle = "#0284c7"; x.fill();
+    x.beginPath(); x.arc(150, 141, 11, 0, Math.PI * 2); x.fillStyle = "#ffffff"; x.fill();
     var url = c.toDataURL("image/png");
     var link = document.querySelector('link[rel="apple-touch-icon"]');
     if (!link) { link = document.createElement("link"); link.rel = "apple-touch-icon"; document.head.appendChild(link); }
