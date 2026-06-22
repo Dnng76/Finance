@@ -119,7 +119,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 16 · wallet icon";
+  var VERSION = "build 17 · hide on open";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Health","Savings","Other"];
   var CATMETA = {
@@ -145,6 +145,7 @@
     emergency: { monthlyExpenses: 0, months: 3, current: 0 },
     trading: { startBalance: 0, trades: [] },
     payday: { date: "", amount: 0, label: "Payday" },
+    hideOnOpen: false,
     recurring: [],
     subscriptions: [],
     budgets: {},
@@ -1019,6 +1020,12 @@
       '</div></div>';
   }
 
+  function privacyLaunchPanel() {
+    return '<div class="panel"><h3>🙈 Hide Amounts on Open</h3>' +
+      '<p class="mini" style="margin:-8px 0 12px">When on, every amount is masked each time you open the app — so nobody can glance at your balance. Tap “Show amounts” in the sidebar to reveal them.</p>' +
+      '<div class="toolbar"><button class="btn ' + (state.hideOnOpen ? "" : "ghost") + '" data-act="toggleHideOpen">' + (state.hideOnOpen ? "✓ On — tap to turn off" : "Turn on") + '</button></div></div>';
+  }
+
   function securitySection() {
     if (!state.pin) {
       return '<div class="panel"><h3>🔒 App Lock (PIN)</h3>' +
@@ -1054,7 +1061,7 @@
     var cur = state.currency || "$";
     var currencies = ["$","€","£","₫","¥","₹"].map(function (c) { return '<button class="btn ' + (cur === c ? "" : "ghost") + ' sm" data-act="cur" data-c="' + c + '">' + c + '</button>'; }).join("");
     return '<h1 class="page-title">Backup, Export & Sync</h1><p class="page-sub">Sync across devices, or move data manually.</p>' +
-      cloudSection() + securitySection() + tabOrderPanel() +
+      cloudSection() + securitySection() + privacyLaunchPanel() + tabOrderPanel() +
       '<div class="panel"><h3>Currency</h3><div class="toolbar">' + currencies + '</div></div>' +
       '<div class="panel"><h3>Export</h3><div class="toolbar"><button class="btn" data-act="expJSON">⤓ Backup (JSON)</button><button class="btn ghost" data-act="expCSV">⤓ Transactions (CSV)</button></div></div>' +
       '<div class="panel"><h3>Import / Restore</h3><div class="toolbar"><button class="btn ghost" data-act="impClick">⤒ Import JSON backup</button><input id="impFile" type="file" accept="application/json" style="display:none"/></div><p class="mini" style="margin-top:10px">Importing merges the backup into your current data.</p></div>' +
@@ -1078,6 +1085,7 @@
     calcCompound: function () { pageCompound.p = num(val("ci_p")); pageCompound.m = num(val("ci_m")); pageCompound.r = num(val("ci_r")); pageCompound.y = num(val("ci_y")); render(); },
     privacy: function () { privacy = !privacy; try { localStorage.setItem("ft_privacy", privacy ? "1" : "0"); } catch (e) {} render(); },
     theme: function () { theme = theme === "light" ? "dark" : "light"; try { localStorage.setItem("ft_theme", theme); } catch (e) {} applyTheme(); render(); },
+    toggleHideOpen: function () { state.hideOnOpen = !state.hideOnOpen; if (state.hideOnOpen) { privacy = true; try { localStorage.setItem("ft_privacy", "1"); } catch (e) {} } save(); render(); },
     setPin: function () { var v = (val("sp_pin") || "").replace(/\D/g, ""); if (v.length < 4) { msg("PIN must be at least 4 digits."); return; } state.pin = v; save(); render(); },
     removePin: function () { state.pin = ""; locked = false; save(); render(); },
     lockNow: function () { if (state.pin) { locked = true; pinBuffer = ""; pinError = false; render(); } },
@@ -1304,6 +1312,7 @@
   try {
     state = load();
     try { privacy = localStorage.getItem("ft_privacy") === "1"; } catch (e) {}
+    if (state.hideOnOpen) privacy = true;
     try { theme = localStorage.getItem("ft_theme") || "dark"; } catch (e) {}
     applyTheme();
     if (state.pin) locked = true;
