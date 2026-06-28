@@ -119,7 +119,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 18 · debt countdown";
+  var VERSION = "build 19 · plan photos";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Health","Savings","Other"];
   var CATMETA = {
@@ -211,6 +211,28 @@
   function el(id) { return document.getElementById(id); }
   function val(id) { var e = el(id); return e ? e.value : ""; }
   function msg(t) { var m = el("dataMsg"); if (m) m.innerHTML = '<div class="hint">' + esc(t) + '</div>'; }
+
+  /* ---------- debt plan photos (device-only, compressed, not synced) ---------- */
+  var debtPhotos = [];
+  function loadDebtPhotos() { try { debtPhotos = JSON.parse(localStorage.getItem("ft_debtPhotos")) || []; } catch (e) { debtPhotos = []; } }
+  function saveDebtPhotos() { try { localStorage.setItem("ft_debtPhotos", JSON.stringify(debtPhotos)); } catch (e) { alert("Phone storage is full — delete a photo and try again."); } }
+  function addDebtPhotoFile(file) {
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      var img = new Image();
+      img.onload = function () {
+        var max = 1000, w = img.width, h = img.height;
+        if (w > max || h > max) { var s = max / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
+        var cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+        cv.getContext("2d").drawImage(img, 0, 0, w, h);
+        debtPhotos.push({ id: uid(), data: cv.toDataURL("image/jpeg", 0.6) });
+        saveDebtPhotos(); render();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
 
   /* ---------- cloud sync (Firebase, optional & local-first) ---------- */
   var cloud = { app: null, auth: null, db: null, user: null, unsub: null, ready: false };
@@ -598,6 +620,18 @@
       '<div class="row-between" style="margin-top:14px"><strong>Total planned for ' + monthLabel + ': ' + fmt(total) + '</strong><button class="btn" data-act="savePlan">Save Plan</button></div></div>';
   }
 
+  function debtPhotosPanel() {
+    var grid = debtPhotos.length ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;margin-top:14px">' +
+      debtPhotos.map(function (p) {
+        return '<div style="position:relative"><img src="' + p.data + '" style="width:100%;border-radius:12px;display:block"/>' +
+          '<button class="icon-btn" data-act="delDebtPhoto" data-id="' + p.id + '" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border-radius:8px">✕</button></div>';
+      }).join("") + '</div>' : '<div class="empty">No photos yet — upload your plan, a statement, or a motivation pic.</div>';
+    return '<div class="panel"><h3>📷 Plan Photos</h3>' +
+      '<p class="mini" style="margin:-8px 0 12px">Upload a photo of your repayment plan or motivation to look back at. Saved on this device only (not synced), so it won\'t affect cloud sync.</p>' +
+      '<button class="btn ghost" data-act="uploadDebtPhoto">⤒ Upload photo</button><input id="debtPhotoFile" type="file" accept="image/*" style="display:none"/>' +
+      grid + '</div>';
+  }
+
   function debtCountdownPanel() {
     var df = state.debtFree || {};
     var t0 = new Date(today() + "T00:00:00");
@@ -693,7 +727,7 @@
       '</div>' +
       '<div class="panel"><h3>Your Debts</h3>' + (rows ?
         '<div style="overflow-x:auto"><table><thead><tr><th>Creditor</th><th>Remaining</th><th>Original</th><th>Rate</th><th>Monthly</th><th>Payoff</th><th>Progress</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-        : '<div class="empty">No debts tracked. 🎉</div>') + '</div>' + debtPayPanel() + debtPlanPanel();
+        : '<div class="empty">No debts tracked. 🎉</div>') + '</div>' + debtPayPanel() + debtPlanPanel() + debtPhotosPanel();
   }
 
   function pageEmergency() {
@@ -1191,6 +1225,8 @@
     planPrev: function () { commitPlan(); planMonth = prevMonth(planMonth); render(); },
     planNext: function () { commitPlan(); planMonth = nextMonth(planMonth); render(); },
     setDebtFree: function () { state.debtFree = { date: val("df_date") || "", start: val("df_start") || "" }; save(); render(); },
+    uploadDebtPhoto: function () { if (el("debtPhotoFile")) el("debtPhotoFile").click(); },
+    delDebtPhoto: function (e) { debtPhotos = debtPhotos.filter(function (p) { return p.id !== e.id; }); saveDebtPhotos(); render(); },
     payDebt: function (e) { var a = num(val("dp_" + e.id)); if (!a) return; state.debts.forEach(function (d) { if (d.id === e.id) d.remaining = Math.max(0, num(d.remaining) - a); }); save(); render(); },
     planPay: function (e) { var a = num(val("pn_" + e.id)); if (!a) return; state.debts.forEach(function (d) { if (d.id === e.id) d.remaining = Math.max(0, num(d.remaining) - a); }); save(); render(); },
     planAdd: function (e) { var a = num(val("pn_" + e.id)); if (!a) return; state.debts.forEach(function (d) { if (d.id === e.id) d.remaining = num(d.remaining) + a; }); save(); render(); },
@@ -1340,6 +1376,7 @@
       reader.readAsText(file);
     };
     // emergency live inputs
+    if (el("debtPhotoFile")) el("debtPhotoFile").onchange = function (ev) { addDebtPhotoFile(ev.target.files[0]); this.value = ""; };
     if (el("pln_month")) el("pln_month").onchange = function () { commitPlan(); planMonth = this.value || planMonth; render(); };
     if (el("em_exp")) el("em_exp").oninput = function () { state.emergency.monthlyExpenses = num(this.value); save(); paintEmergency(); };
     if (el("em_cur")) el("em_cur").oninput = function () { state.emergency.current = num(this.value); save(); paintEmergency(); };
@@ -1349,6 +1386,7 @@
   // boot
   try {
     state = load();
+    loadDebtPhotos();
     try { privacy = localStorage.getItem("ft_privacy") === "1"; } catch (e) {}
     if (state.hideOnOpen) privacy = true;
     try { theme = localStorage.getItem("ft_theme") || "dark"; } catch (e) {}
