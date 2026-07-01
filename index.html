@@ -40,12 +40,13 @@
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
 
   .app { display: flex; min-height: 100vh; }
-  .sidebar { width: 240px; background: var(--bg2); border-right: 1px solid var(--border); padding: 24px 16px; position: sticky; top: 0; height: 100vh; flex-shrink: 0; }
+  .sidebar { width: 240px; background: var(--bg2); border-right: 1px solid var(--border); padding: 24px 16px; position: sticky; top: 0; height: 100vh; flex-shrink: 0; overflow-y: auto; }
+  .navhead { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); opacity: .7; margin: 16px 14px 6px; }
   .brand { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; margin-bottom: 28px; padding: 0 8px; }
   .brand .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
-  .nav button { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: transparent; border: none; color: var(--muted); padding: 12px 14px; border-radius: 10px; font-size: 15px; cursor: pointer; margin-bottom: 4px; transition: all .15s; }
+  .nav button { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: transparent; border: none; color: var(--muted); padding: 10px 14px; border-radius: 10px; font-size: 15px; cursor: pointer; margin-bottom: 2px; transition: all .15s; }
   .nav button:hover { background: var(--panel); color: var(--text); }
-  .nav button.active { background: linear-gradient(90deg, rgba(45,212,191,.18), rgba(56,189,248,.08)); color: var(--accent); font-weight: 600; }
+  .nav button.active { background: linear-gradient(90deg, rgba(45,212,191,.20), rgba(56,189,248,.05)); color: var(--accent); font-weight: 600; box-shadow: inset 3px 0 0 var(--accent); }
   .nav button .ico { font-size: 18px; width: 22px; text-align: center; }
 
   .main { flex: 1; padding: 32px 40px; max-width: 1200px; }
@@ -54,6 +55,7 @@
     .sidebar { width: 100%; height: auto; position: static; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     .brand { margin-bottom: 0; margin-right: auto; }
     .nav { display: flex; flex-wrap: wrap; gap: 4px; }
+    .navhead { display: none; }
     .nav button { width: auto; padding: 8px 12px; }
     .nav button .label { display: none; }
     .nav button .ico { font-size: 20px; }
@@ -63,35 +65,40 @@
   .page-sub { color: var(--muted); margin: 0 0 28px; font-size: 14px; }
 
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-bottom: 28px; }
-  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
-  .card .label { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
-  .card .value { font-size: 26px; font-weight: 700; word-break: break-word; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: 0 1px 2px rgba(0,0,0,.18); transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.24); border-color: var(--border); }
+  .card .label { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .cicon { width: 38px; height: 38px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; margin: -6px 0; }
+  .card .value { font-size: 27px; font-weight: 700; word-break: break-word; letter-spacing: -0.5px; }
   .card .sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
   .pos { color: var(--green); } .neg { color: var(--red); }
 
-  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 22px; margin-bottom: 22px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 22px; box-shadow: 0 1px 2px rgba(0,0,0,.14); }
   .panel h3 { margin: 0 0 18px; font-size: 17px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap: wrap; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
   @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
 
-  input, select { background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 10px; font-size: 14px; width: 100%; outline: none; font-family: inherit; }
-  input:focus, select:focus { border-color: var(--accent); }
+  input, select { background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 11px 13px; border-radius: 10px; font-size: 14px; width: 100%; outline: none; font-family: inherit; transition: border-color .12s ease, box-shadow .12s ease; }
+  input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,212,191,.16); }
   label.field { display: block; }
   label.field span { display:block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
   .form-row { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); align-items: end; }
 
-  button.btn { background: var(--accent); color: #04231f; border: none; padding: 11px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px; white-space: nowrap; font-family: inherit; }
-  button.btn:hover { filter: brightness(1.08); }
-  button.btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  button.btn { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #04231f; border: none; padding: 11px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px; white-space: nowrap; font-family: inherit; box-shadow: 0 3px 10px rgba(45,212,191,.28); transition: transform .12s ease, box-shadow .12s ease, filter .12s ease; }
+  button.btn:hover { filter: brightness(1.06); box-shadow: 0 5px 16px rgba(45,212,191,.34); }
+  button.btn:active { transform: translateY(1px); box-shadow: 0 1px 5px rgba(45,212,191,.3); }
+  button.btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); box-shadow: none; }
   button.btn.ghost:hover { background: var(--panel2); }
   button.btn.sm { padding: 7px 12px; font-size: 13px; }
   button.icon-btn { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 8px; }
   button.icon-btn:hover { color: var(--red); background: rgba(248,113,113,.1); }
 
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
-  td { padding: 12px; border-bottom: 1px solid var(--border); }
-  tr:last-child td { border-bottom: none; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0 8px; font-size: 14px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; padding: 2px 14px; }
+  td { padding: 13px 14px; background: var(--bg); transition: background .12s ease; }
+  tbody tr td:first-child { border-radius: 12px 0 0 12px; }
+  tbody tr td:last-child { border-radius: 0 12px 12px 0; }
+  tbody tr:hover td { background: var(--panel2); }
   .tag { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
   .tag.income { background: rgba(52,211,153,.15); color: var(--green); }
   .tag.expense { background: rgba(248,113,113,.15); color: var(--red); }
@@ -119,7 +126,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 20 · lock screen";
+  var VERSION = "build 22 · ui refresh";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Health","Savings","Other"];
   var CATMETA = {
@@ -498,13 +505,13 @@
           '<button class="btn" data-act="setOB">Save</button>' +
         '</div></div>' +
       '<div class="cards">' +
-        card("💰 Current Balance", fmt(t.balance), "Income " + fmt(t.income) + " · Expenses " + fmt(t.expense), t.balance >= 0 ? "pos" : "neg") +
-        card("◍ Total Debt", fmt(t.totalDebt), state.debts.length + " debt" + (state.debts.length !== 1 ? "s" : "") + " tracked", "neg") +
-        card("⛨ Emergency Fund", fmt(t.emFund), "Target " + fmt(num(state.emergency.monthlyExpenses) * num(state.emergency.months)), "") +
-        card("💹 Trading Balance", fmt(t.tradingBalance), state.trading.trades.length + " trade" + (state.trading.trades.length !== 1 ? "s" : ""), t.tradingBalance >= 0 ? "pos" : "neg") +
-        card("🎁 Gift Saved", fmt(t.goalGift), "Not counted in net worth", "") +
-        card("📈 Net Worth", fmt(t.netWorth), "Assets minus debts (gifts excluded)", t.netWorth >= 0 ? "pos" : "neg") +
-        card("💸 Safe to Spend", fmt(safe), "Balance − subscriptions − planned debt", safe >= 0 ? "pos" : "neg") +
+        card("Current Balance", fmt(t.balance), "Income " + fmt(t.income) + " · Expenses " + fmt(t.expense), t.balance >= 0 ? "pos" : "neg", "💰", "rgba(52,211,153,.16)") +
+        card("Total Debt", fmt(t.totalDebt), state.debts.length + " debt" + (state.debts.length !== 1 ? "s" : "") + " tracked", "neg", "💳", "rgba(248,113,113,.16)") +
+        card("Emergency Fund", fmt(t.emFund), "Target " + fmt(num(state.emergency.monthlyExpenses) * num(state.emergency.months)), "", "🛡", "rgba(45,212,191,.16)") +
+        card("Trading Balance", fmt(t.tradingBalance), state.trading.trades.length + " trade" + (state.trading.trades.length !== 1 ? "s" : ""), t.tradingBalance >= 0 ? "pos" : "neg", "💹", "rgba(167,139,250,.16)") +
+        card("Gift Saved", fmt(t.goalGift), "Not counted in net worth", "", "🎁", "rgba(244,114,182,.16)") +
+        card("Net Worth", fmt(t.netWorth), "Assets minus debts (gifts excluded)", t.netWorth >= 0 ? "pos" : "neg", "📈", "rgba(56,189,248,.16)") +
+        card("Safe to Spend", fmt(safe), "Balance − subscriptions − planned debt", safe >= 0 ? "pos" : "neg", "💸", "rgba(251,191,36,.16)") +
       '</div>' + progressPanel +
       '<div class="grid2">' +
         '<div class="panel"><h3>Balance Over Time</h3>' + areaChart(series) + '</div>' +
@@ -514,8 +521,9 @@
       '<div class="panel"><h3>Net Worth Composition</h3>' + compHtml + '</div>';
   }
 
-  function card(label, value, sub, cls) {
-    return '<div class="card"><div class="label">' + label + '</div><div class="value ' + (cls || "") + '">' + value + '</div>' + (sub ? '<div class="sub">' + sub + '</div>' : '') + '</div>';
+  function card(label, value, sub, cls, icon, iconBg) {
+    var ic = icon ? '<span class="cicon" style="background:' + (iconBg || "rgba(45,212,191,.16)") + '">' + icon + '</span>' : '';
+    return '<div class="card"><div class="label"><span>' + label + '</span>' + ic + '</div><div class="value ' + (cls || "") + '">' + value + '</div>' + (sub ? '<div class="sub">' + sub + '</div>' : '') + '</div>';
   }
 
   function ensureGoalBuckets(g) {
@@ -1315,17 +1323,17 @@
 
   function navBase() {
     return [
-      { id: "dashboard", label: "Dashboard", ico: "▥" },
-      { id: "goals", label: "Goals", ico: "◎" },
-      { id: "debt", label: "Debt", ico: "◍" },
-      { id: "emergency", label: "Emergency Fund", ico: "⛨" },
-      { id: "transactions", label: "Transactions", ico: "⇄" },
-      { id: "recurring", label: "Recurring", ico: "🔁" },
-      { id: "subs", label: "Subscriptions", ico: "🧾" },
-      { id: "trading", label: "Trading", ico: "💹" },
-      { id: "payday", label: "Payday", ico: "⏰" },
-      { id: "calc", label: "Calculator", ico: "🧮" },
-      { id: "data", label: "Backup / Export", ico: "⤓" }
+      { id: "dashboard", label: "Dashboard", ico: "▥", grp: "" },
+      { id: "transactions", label: "Transactions", ico: "⇄", grp: "track" },
+      { id: "recurring", label: "Recurring", ico: "🔁", grp: "track" },
+      { id: "subs", label: "Subscriptions", ico: "🧾", grp: "track" },
+      { id: "trading", label: "Trading", ico: "💹", grp: "track" },
+      { id: "goals", label: "Goals", ico: "◎", grp: "plan" },
+      { id: "debt", label: "Debt", ico: "◍", grp: "plan" },
+      { id: "emergency", label: "Emergency Fund", ico: "⛨", grp: "plan" },
+      { id: "payday", label: "Payday", ico: "⏰", grp: "plan" },
+      { id: "calc", label: "Calculator", ico: "🧮", grp: "tools" },
+      { id: "data", label: "Backup / Export", ico: "⤓", grp: "tools" }
     ];
   }
   function orderedNav() {
@@ -1351,9 +1359,14 @@
     if (locked && state.pin) { el("root").innerHTML = lockScreen(); wire(); return; }
     var pages = { dashboard: pageDashboard, goals: pageGoals, debt: pageDebt, emergency: pageEmergency, transactions: pageTransactions, recurring: pageRecurring, subs: pageSubscriptions, trading: pageTrading, payday: pagePayday, calc: pageCompound, data: pageData };
     var nav = orderedNav();
-    var sidebar = '<aside class="sidebar"><div class="brand"><span class="dot"></span> Finance</div><nav class="nav">' +
-      nav.map(function (n) { return '<button class="' + (currentTab === n.id ? "active" : "") + '" data-tab="' + n.id + '"><span class="ico">' + n.ico + '</span> <span class="label">' + n.label + '</span></button>'; }).join("") +
-      '</nav>' +
+    var groups = [{ k: "", t: "" }, { k: "track", t: "Track" }, { k: "plan", t: "Plan" }, { k: "tools", t: "Tools" }];
+    var navHtml = groups.map(function (gr) {
+      var items = nav.filter(function (n) { return (n.grp || "") === gr.k; });
+      if (!items.length) return "";
+      return (gr.t ? '<div class="navhead">' + gr.t + '</div>' : "") +
+        items.map(function (n) { return '<button class="' + (currentTab === n.id ? "active" : "") + '" data-tab="' + n.id + '"><span class="ico">' + n.ico + '</span> <span class="label">' + n.label + '</span></button>'; }).join("");
+    }).join("");
+    var sidebar = '<aside class="sidebar"><div class="brand"><span class="dot"></span> Finance</div><nav class="nav">' + navHtml + '</nav>' +
       '<button class="btn ghost sm" data-act="privacy" style="margin-top:14px;width:100%">' + (privacy ? "👁 Show amounts" : "🙈 Hide amounts") + '</button>' +
       '<button class="btn ghost sm" data-act="theme" style="margin-top:8px;width:100%">' + (theme === "light" ? "🌙 Dark mode" : "☀ Light mode") + '</button>' +
       '<div class="mini" style="margin-top:12px;text-align:center;opacity:.55">' + VERSION + '</div>' +
