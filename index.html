@@ -126,7 +126,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 22 · ui refresh";
+  var VERSION = "build 23 · target bars";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Health","Savings","Other"];
   var CATMETA = {
@@ -154,6 +154,7 @@
     payday: { date: "", amount: 0, label: "Payday" },
     hideOnOpen: false,
     debtFree: { date: "", start: "" },
+    targets: { balance: 0, trading: 0 },
     recurring: [],
     subscriptions: [],
     budgets: {},
@@ -497,6 +498,11 @@
     var nwSeries = (state.nwHistory || []).slice().sort(function (a, b) { return a.ym.localeCompare(b.ym); }).map(function (h) { return { date: monthShort(h.ym), balance: h.value }; });
     var nwPanel = nwSeries.length >= 2 ? '<div class="panel"><h3>Net Worth Over Time</h3>' + areaChart(nwSeries) + '</div>' : "";
 
+    var tgt = state.targets || {};
+    var balBar = num(tgt.balance) > 0 ? t.balance / num(tgt.balance) * 100 : null;
+    var trdBar = num(tgt.trading) > 0 ? t.tradingBalance / num(tgt.trading) * 100 : null;
+    var emBar = emTarget > 0 ? t.emFund / emTarget * 100 : null;
+
     return '<h1 class="page-title">Dashboard</h1><p class="page-sub">Your complete financial picture at a glance.</p>' +
       '<div class="panel"><h3>Starting Balance</h3>' +
         '<p class="mini" style="margin:-8px 0 14px">Enter the cash you have right now. Your balance below = this + income − expenses.</p>' +
@@ -504,11 +510,18 @@
           '<label class="field"><span>Current cash on hand (' + (state.currency || "$") + ')</span><input id="ob_input" type="number" value="' + num(state.openingBalance) + '"/></label>' +
           '<button class="btn" data-act="setOB">Save</button>' +
         '</div></div>' +
+      '<div class="panel"><h3>🎯 Targets</h3>' +
+        '<p class="mini" style="margin:-8px 0 14px">Set a goal for your balance and trading — progress bars appear on the cards below. (Emergency fund target is set in its own tab.)</p>' +
+        '<div class="form-row" style="max-width:560px">' +
+          '<label class="field"><span>Balance target (' + (state.currency || "$") + ')</span><input id="tg_balance" type="number" value="' + num(tgt.balance) + '"/></label>' +
+          '<label class="field"><span>Trading target (' + (state.currency || "$") + ')</span><input id="tg_trading" type="number" value="' + num(tgt.trading) + '"/></label>' +
+          '<button class="btn" data-act="setTargets">Save</button>' +
+        '</div></div>' +
       '<div class="cards">' +
-        card("Current Balance", fmt(t.balance), "Income " + fmt(t.income) + " · Expenses " + fmt(t.expense), t.balance >= 0 ? "pos" : "neg", "💰", "rgba(52,211,153,.16)") +
+        card("Current Balance", fmt(t.balance), "Income " + fmt(t.income) + " · Expenses " + fmt(t.expense), t.balance >= 0 ? "pos" : "neg", "💰", "rgba(52,211,153,.16)", balBar) +
         card("Total Debt", fmt(t.totalDebt), state.debts.length + " debt" + (state.debts.length !== 1 ? "s" : "") + " tracked", "neg", "💳", "rgba(248,113,113,.16)") +
-        card("Emergency Fund", fmt(t.emFund), "Target " + fmt(num(state.emergency.monthlyExpenses) * num(state.emergency.months)), "", "🛡", "rgba(45,212,191,.16)") +
-        card("Trading Balance", fmt(t.tradingBalance), state.trading.trades.length + " trade" + (state.trading.trades.length !== 1 ? "s" : ""), t.tradingBalance >= 0 ? "pos" : "neg", "💹", "rgba(167,139,250,.16)") +
+        card("Emergency Fund", fmt(t.emFund), "Target " + fmt(num(state.emergency.monthlyExpenses) * num(state.emergency.months)), "", "🛡", "rgba(45,212,191,.16)", emBar) +
+        card("Trading Balance", fmt(t.tradingBalance), state.trading.trades.length + " trade" + (state.trading.trades.length !== 1 ? "s" : ""), t.tradingBalance >= 0 ? "pos" : "neg", "💹", "rgba(167,139,250,.16)", trdBar) +
         card("Gift Saved", fmt(t.goalGift), "Not counted in net worth", "", "🎁", "rgba(244,114,182,.16)") +
         card("Net Worth", fmt(t.netWorth), "Assets minus debts (gifts excluded)", t.netWorth >= 0 ? "pos" : "neg", "📈", "rgba(56,189,248,.16)") +
         card("Safe to Spend", fmt(safe), "Balance − subscriptions − planned debt", safe >= 0 ? "pos" : "neg", "💸", "rgba(251,191,36,.16)") +
@@ -521,9 +534,10 @@
       '<div class="panel"><h3>Net Worth Composition</h3>' + compHtml + '</div>';
   }
 
-  function card(label, value, sub, cls, icon, iconBg) {
+  function card(label, value, sub, cls, icon, iconBg, barPct) {
     var ic = icon ? '<span class="cicon" style="background:' + (iconBg || "rgba(45,212,191,.16)") + '">' + icon + '</span>' : '';
-    return '<div class="card"><div class="label"><span>' + label + '</span>' + ic + '</div><div class="value ' + (cls || "") + '">' + value + '</div>' + (sub ? '<div class="sub">' + sub + '</div>' : '') + '</div>';
+    var bar = (barPct != null) ? '<div class="progress" style="margin-top:12px;height:7px"><div style="width:' + Math.max(0, Math.min(100, barPct)) + '%"></div></div><div class="mini" style="margin-top:5px">' + Math.max(0, barPct).toFixed(0) + '% of target</div>' : '';
+    return '<div class="card"><div class="label"><span>' + label + '</span>' + ic + '</div><div class="value ' + (cls || "") + '">' + value + '</div>' + (sub ? '<div class="sub">' + sub + '</div>' : '') + bar + '</div>';
   }
 
   function ensureGoalBuckets(g) {
@@ -937,7 +951,7 @@
           '<button class="btn" data-act="setTradeStart">Save</button>' +
         '</div></div>' +
       '<div class="cards">' +
-        card("Trading Balance", fmt(balance), "Capital " + fmt(tr.startBalance) + " + P/L", balance >= num(tr.startBalance) ? "pos" : "neg") +
+        card("Trading Balance", fmt(balance), "Capital " + fmt(tr.startBalance) + " + P/L", balance >= num(tr.startBalance) ? "pos" : "neg", null, null, (num((state.targets || {}).trading) > 0 ? balance / num(state.targets.trading) * 100 : null)) +
         card("Net P/L", (net >= 0 ? "+" : "−") + fmt(Math.abs(net)), tr.trades.length + " trade" + (tr.trades.length !== 1 ? "s" : ""), net >= 0 ? "pos" : "neg") +
         card("Total Profit", fmt(profit), wins + " win" + (wins !== 1 ? "s" : ""), "pos") +
         card("Total Loss", fmt(loss), losses + " loss" + (losses !== 1 ? "es" : ""), "neg") +
@@ -1161,6 +1175,7 @@
 
   var actions = {
     setOB: function () { state.openingBalance = num(val("ob_input")); save(); render(); },
+    setTargets: function () { state.targets = { balance: num(val("tg_balance")), trading: num(val("tg_trading")) }; save(); render(); },
     setTradeStart: function () { state.trading.startBalance = num(val("tr_start")); save(); render(); },
     setPayday: function () { state.payday = { label: val("pd_label") || "Payday", date: val("pd_date") || "", amount: num(val("pd_amount")) }; save(); render(); },
     calcCompound: function () { pageCompound.p = num(val("ci_p")); pageCompound.m = num(val("ci_m")); pageCompound.r = num(val("ci_r")); pageCompound.y = num(val("ci_y")); render(); },
