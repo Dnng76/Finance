@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 71</title>
+<title>Finance Tracker · build 72</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -245,9 +245,9 @@
   .sheet [hidden] { display: none !important; }
   body.menu-open { overflow: hidden; }
   .debt-page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
-  .debt-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; padding: 0 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+  .debt-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 20px; padding: 20px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
   .debt-summary .value { font-size: 30px; font-weight: 700; margin: 8px 0 6px; overflow-wrap: anywhere; }
-  .debt-row { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,.7fr) minmax(0,.7fr) minmax(220px,1fr); align-items: start; gap: 16px; padding: 24px 0 16px; border-bottom: 1px solid var(--border); }
+  .debt-row { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,.8fr) minmax(0,.8fr) minmax(240px,1.2fr); align-items: start; gap: 18px; padding: 24px 0 16px; border-bottom: 1px solid var(--border); }
   .debt-name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .debt-name h2 { font-size: 16px; margin: 0; overflow-wrap: anywhere; }
   .debt-row .debt-value { font-size: 22px; font-weight: 700; margin-top: 8px; overflow-wrap: anywhere; }
@@ -262,9 +262,24 @@
   .debt-extra { margin-top: 18px; padding-top: 8px; }
   .debt-extra > summary { color: var(--text); font-size: 15px; font-weight: 600; }
   .debt-add-form { margin-bottom: 12px; }
+  .debt-month-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .debt-month-bar h2 { font-size: 17px; margin: 0; }
+  .debt-month-bar .month-picker input { width: 170px; }
+  .debt-pay-controls { flex-wrap: wrap; }
+  .debt-pay-controls input { flex-basis: 100%; }
+  .debt-pay-controls button { flex: 1; }
+  .debt-status { font-size: 12px; font-weight: 600; margin-top: 10px; }
+  .debt-status[data-status="paid"] { color: var(--green); }
+  .debt-status[data-status="partial"] { color: var(--yellow); }
+  .debt-plan-edit { grid-column: 1 / -1; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .debt-plan-heading { display: flex; align-items: center; gap: 8px; }
+  .debt-plan-heading .tool-btn { width: 28px; height: 28px; }
+  .debt-pay-controls button:disabled { opacity: .4; cursor: default; box-shadow: none; }
   @media (min-width: 761px) and (max-width: 1120px) {
+    .debt-summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
     .debt-row { grid-template-columns: repeat(2,minmax(0,1fr)); }
     .debt-name, .debt-pay { grid-column: 1 / -1; }
+    .debt-row > div:first-child { grid-column: 1 / -1; }
   }
   @media (min-width: 761px) and (max-width: 1120px) { .dashboard-cards { grid-template-columns: repeat(2,minmax(0,1fr)); } }
   @media (max-width: 760px) {
@@ -278,11 +293,23 @@
     .holdings .value { font-size: 18px; }
     .holdings .mini { font-size: 11px; }
     .debt-page-head { gap: 10px; }
+    .debt-page-head { margin-bottom: 16px; }
     .debt-page-head .btn { padding: 10px 12px; }
     .debt-summary { gap: 16px; }
+    .debt-summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
     .debt-summary .value { font-size: 25px; }
-    .debt-row { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px 12px; padding-top: 20px; }
+    .debt-month-bar h2 { display: none; }
+    .debt-summary { padding: 12px 0 16px; gap: 12px; }
+    .debt-summary { margin-bottom: 0; }
+    .debt-summary .mini { font-size: 11px; }
+    .debt-summary .value { font-size: 23px; margin: 5px 0; }
+    .debt-row { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding-top: 16px; }
     .debt-name, .debt-pay { grid-column: 1 / -1; }
+    .debt-row > div:first-child { grid-column: 1 / -1; }
+    .debt-row > div:first-child { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 4px 12px; }
+    .debt-row > div:first-child .debt-name { grid-column: 1; grid-row: 1 / 3; align-content: start; }
+    .debt-row > div:first-child > .mini { grid-column: 2; text-align: right; margin-top: 0 !important; }
+    .debt-row > div:first-child > .debt-value { grid-column: 2; text-align: right; margin-top: 0; }
     .app-tools { padding-bottom: 12px; margin-bottom: 18px; gap: 6px; }
     .app-tools .btn { padding: 10px 12px; }
     .app-tools .btn .action-label { display: none; }
@@ -309,7 +336,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 71 · clear debt payments";
+  var VERSION = "build 72 · monthly debt payments";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Savings","Other"];
   var CATMETA = {
@@ -479,8 +506,8 @@
     state.recurring.forEach(function (r) { evs.push({ day: Math.min(28, Math.max(1, num(r.day) || 1)), label: (r.note || r.category) + " " + fmt(r.amount), ico: "🔁", color: r.type === "income" ? "#34d399" : "#a78bfa" }); });
     // Planned debt payments for this month
     (state.debts || []).forEach(function (d) {
-      var pl = d.plans && d.plans[ym];
-      if (pl && num(pl.amount) > 0) evs.push({ day: 1, label: "Pay " + d.creditor + " " + fmt(pl.amount), ico: "💳", color: "#f87171" });
+      var info = debtMonthInfo(d, ym);
+      if (num(d.remaining) > 0 && planHas(d, ym) && info.left > 0) evs.push({ day: 1, label: "Pay " + d.creditor + " " + fmt(info.left), ico: "💳", color: "#f87171" });
     });
     // Planned goal savings for this month
     (state.goals || []).forEach(function (g) {
@@ -580,7 +607,7 @@
     });
     events.sort(function (a, b) { return a.days - b.days; });
     var curYm = ymOfDate(now);
-    var plannedDebt = (state.debts || []).reduce(function (s, d) { return s + ((d.plans && d.plans[curYm]) ? num(d.plans[curYm].amount) : 0); }, 0);
+    var plannedDebt = (state.debts || []).reduce(function (s, d) { return s + (num(d.remaining) > 0 && planHas(d, curYm) ? debtMonthInfo(d, curYm).left : 0); }, 0);
     if (!events.length && plannedDebt <= 0) return "";
     var rows = events.map(function (e) {
       var whenTxt = e.days === 0 ? "today" : "in " + e.days + " day" + (e.days === 1 ? "" : "s");
@@ -865,7 +892,7 @@
     while (monthCursor <= lastMonth) {
       var ym = ymOfDate(monthCursor);
       (state.debts || []).forEach(function (d) {
-        if (d.plans && d.plans[ym]) debt += num(d.plans[ym].amount);
+        if (num(d.remaining) > 0 && planHas(d, ym)) debt += debtMonthInfo(d, ym).left;
       });
       monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 1);
     }
@@ -1419,8 +1446,51 @@
 
   // A month plan "has an amount" when one was explicitly set — including 0 ("nothing due this month").
   function planHasAmt(pl) { return !!pl && pl.amount != null && pl.amount !== ""; }
-  function planHas(d, ym) { return planHasAmt(d.plans && d.plans[ym]); }
+  function planHas(d, ym) { return planHasAmt(d.monthlyPlans && d.monthlyPlans[ym]) || planHasAmt(d.plans && d.plans[ym]); }
   function planShown(pl) { return planHasAmt(pl) ? String(num(pl.amount)) : ""; }
+  function validDebtMonth(ym) { return /^\d{4}-(0[1-9]|1[0-2])$/.test(ym || ""); }
+  function selectedDebtMonth() { return validDebtMonth(pageDebt.month) ? pageDebt.month : ymOfDate(new Date()); }
+  function debtPaymentMonth(p) { return validDebtMonth(p.month) ? p.month : (p.date || "").slice(0, 7); }
+  function debtMonthInfo(d, ym) {
+    var records = (Array.isArray(d.payments) ? d.payments : []).filter(function (p) { return debtPaymentMonth(p) === ym && (!p.kind || p.kind === "payment" || p.kind === "reversal"); });
+    var paid = money(Math.max(0, records.reduce(function (s, p) { return s + (p.kind === "reversal" ? -1 : 1) * num(p.amount); }, 0)));
+    var stored = d.monthlyPlans && d.monthlyPlans[ym], legacy = d.plans && d.plans[ym], planned, note = (stored && stored.note) || (legacy && legacy.note) || "";
+    if (planHasAmt(stored)) { planned = num(stored.amount); note = stored.note || ""; }
+    else if (planHasAmt(legacy)) {
+      // Older plans held unpaid amounts; only known older payments can be added back.
+      var legacyPaid = records.reduce(function (s, p) { return s + (!p.kind && !p.month ? num(p.amount) : 0); }, 0);
+      planned = num(legacy.amount) + legacyPaid; note = legacy.note || "";
+    } else planned = d.startYm && ym < d.startYm ? 0 : Math.min(Math.max(0, num(d.payment)), Math.max(0, num(d.remaining)) + paid);
+    planned = money(Math.max(0, planned));
+    var left = money(Math.max(0, planned - paid));
+    return { planned: planned, paid: paid, left: left, extra: money(Math.max(0, paid - planned)), note: note, records: records,
+      status: paid > 0 && left === 0 ? "paid" : paid > 0 ? "partial" : "unpaid",
+      label: paid > 0 && left === 0 ? "Paid" : paid > 0 ? "Partly paid" : planned > 0 ? "No payment recorded" : "No payment due" };
+  }
+  function setDebtMonthPlan(d, ym, amount, note) {
+    if (!d.monthlyPlans) d.monthlyPlans = {};
+    d.monthlyPlans[ym] = { amount: money(amount), note: note || "" };
+  }
+  function adjustDebtPayment(id, inputId, ym, reverse) {
+    if (!validDebtMonth(ym)) { toast("Choose a valid payment month", "!"); return; }
+    var amount = positiveAmount(inputId); if (amount === null) return;
+    var d = state.debts.filter(function (x) { return x.id === id; })[0]; if (!d) return;
+    var info = debtMonthInfo(d, ym);
+    if (reverse && amount > info.paid) { toast("Only " + fmt(info.paid) + " is recorded as paid for " + ymLabel(ym), "!"); return; }
+    if (!reverse && amount > money(d.remaining)) { toast("Payment cannot exceed the remaining balance of " + fmt(d.remaining), "!"); return; }
+    var before = clone(d);
+    if (!planHasAmt(d.monthlyPlans && d.monthlyPlans[ym])) setDebtMonthPlan(d, ym, info.planned, info.note);
+    d.remaining = money(num(d.remaining) + (reverse ? amount : -amount));
+    if (!Array.isArray(d.payments)) d.payments = [];
+    d.payments.push({ id: uid(), date: today(), month: ym, kind: reverse ? "reversal" : "payment", amount: amount, remaining: d.remaining });
+    var after = JSON.stringify(d);
+    save(); render();
+    toast((reverse ? "Added back " : "Paid ") + fmt(amount) + " · " + ymLabel(ym) + " · " + fmt(d.remaining) + " debt left", "✓", "Undo", function () {
+      var index = -1; state.debts.forEach(function (x, i) { if (x.id === id) index = i; });
+      if (index < 0 || JSON.stringify(state.debts[index]) !== after) { toast("Debt has changed since that entry. Use Add back to make a correction.", "!"); return; }
+      state.debts[index] = clone(before); save(); render(); toast("Entry undone", "↶");
+    });
+  }
   // Save the Plan to Pay boxes — but ONLY the ones the user actually changed, so this can never
   // silently overwrite an amount that was edited elsewhere (e.g. in the Payment Plan table).
   function commitPlan() {
@@ -1437,24 +1507,6 @@
       changed = true;
     });
     if (changed) save();
-  }
-  function recordPaidToPlan(d, a) {
-    if (!d.plans) return;
-    var cur = ymOfDate(new Date(today() + "T00:00:00"));
-    // Apply the payment to this month's plan first, then spill any excess into
-    // the next planned month(s) in chronological order until it's used up.
-    var months = Object.keys(d.plans).filter(function (m) { return m >= cur && num(d.plans[m].amount) > 0; }).sort();
-    var left = num(a);
-    for (var i = 0; i < months.length && left > 0; i++) {
-      var m = months[i], amt = num(d.plans[m].amount);
-      var take = Math.min(amt, left);
-      d.plans[m].amount = money(amt - take);
-      left = money(left - take);
-    }
-  }
-  function recordChargeToPlan(d, a) {
-    var cur = ymOfDate(new Date(today() + "T00:00:00"));
-    if (d.plans && d.plans[cur] && num(d.plans[cur].amount) > 0) d.plans[cur].amount = money(num(d.plans[cur].amount) + a);
   }
   function monthsBetweenYm(a, b) { var p = a.split("-"), q = b.split("-"); return (+q[0] - +p[0]) * 12 + (+q[1] - +p[1]); }
   function debtStartDelay(d) {
@@ -1480,10 +1532,10 @@
       debts.forEach(function (d) {
         var b = bal[d.id];
         if (b <= 0.005) return;
-        var hasPlan = planHas(d, ym), plNote = (d.plans && d.plans[ym] && d.plans[ym].note) || "";
-        if (d.startYm && ym < d.startYm && !(hasPlan && num(d.plans[ym].amount) > 0)) return;
+        var hasPlan = planHas(d, ym), info = debtMonthInfo(d, ym), plNote = info.note;
+        if (d.startYm && ym < d.startYm && !(hasPlan && info.planned > 0)) return;
         var interest = b * (num(d.rate) / 100 / 12);
-        var want = hasPlan ? num(d.plans[ym].amount) : num(d.payment);
+        var want = hasPlan ? info.left : Math.max(0, num(d.payment) - info.paid);
         var pay = Math.min(want, b + interest);
         var after = Math.max(0, b + interest - pay);
         bal[d.id] = after;
@@ -1708,13 +1760,20 @@
     return ymAdd(d.startYm && d.startYm > cur ? d.startYm : cur, Math.max(0, n - 1));
   }
   function pageDebt() {
-    var cur = esc(state.currency || "$");
+    var cur = esc(state.currency || "$"), ym = selectedDebtMonth();
     var active = state.debts.filter(function (d) { return num(d.remaining) > 0; });
-    var cleared = state.debts.filter(function (d) { return !(num(d.remaining) > 0); });
+    var shown = state.debts.filter(function (d) { return num(d.remaining) > 0 || debtMonthInfo(d, ym).records.length > 0; });
+    var cleared = state.debts.filter(function (d) { return !(num(d.remaining) > 0) && debtMonthInfo(d, ym).records.length === 0; });
     var totalLeft = money(active.reduce(function (s, d) { return s + num(d.remaining); }, 0));
-    var monthly = money(active.reduce(function (s, d) { return s + Math.max(0, num(d.payment)); }, 0));
-    var summary = '<section class="debt-summary" aria-label="Debt summary"><div><div class="mini">Total debt</div><div class="value ' + (totalLeft > 0 ? 'neg' : 'pos') + '" data-debt-total>' + fmt(totalLeft) + '</div><div class="mini">' + active.length + ' active debt' + (active.length === 1 ? '' : 's') + '</div></div>' +
-      '<div><div class="mini">Monthly payment</div><div class="value" data-debt-monthly>' + fmt(monthly) + '</div><div class="mini">Regular payments across active debts</div></div></section>';
+    var monthly = 0, paid = 0, left = 0, extra = 0;
+    shown.forEach(function (d) { var info = debtMonthInfo(d, ym); monthly += info.planned; paid += info.paid; left += info.left; extra += info.extra; });
+    var monthBar = '<section class="debt-month-bar" aria-label="Payment month"><h2>' + esc(ymLabel(ym, true)) + '</h2><div class="month-picker">' +
+      '<button class="tool-btn" data-act="debtMonthPrev" title="Previous month" aria-label="Previous debt month">&#8249;</button><input id="debt_month" type="month" aria-label="Debt payment month" value="' + ym + '"/>' +
+      '<button class="tool-btn" data-act="debtMonthNext" title="Next month" aria-label="Next debt month">&#8250;</button></div></section>';
+    var summary = '<section class="debt-summary" aria-label="Debt summary"><div><div class="mini">Current total debt</div><div class="value ' + (totalLeft > 0 ? 'neg' : 'pos') + '" data-debt-total>' + fmt(totalLeft) + '</div><div class="mini">Across all debts</div></div>' +
+      '<div><div class="mini">Monthly payment</div><div class="value" data-debt-monthly>' + fmt(monthly) + '</div><div class="mini">Planned for ' + esc(ymMonthName(ym)) + '</div></div>' +
+      '<div><div class="mini">Paid this month</div><div class="value pos" data-debt-paid>' + fmt(paid) + '</div><div class="mini">' + (extra > 0 ? 'Includes ' + fmt(extra) + ' extra' : 'Recorded for ' + esc(ymMonthName(ym))) + '</div></div>' +
+      '<div><div class="mini">Still to pay</div><div class="value ' + (left > 0 ? 'neg' : 'pos') + '" data-debt-unpaid>' + fmt(left) + '</div><div class="mini">For ' + esc(ymMonthName(ym)) + '</div></div></section>';
     var addForm = pageDebt.adding ? '<section class="panel debt-add-form"><div class="row-between"><h3 style="margin:0">Add a debt</h3><button class="tool-btn" data-act="debtAddToggle" aria-label="Cancel adding debt" title="Cancel">&#215;</button></div>' +
         '<div class="form-row" style="margin-top:14px">' +
           '<label class="field"><span>Name</span><input id="d_creditor" placeholder="e.g. UOB credit card"/></label>' +
@@ -1725,18 +1784,23 @@
           '<label class="field"><span>Annual interest (%)</span><input id="d_rate" type="number" min="0" step="0.01" placeholder="0"/></label>' +
           '<label class="field"><span>Original total (' + cur + ')</span><input id="d_total" type="number" min="0" step="0.01" placeholder="Same as remaining"/></label>' +
         '</div></details><div class="toolbar" style="margin-top:16px"><button class="btn" data-act="addDebt">Save debt</button><button class="btn ghost" data-act="debtAddToggle">Cancel</button></div></section>' : '';
-    var rows = active.map(function (d) {
+    var rows = shown.map(function (d) {
+        var info = debtMonthInfo(d, ym);
         var orig = Math.max(num(d.total), num(d.remaining)), pct = orig > 0 ? (orig - num(d.remaining)) / orig * 100 : 0;
         var history = Array.isArray(d.payments) ? d.payments : [];
         var details = '<div class="debt-more-content"><div style="display:flex;align-items:center;gap:16px">' + ring(pct, 'var(--green)', 70) + '<div class="mini">Paid off<br><strong>' + fmt(orig - num(d.remaining)) + '</strong> of ' + fmt(orig) + '</div></div>' +
           '<p class="mini">Annual interest: ' + num(d.rate) + '%' + (d.startYm ? ' · First payment: ' + esc(ymLabel(d.startYm)) : '') + '</p>' +
-          (history.length ? '<h3 style="font-size:14px;margin:16px 0 4px">Recorded payments</h3><ul class="debt-history">' + history.slice().reverse().map(function (p) { return '<li><span>' + esc(fmtDay(p.date)) + '</span><strong>' + fmt(p.amount) + '</strong></li>'; }).join('') + '</ul>' : '') +
+          (history.length ? '<h3 style="font-size:14px;margin:16px 0 4px">Recorded payments</h3><ul class="debt-history">' + history.slice().reverse().map(function (p) { return '<li><span>' + esc(ymLabel(debtPaymentMonth(p))) + ' · ' + (p.kind === 'reversal' ? 'Added back' : 'Paid') + '<br><span class="mini">Recorded ' + esc(fmtDay(p.date)) + '</span></span><strong>' + fmt(p.amount) + '</strong></li>'; }).join('') + '</ul>' : '') +
           '<label class="field"><span>New charge (' + cur + ')</span><div class="debt-pay-controls"><input id="dc_' + esc(d.id) + '" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00"/><button class="btn ghost" data-act="addDebtAmt" data-id="' + esc(d.id) + '">Add charge</button></div></label></div>';
-        return '<article class="debt-row" aria-label="' + esc(d.creditor) + '"><div class="debt-name"><h2>' + esc(d.creditor) + '</h2><button class="btn ghost sm" data-act="editDebt" data-id="' + esc(d.id) + '" aria-label="Edit ' + esc(d.creditor) + '">Edit</button></div>' +
-          '<div><div class="mini">Remaining balance</div><div class="debt-value neg" data-debt-balance="' + esc(d.id) + '">' + fmt(d.remaining) + '</div></div>' +
-          '<div><div class="mini">Monthly payment</div><div class="debt-value">' + fmt(d.payment) + '</div></div>' +
-          '<div class="debt-pay"><label class="field" for="dp_' + esc(d.id) + '"><span>Amount paid (' + cur + ')</span></label><div class="debt-pay-controls"><input id="dp_' + esc(d.id) + '" type="number" inputmode="decimal" min="0.01" max="' + money(d.remaining) + '" step="0.01" placeholder="0.00" aria-label="Amount paid for ' + esc(d.creditor) + '"/>' +
-          '<button class="btn" data-act="payDebt" data-id="' + esc(d.id) + '" aria-label="Record payment for ' + esc(d.creditor) + '">Record payment</button></div></div>' +
+        var editing = pageDebt.editMonthId === d.id ? '<div class="debt-plan-edit"><h3 style="font-size:15px;margin:0 0 12px">' + esc(d.creditor) + ' · ' + esc(ymLabel(ym, true)) + '</h3><div class="form-row"><label class="field"><span>Planned payment (' + cur + ')</span><input id="dmp_amount" type="number" min="0" step="0.01" inputmode="decimal" value="' + info.planned + '"/></label>' +
+          '<label class="field"><span>Month note (optional)</span><input id="dmp_note" value="' + esc(info.note) + '"/></label></div><div class="toolbar" style="margin-top:12px"><button class="btn sm" data-act="debtMonthSave" data-id="' + esc(d.id) + '">Save month</button><button class="btn ghost sm" data-act="debtMonthCancel">Cancel</button></div></div>' : '';
+        return '<article class="debt-row" aria-label="' + esc(d.creditor) + '"><div><div class="debt-name"><h2>' + esc(d.creditor) + '</h2><button class="btn ghost sm" data-act="editDebt" data-id="' + esc(d.id) + '" aria-label="Edit ' + esc(d.creditor) + '">Edit</button></div>' +
+          '<div class="mini" style="margin-top:10px">Current balance</div><div class="debt-value neg" data-debt-balance="' + esc(d.id) + '">' + fmt(d.remaining) + '</div></div>' +
+          '<div><div class="debt-plan-heading"><span class="mini">Monthly payment</span><button class="tool-btn" data-act="debtMonthEdit" data-id="' + esc(d.id) + '" title="Edit payment for ' + esc(ymLabel(ym)) + '" aria-label="Edit monthly payment for ' + esc(d.creditor) + '">&#9998;</button></div><div class="debt-value">' + fmt(info.planned) + '</div><div class="mini" style="margin-top:8px">' + esc(ymLabel(ym)) + '</div></div>' +
+          '<div><div class="mini">Paid this month</div><div class="debt-value pos" data-month-paid="' + esc(d.id) + '">' + fmt(info.paid) + '</div><div class="mini" style="margin-top:8px">Still to pay <strong>' + fmt(info.left) + '</strong></div><div class="debt-status" data-status="' + info.status + '">' + info.label + '</div>' + (info.extra > 0 ? '<div class="mini">Extra paid ' + fmt(info.extra) + '</div>' : '') + (info.note ? '<p class="mini">' + esc(info.note) + '</p>' : '') + '</div>' +
+          '<div class="debt-pay"><label class="field" for="dp_' + esc(d.id) + '"><span>Amount (' + cur + ')</span></label><div class="debt-pay-controls"><input id="dp_' + esc(d.id) + '" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0.00" aria-label="Amount paid for ' + esc(d.creditor) + '"/>' +
+          '<button class="btn" data-act="payDebt" data-id="' + esc(d.id) + '" aria-label="Record payment for ' + esc(d.creditor) + '" title="Deduct from debt and record for ' + esc(ymLabel(ym)) + '"' + (num(d.remaining) <= 0 ? ' disabled' : '') + '>&#8722; Paid</button>' +
+          '<button class="btn ghost" data-act="reverseDebtPayment" data-id="' + esc(d.id) + '" aria-label="Add payment back for ' + esc(d.creditor) + '" title="Reverse a payment recorded for ' + esc(ymLabel(ym)) + '"' + (info.paid <= 0 ? ' disabled' : '') + '>+ Add back</button></div></div>' + editing +
           '<details class="debt-more"><summary>Details & payment history</summary>' + details + '</details></article>';
       }).join("");
     var done = cleared.length ? '<details class="debt-extra"><summary>Paid off (' + cleared.length + ')</summary>' + cleared.map(function (d) {
@@ -1748,7 +1812,7 @@
       '<details class="debt-extra" id="debt_tools"' + (pageDebt.toolsOpen ? ' open' : '') + '><summary>Payoff tools & photos</summary>' + debtCountdownPanel() +
       '<div class="panel"><h3>Payoff strategy calculator</h3><div class="form-row" style="max-width:420px"><label class="field"><span>Extra per month (' + cur + ')</span><input id="sn_extra" type="number" min="0" value="' + num(pageDebt.extra) + '"/></label><button class="btn" data-act="calcDebt">Calculate</button></div>' + debtCalcResults() + '</div>' + debtPhotosPanel() + '</details>';
     return '<div class="debt-page-head"><h1 class="page-title">Debt</h1><button class="btn ghost" data-act="debtAddToggle">' + (pageDebt.adding ? 'Cancel' : '+ Add debt') + '</button></div>' +
-      summary + addForm + (rows || '<div class="empty">' + (cleared.length ? 'All debts paid off.' : 'No debts added yet.') + '</div>') + done + tools;
+      monthBar + summary + addForm + (rows || '<div class="empty">' + (state.debts.length ? 'No active debts or recorded payments for this month.' : 'No debts added yet.') + '</div>') + done + tools;
   }
 
   function pageEmergency() {
@@ -3242,8 +3306,8 @@
         var shown = num(inp.getAttribute("data-shown")), v = inp.value === "" ? 0 : num(inp.value);
         if (v < 0) v = 0;
         if (Math.abs(v - shown) < 0.005) return;   // untouched — leave it exactly as it was
-        if (!d.plans) d.plans = {};
-        d.plans[ym] = { amount: v, note: (d.plans[ym] && d.plans[ym].note) || "" };
+        var info = debtMonthInfo(d, ym);
+        setDebtMonthPlan(d, ym, v + info.paid, info.note);
         changed++;
       });
       schedEditYm = null; save(); render();
@@ -3251,7 +3315,7 @@
     },
     schedEditReset: function (e) {
       var ym = e.k;
-      (state.debts || []).forEach(function (d) { if (d.plans && d.plans[ym] != null) delete d.plans[ym]; });
+      (state.debts || []).forEach(function (d) { if (d.plans && d.plans[ym] != null) delete d.plans[ym]; if (d.monthlyPlans && d.monthlyPlans[ym] != null) delete d.monthlyPlans[ym]; });
       schedEditYm = null; save(); render(); toast(ymLabel(ym, true) + " back to regular payments", "↺");
     },
     planPrev: function () { commitPlan(); planMonth = prevMonth(planMonth); render(); },
@@ -3319,29 +3383,24 @@
       state.fire = { expense: num(val("fr_exp")), assets: num(val("fr_assets")), growth: num(val("fr_growth")), swr: num(val("fr_swr")) || 4, invest: num(val("fr_invest")) };
       save(); render(); toast("Freedom plan updated", "🔥");
     },
-    payDebt: function (e) {
-      var a = positiveAmount("dp_" + e.id); if (a === null) return;
-      var d = state.debts.filter(function (x) { return x.id === e.id; })[0];
-      if (!d || !(num(d.remaining) > 0)) return;
-      if (a > money(d.remaining)) { toast("Payment cannot exceed the remaining balance of " + fmt(d.remaining), "!"); return; }
-      var before = clone(d);
-      d.remaining = money(num(d.remaining) - a);
-      recordPaidToPlan(d, a);
-      if (!Array.isArray(d.payments)) d.payments = [];
-      d.payments.push({ id: uid(), date: today(), amount: a, remaining: d.remaining });
-      var after = JSON.stringify(d);
-      save(); render();
-      toast("Recorded " + fmt(a) + " · " + fmt(d.remaining) + " remaining", "✓", "Undo", function () {
-        var index = -1; state.debts.forEach(function (x, i) { if (x.id === e.id) index = i; });
-        if (index < 0 || JSON.stringify(state.debts[index]) !== after) { toast("Debt has changed since that payment. Edit it to make a correction.", "!"); return; }
-        state.debts[index] = clone(before); save(); render(); toast("Payment undone", "↶");
-      });
+    payDebt: function (e) { adjustDebtPayment(e.id, "dp_" + e.id, selectedDebtMonth(), false); },
+    reverseDebtPayment: function (e) { adjustDebtPayment(e.id, "dp_" + e.id, selectedDebtMonth(), true); },
+    debtMonthPrev: function () { pageDebt.month = prevMonth(selectedDebtMonth()); pageDebt.editMonthId = null; render(); },
+    debtMonthNext: function () { pageDebt.month = nextMonth(selectedDebtMonth()); pageDebt.editMonthId = null; render(); },
+    debtMonthEdit: function (e) { pageDebt.editMonthId = e.id; render(); },
+    debtMonthCancel: function () { pageDebt.editMonthId = null; render(); },
+    debtMonthSave: function (e) {
+      var amount = Number(val("dmp_amount"));
+      if (val("dmp_amount") === "" || !isFinite(amount) || amount < 0) { toast("Enter a planned payment of zero or greater", "!"); return; }
+      var d = state.debts.filter(function (x) { return x.id === e.id; })[0]; if (!d) return;
+      setDebtMonthPlan(d, selectedDebtMonth(), amount, val("dmp_note"));
+      pageDebt.editMonthId = null; save(); render(); toast("Month payment saved", "✓");
     },
     debtView: function (e) { pageDebt.view = e.k || "debts"; editDebtId = null; schedEditYm = null; render(); },
     debtAddToggle: function () { pageDebt.adding = !pageDebt.adding; render(); if (pageDebt.adding) setTimeout(function () { if (el("d_creditor")) el("d_creditor").focus(); }, 30); },
-    planPay: function (e) { var a = num(val("pn_" + e.id)); if (!a) return; state.debts.forEach(function (d) { if (d.id === e.id) { var b = num(d.remaining); d.remaining = Math.max(0, b - a); recordPaidToPlan(d, a); maybeCelebrateDebt(d, b); } }); save(); render(); },
+    planPay: function (e) { adjustDebtPayment(e.id, "pn_" + e.id, planMonth || selectedDebtMonth(), false); },
     planAdd: function (e) { var a = num(val("pn_" + e.id)); if (!a) return; state.debts.forEach(function (d) { if (d.id === e.id) d.remaining = num(d.remaining) + a; }); save(); render(); },
-    addDebtAmt: function (e) { var a = positiveAmount("dc_" + e.id); if (a === null) return; state.debts.forEach(function (d) { if (d.id === e.id) { d.remaining = money(num(d.remaining) + a); recordChargeToPlan(d, a); } }); save(); render(); toast("Charge added", "✓"); },
+    addDebtAmt: function (e) { var a = positiveAmount("dc_" + e.id); if (a === null) return; state.debts.forEach(function (d) { if (d.id === e.id) d.remaining = money(num(d.remaining) + a); }); save(); render(); toast("Charge added", "✓"); },
     editDebt: function (e) { editDebtId = e.id; render(); },
     editDebtCancel: function () { editDebtId = null; render(); },
     editDebtSave: function (e) {
@@ -3623,6 +3682,7 @@
 
   function wire() {
     var root = el("root");
+    if (el("debt_month")) el("debt_month").onchange = function () { pageDebt.month = validDebtMonth(this.value) ? this.value : ymOfDate(new Date()); pageDebt.editMonthId = null; render(); };
     if (el("tab_customize")) el("tab_customize").ontoggle = function () { tabOrderPanel.open = this.open; };
     if (el("debt_plan")) el("debt_plan").ontoggle = function () { pageDebt.planOpen = this.open; };
     if (el("debt_tools")) el("debt_tools").ontoggle = function () { pageDebt.toolsOpen = this.open; };
@@ -3728,6 +3788,8 @@
   // boot
   try {
     state = load();
+    var linkedTab = new URLSearchParams(location.search).get("tab");
+    if (navBase().some(function (n) { return n.id === linkedTab; })) currentTab = linkedTab;
     loadDebtPhotos();
     loadBudgetPhotos();
     loadGoalPhotos();
