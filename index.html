@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 72</title>
+<title>Finance Tracker · build 73</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -245,8 +245,14 @@
   .sheet [hidden] { display: none !important; }
   body.menu-open { overflow: hidden; }
   .debt-page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
-  .debt-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 20px; padding: 20px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
-  .debt-summary .value { font-size: 30px; font-weight: 700; margin: 8px 0 6px; overflow-wrap: anywhere; }
+  .debt-total { padding: 0 0 28px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .debt-total h2 { font-size: 16px; font-weight: 600; margin: 0; }
+  .debt-total .value { font-size: 56px; line-height: 1.15; font-weight: 750; margin: 10px 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .debt-total .value.long-amount { font-size: 40px; }
+  .debt-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; padding: 20px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+  .debt-summary > div { min-width: 0; }
+  .debt-summary .value { font-size: 28px; font-weight: 700; margin: 8px 0 6px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .debt-summary .debt-still { border-left: 3px solid var(--accent); padding-left: 18px; }
   .debt-row { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,.8fr) minmax(0,.8fr) minmax(240px,1.2fr); align-items: start; gap: 18px; padding: 24px 0 16px; border-bottom: 1px solid var(--border); }
   .debt-name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .debt-name h2 { font-size: 16px; margin: 0; overflow-wrap: anywhere; }
@@ -262,9 +268,11 @@
   .debt-extra { margin-top: 18px; padding-top: 8px; }
   .debt-extra > summary { color: var(--text); font-size: 15px; font-weight: 600; }
   .debt-add-form { margin-bottom: 12px; }
-  .debt-month-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .debt-month-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .debt-month-bar h2 { font-size: 17px; margin: 0; }
-  .debt-month-bar .month-picker input { width: 170px; }
+  .debt-month-bar .month-picker { min-width: 0; }
+  .debt-month-bar .month-picker input { width: 205px; min-width: 0; min-height: 44px; font-size: 18px; font-weight: 600; }
+  .debt-month-bar .tool-btn { width: 44px; height: 44px; flex-shrink: 0; }
   .debt-pay-controls { flex-wrap: wrap; }
   .debt-pay-controls input { flex-basis: 100%; }
   .debt-pay-controls button { flex: 1; }
@@ -275,8 +283,14 @@
   .debt-plan-heading { display: flex; align-items: center; gap: 8px; }
   .debt-plan-heading .tool-btn { width: 28px; height: 28px; }
   .debt-pay-controls button:disabled { opacity: .4; cursor: default; box-shadow: none; }
+  @media (max-width: 380px) {
+    .debt-summary { grid-template-columns: minmax(0,1fr); }
+    .debt-summary > div { display: flex; align-items: baseline; justify-content: space-between; gap: 4px 12px; flex-wrap: wrap; }
+    .debt-summary > div > .mini:first-child { flex: 1; }
+    .debt-summary > div > .mini:not(:first-child) { flex-basis: 100%; text-align: right; }
+    .debt-summary .debt-still { border-left: 0; padding-left: 0 !important; border-top: 1px solid var(--border); padding-top: 8px; }
+  }
   @media (min-width: 761px) and (max-width: 1120px) {
-    .debt-summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
     .debt-row { grid-template-columns: repeat(2,minmax(0,1fr)); }
     .debt-name, .debt-pay { grid-column: 1 / -1; }
     .debt-row > div:first-child { grid-column: 1 / -1; }
@@ -295,14 +309,17 @@
     .debt-page-head { gap: 10px; }
     .debt-page-head { margin-bottom: 16px; }
     .debt-page-head .btn { padding: 10px 12px; }
-    .debt-summary { gap: 16px; }
-    .debt-summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
-    .debt-summary .value { font-size: 25px; }
-    .debt-month-bar h2 { display: none; }
-    .debt-summary { padding: 12px 0 16px; gap: 12px; }
-    .debt-summary { margin-bottom: 0; }
+    .debt-total { padding-bottom: 20px; margin-bottom: 20px; }
+    .debt-total .value { font-size: 44px; }
+    .debt-total .value.long-amount { font-size: 30px; }
+    .debt-month-bar { gap: 10px; }
+    .debt-month-bar h2 { font-size: 15px; }
+    .debt-month-bar .month-picker { width: 100%; }
+    .debt-month-bar .month-picker input { flex: 1; width: 0; }
+    .debt-summary { padding: 14px 0 18px; gap: 12px; margin-bottom: 0; }
     .debt-summary .mini { font-size: 11px; }
-    .debt-summary .value { font-size: 23px; margin: 5px 0; }
+    .debt-summary .value { font-size: 21px; margin: 6px 0; }
+    .debt-summary .debt-still { padding-left: 10px; }
     .debt-row { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding-top: 16px; }
     .debt-name, .debt-pay { grid-column: 1 / -1; }
     .debt-row > div:first-child { grid-column: 1 / -1; }
@@ -336,7 +353,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 72 · monthly debt payments";
+  var VERSION = "build 73 · clear monthly debt overview";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Savings","Other"];
   var CATMETA = {
@@ -1767,13 +1784,14 @@
     var totalLeft = money(active.reduce(function (s, d) { return s + num(d.remaining); }, 0));
     var monthly = 0, paid = 0, left = 0, extra = 0;
     shown.forEach(function (d) { var info = debtMonthInfo(d, ym); monthly += info.planned; paid += info.paid; left += info.left; extra += info.extra; });
-    var monthBar = '<section class="debt-month-bar" aria-label="Payment month"><h2>' + esc(ymLabel(ym, true)) + '</h2><div class="month-picker">' +
+    var debtTotal = '<section class="debt-total" aria-label="Current total debt"><h2>Total debt</h2><div class="value' + (fmt(totalLeft).length > 13 ? ' long-amount' : '') + '" data-debt-total>' + fmt(totalLeft) + '</div><div class="mini">Outstanding today &middot; ' + active.length + ' active ' + (active.length === 1 ? 'debt' : 'debts') + '</div></section>';
+    var monthBar = '<section class="debt-month-bar" aria-label="Payment month"><h2>Monthly payments</h2><div class="month-picker">' +
       '<button class="tool-btn" data-act="debtMonthPrev" title="Previous month" aria-label="Previous debt month">&#8249;</button><input id="debt_month" type="month" aria-label="Debt payment month" value="' + ym + '"/>' +
       '<button class="tool-btn" data-act="debtMonthNext" title="Next month" aria-label="Next debt month">&#8250;</button></div></section>';
-    var summary = '<section class="debt-summary" aria-label="Debt summary"><div><div class="mini">Current total debt</div><div class="value ' + (totalLeft > 0 ? 'neg' : 'pos') + '" data-debt-total>' + fmt(totalLeft) + '</div><div class="mini">Across all debts</div></div>' +
-      '<div><div class="mini">Monthly payment</div><div class="value" data-debt-monthly>' + fmt(monthly) + '</div><div class="mini">Planned for ' + esc(ymMonthName(ym)) + '</div></div>' +
-      '<div><div class="mini">Paid this month</div><div class="value pos" data-debt-paid>' + fmt(paid) + '</div><div class="mini">' + (extra > 0 ? 'Includes ' + fmt(extra) + ' extra' : 'Recorded for ' + esc(ymMonthName(ym))) + '</div></div>' +
-      '<div><div class="mini">Still to pay</div><div class="value ' + (left > 0 ? 'neg' : 'pos') + '" data-debt-unpaid>' + fmt(left) + '</div><div class="mini">For ' + esc(ymMonthName(ym)) + '</div></div></section>';
+    var summary = '<section class="debt-summary" aria-label="Payments for ' + esc(ymLabel(ym, true)) + '">' +
+      '<div><div class="mini">Planned</div><div class="value" data-debt-monthly>' + fmt(monthly) + '</div></div>' +
+      '<div><div class="mini">Paid</div><div class="value pos" data-debt-paid>' + fmt(paid) + '</div>' + (extra > 0 ? '<div class="mini">Includes ' + fmt(extra) + ' extra</div>' : '') + '</div>' +
+      '<div class="debt-still"><div class="mini">Still to pay</div><div class="value ' + (left > 0 ? 'neg' : 'pos') + '" data-debt-unpaid>' + fmt(left) + '</div></div></section>';
     var addForm = pageDebt.adding ? '<section class="panel debt-add-form"><div class="row-between"><h3 style="margin:0">Add a debt</h3><button class="tool-btn" data-act="debtAddToggle" aria-label="Cancel adding debt" title="Cancel">&#215;</button></div>' +
         '<div class="form-row" style="margin-top:14px">' +
           '<label class="field"><span>Name</span><input id="d_creditor" placeholder="e.g. UOB credit card"/></label>' +
@@ -1812,7 +1830,7 @@
       '<details class="debt-extra" id="debt_tools"' + (pageDebt.toolsOpen ? ' open' : '') + '><summary>Payoff tools & photos</summary>' + debtCountdownPanel() +
       '<div class="panel"><h3>Payoff strategy calculator</h3><div class="form-row" style="max-width:420px"><label class="field"><span>Extra per month (' + cur + ')</span><input id="sn_extra" type="number" min="0" value="' + num(pageDebt.extra) + '"/></label><button class="btn" data-act="calcDebt">Calculate</button></div>' + debtCalcResults() + '</div>' + debtPhotosPanel() + '</details>';
     return '<div class="debt-page-head"><h1 class="page-title">Debt</h1><button class="btn ghost" data-act="debtAddToggle">' + (pageDebt.adding ? 'Cancel' : '+ Add debt') + '</button></div>' +
-      monthBar + summary + addForm + (rows || '<div class="empty">' + (state.debts.length ? 'No active debts or recorded payments for this month.' : 'No debts added yet.') + '</div>') + done + tools;
+      debtTotal + monthBar + summary + addForm + (rows || '<div class="empty">' + (state.debts.length ? 'No active debts or recorded payments for this month.' : 'No debts added yet.') + '</div>') + done + tools;
   }
 
   function pageEmergency() {
