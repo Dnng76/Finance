@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 78</title>
+<title>Finance Tracker · build 79</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -376,7 +376,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 78 · version label on dashboard";
+  var VERSION = "build 79 · lock only when you tap 🔒";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Savings","Other"];
   var CATMETA = {
@@ -426,7 +426,7 @@
     currency: "$"
   };
 
-  var state, currentTab = "dashboard", privacy = false, editGoalId = null, editDebtId = null, locked = false, pinBuffer = "", pinError = false, theme = "dark", planMonth = null, editTxId = null, editTradeId = null, moreOpen = false, payoffPrompt = null, goalPlanMonth = null, editAccountId = null, editBudgetId = null, photoTargetGoal = null, editLeaveId = null, schedEditYm = null;
+  var state, currentTab = "dashboard", privacy = false, editGoalId = null, editDebtId = null, locked = false, pinBuffer = "", pinError = false, theme = "dark", planMonth = null, editTxId = null, editTradeId = null, moreOpen = false, payoffPrompt = null, goalPlanMonth = null, editAccountId = null, editBudgetId = null, photoTargetGoal = null, editLeaveId = null, schedEditYm = null, pinSetupOpen = false;
   function applyTheme() {
     document.body.classList.toggle("light", theme === "light");
     var m = document.querySelector('meta[name="theme-color"]');
@@ -442,6 +442,9 @@
     } catch (e) { return clone(defaultData); }
   }
   var localSaveError = "";
+  // Manual lock: the app only locks when you tap 🔒, and stays locked (even after closing) until the PIN is entered.
+  function isManuallyLocked() { try { return localStorage.getItem("ft_locked") === "1"; } catch (e) { return false; } }
+  function setManualLock(on) { try { if (on) localStorage.setItem("ft_locked", "1"); else localStorage.removeItem("ft_locked"); } catch (e) {} }
   function saveLocal() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); localSaveError = ""; }
     catch (e) { localSaveError = "Device storage is full or unavailable. Export a backup before closing."; }
@@ -792,7 +795,7 @@
         if (u) {
           if (localStorage.getItem("ft_resetpin") === "1") {
             try { localStorage.removeItem("ft_resetpin"); } catch (e) {}
-            state.pin = ""; locked = false; pinBuffer = ""; saveLocal(); cloudPush(); render();
+            state.pin = ""; locked = false; pinBuffer = ""; setManualLock(false); saveLocal(); cloudPush(); render();
           }
           subscribe();
         } else {
@@ -823,7 +826,7 @@
             if (!doc.metadata.fromCache) { setSyncTs("ft_pushedTs", Math.max(syncTs("ft_localTs"), num(d.updated))); setSyncTs("ft_lastSync", Date.now()); }
             setSyncPhase(doc.metadata.fromCache ? "cached" : "synced");
             if (firstRemote) { privacy = privacy || !!state.hideOnOpen; try { localStorage.setItem("ft_privacy", privacy ? "1" : "0"); } catch (er) {} }
-            if (firstRemote && state.pin) { locked = true; pinBuffer = ""; pinError = false; render(); }
+            if (firstRemote && state.pin && isManuallyLocked()) { locked = true; pinBuffer = ""; pinError = false; render(); }
             finishSplash();
             return;
           }
@@ -834,7 +837,7 @@
             // saving). Keep it and send it up, instead of letting the older cloud copy overwrite it.
             cloudWrite();
             if (firstRemote) { privacy = privacy || !!state.hideOnOpen; try { localStorage.setItem("ft_privacy", privacy ? "1" : "0"); } catch (er3) {} }
-            if (firstRemote && state.pin) { locked = true; pinBuffer = ""; pinError = false; render(); }
+            if (firstRemote && state.pin && isManuallyLocked()) { locked = true; pinBuffer = ""; pinError = false; render(); }
             finishSplash();
             return;
           }
@@ -844,7 +847,7 @@
           if (!doc.metadata.fromCache) setSyncTs("ft_lastSync", Date.now());
           setSyncPhase(doc.metadata.fromCache ? "cached" : "synced");
           if (firstRemote) { privacy = privacy || !!state.hideOnOpen; try { localStorage.setItem("ft_privacy", privacy ? "1" : "0"); } catch (er2) {} }
-          if (firstRemote && state.pin) { locked = true; pinBuffer = ""; pinError = false; }
+          if (firstRemote && state.pin && isManuallyLocked()) { locked = true; pinBuffer = ""; pinError = false; }
           if ((firstRemote && (state.pin || state.hideOnOpen)) || !typing) render();
           finishSplash();
         } catch (e) { setSyncPhase("error", "Could not load cloud data: " + e.message); finishSplash(); }
@@ -3110,10 +3113,10 @@
   function securitySection() {
     if (!state.pin) {
       return '<div class="panel"><h3>🔒 App Lock (PIN)</h3>' +
-        '<p class="mini" style="margin:-8px 0 12px">Set a numeric PIN to lock the app on open. Casual privacy lock — not bank-grade security.</p>' +
+        '<p class="mini" style="margin:-8px 0 12px">Set a PIN, then tap the 🔒 button at the top whenever you want to lock the app. It never locks by itself. Casual privacy lock — not bank-grade security.</p>' +
         '<div class="form-row" style="max-width:360px"><label class="field"><span>New PIN (4+ digits)</span><input id="sp_pin" type="password" inputmode="numeric" placeholder="••••"/></label><button class="btn" data-act="setPin">Set PIN</button></div></div>';
     }
-    return '<div class="panel"><h3>🔒 App Lock (PIN)</h3><div class="hint" style="margin:0 0 12px">✓ PIN lock is on — you\'ll be asked for it when the app opens. Forgot it? Tap <strong>“Forgot PIN? Reset with Google”</strong> on the lock screen to reset using your Google account.</div>' +
+    return '<div class="panel"><h3>🔒 App Lock (PIN)</h3><div class="hint" style="margin:0 0 12px">✓ PIN is set. The app only locks when you tap 🔒 at the top (or Lock now below), and stays locked — even if you close it — until you enter the PIN. Forgot it? Tap <strong>“Forgot PIN? Reset with Google”</strong> on the lock screen to reset using your Google account.</div>' +
       '<div class="toolbar"><button class="btn" data-act="lockNow">Lock now</button><button class="btn ghost" data-act="removePin">Remove PIN</button></div></div>';
   }
 
@@ -3321,13 +3324,24 @@
     privacy: function () { privacy = !privacy; try { localStorage.setItem("ft_privacy", privacy ? "1" : "0"); } catch (e) {} render(); },
     theme: function () { theme = theme === "light" ? "dark" : "light"; try { localStorage.setItem("ft_theme", theme); } catch (e) {} applyTheme(); render(); },
     toggleHideOpen: function () { state.hideOnOpen = !state.hideOnOpen; if (state.hideOnOpen) { privacy = true; try { localStorage.setItem("ft_privacy", "1"); } catch (e) {} } save(); render(); },
-    setPin: function () { var v = (val("sp_pin") || "").replace(/\D/g, ""); if (v.length < 4) { msg("PIN must be at least 4 digits."); return; } state.pin = v; save(); render(); },
-    removePin: function () { state.pin = ""; locked = false; save(); render(); },
-    lockNow: function () { if (state.pin) { locked = true; pinBuffer = ""; pinError = false; el("ftToasts").textContent = ""; render(); } },
+    setPin: function () { var v = (val("sp_pin") || "").replace(/\D/g, ""); if (v.length < 4) { msg("PIN must be at least 4 digits."); return; } state.pin = v; save(); render(); toast("PIN saved — tap 🔒 at the top whenever you want to lock", "🔒"); },
+    removePin: function () { state.pin = ""; locked = false; setManualLock(false); save(); render(); },
+    lockNow: function () {
+      if (!state.pin) { pinSetupOpen = true; render(); setTimeout(function () { if (el("lk_pin")) el("lk_pin").focus(); }, 30); return; }
+      locked = true; pinBuffer = ""; pinError = false; setManualLock(true); el("ftToasts").textContent = ""; render();
+    },
+    pinSetupCancel: function () { pinSetupOpen = false; render(); },
+    pinSetupSave: function () {
+      var a = (val("lk_pin") || "").replace(/\D/g, ""), b = (val("lk_pin2") || "").replace(/\D/g, "");
+      if (a.length < 4) { toast("PIN must be at least 4 digits", "!"); return; }
+      if (a !== b) { toast("The two PINs don't match", "!"); if (el("lk_pin2")) { el("lk_pin2").value = ""; el("lk_pin2").focus(); } return; }
+      state.pin = a; save(); pinSetupOpen = false;
+      locked = true; pinBuffer = ""; pinError = false; setManualLock(true); el("ftToasts").textContent = ""; render();
+    },
     pinDigit: function (e) {
       pinError = false; pinBuffer += e.k;
       if (pinBuffer.length >= state.pin.length) {
-        if (pinBuffer === state.pin) { locked = false; pinBuffer = ""; } else { pinBuffer = ""; pinError = true; }
+        if (pinBuffer === state.pin) { locked = false; pinBuffer = ""; setManualLock(false); } else { pinBuffer = ""; pinError = true; }
       }
       render();
     },
@@ -3341,7 +3355,7 @@
       var provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
       cloud.auth.signInWithPopup(provider).then(function () {
-        state.pin = ""; pinBuffer = ""; pinError = false; locked = false; save(); render();
+        state.pin = ""; pinBuffer = ""; pinError = false; locked = false; setManualLock(false); save(); render();
       }).catch(function (e) {
         if (e && e.code === "auth/popup-closed-by-user") { note("Sign-in cancelled. Tap to try again."); return; }
         try { localStorage.setItem("ft_resetpin", "1"); } catch (err) {}
@@ -3793,8 +3807,14 @@
       '<button class="btn" data-act="newTx" title="Add transaction" aria-label="Add transaction">' + svgi(NAVICONS.transactions) + '<span class="action-label"> Add transaction</span></button>' +
       '<button class="tool-btn" data-act="privacy" title="' + (privacy ? 'Show amounts' : 'Hide amounts') + '" aria-label="' + (privacy ? 'Show amounts' : 'Hide amounts') + '" aria-pressed="' + privacy + '">' + svgi(privacy ? NAVICONS.eyeOff : NAVICONS.eye) + '</button>' +
       '<button class="tool-btn" data-act="theme" title="' + (theme === "light" ? 'Dark mode' : 'Light mode') + '" aria-label="' + (theme === "light" ? 'Dark mode' : 'Light mode') + '">' + svgi(theme === "light" ? NAVICONS.moon : NAVICONS.sun) + '</button>' +
-      (state.pin ? '<button class="tool-btn" data-act="lockNow" title="Lock app" aria-label="Lock app">' + svgi(NAVICONS.lock) + '</button>' : '') + '</div></div>';
-    el("root").innerHTML = '<div class="app"><div class="app-content"' + (moreOpen ? ' inert aria-hidden="true"' : '') + '>' + sidebar + '<main class="main">' + topTools + pages[currentTab]() + '</main>' + botnav + '</div>' + sheet + payoff + debtEditModal() + '</div>';
+      '<button class="tool-btn" data-act="lockNow" title="' + (state.pin ? 'Lock app' : 'Set up app lock') + '" aria-label="' + (state.pin ? 'Lock app' : 'Set up app lock') + '">' + svgi(NAVICONS.lock) + '</button>' + '</div></div>';
+    var pinSetup = pinSetupOpen ? '<div class="modal-ov"><div class="modal-card" style="text-align:left">' +
+      '<div class="row-between" style="margin-bottom:6px"><h3 style="margin:0;font-size:18px">🔒 Create a PIN</h3><button class="icon-btn" data-act="pinSetupCancel" aria-label="Cancel">✕</button></div>' +
+      '<p class="mini" style="margin:0 0 14px">Tap the lock button whenever you want to hide the app. It stays locked — even if you close it — until this PIN is entered. It never locks by itself.</p>' +
+      '<label class="field" style="margin-bottom:10px"><span>PIN (4+ digits)</span><input id="lk_pin" type="password" inputmode="numeric" autocomplete="new-password" placeholder="••••"/></label>' +
+      '<label class="field" style="margin-bottom:14px"><span>Type it again</span><input id="lk_pin2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="••••"/></label>' +
+      '<div class="toolbar"><button class="btn" data-act="pinSetupSave">Save & lock now</button><button class="btn ghost" data-act="pinSetupCancel">Cancel</button></div></div></div>' : '';
+    el("root").innerHTML = '<div class="app"><div class="app-content"' + (moreOpen ? ' inert aria-hidden="true"' : '') + '>' + sidebar + '<main class="main">' + topTools + pages[currentTab]() + '</main>' + botnav + '</div>' + sheet + payoff + debtEditModal() + pinSetup + '</div>';
     wire();
   }
 
@@ -3909,7 +3929,7 @@
     if (state.hideOnOpen) privacy = true;
     try { theme = localStorage.getItem("ft_theme") || "dark"; } catch (e) {}
     applyTheme();
-    if (state.pin) locked = true;
+    if (state.pin && isManuallyLocked()) locked = true; // only stays locked if you pressed 🔒 last time
     applyRecurring();
     recordNetWorth();
     booting = false; // start-up housekeeping above isn't a user edit; everything after this is
@@ -3940,12 +3960,11 @@
     var shield = document.createElement("div");
     shield.id = "ftShield";
     shield.style.cssText = "position:fixed;inset:0;background:#0b1120;display:none;align-items:center;justify-content:center;z-index:99999;font-size:64px";
-    shield.textContent = "🔒";
+    shield.textContent = ""; // plain cover so the app-switcher preview doesn't show your numbers (no auto-lock)
     document.body.appendChild(shield);
     var coverNow = function () {
       shield.style.display = "flex";
       if (state && state.hideOnOpen) { privacy = true; try { localStorage.setItem("ft_privacy", "1"); } catch (e) {} }
-      if (state && state.pin) { locked = true; pinBuffer = ""; pinError = false; }
       el("ftToasts").textContent = "";
     };
     var uncover = function () { shield.style.display = "none"; render(); };
