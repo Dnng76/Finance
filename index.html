@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 74</title>
+<title>Finance Tracker · build 78</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -276,6 +276,7 @@
   .debt-pay-controls { flex-wrap: wrap; }
   .debt-pay-controls input { flex-basis: 100%; }
   .debt-pay-controls button { flex: 1; }
+  .debt-pay-controls .debt-fill { flex: 1 0 100%; white-space: normal; }
   .debt-status { font-size: 12px; font-weight: 600; margin-top: 10px; }
   .debt-status[data-status="paid"] { color: var(--green); }
   .debt-status[data-status="partial"] { color: var(--yellow); }
@@ -283,6 +284,28 @@
   .debt-plan-heading { display: flex; align-items: center; gap: 8px; }
   .debt-plan-heading .tool-btn { width: 28px; height: 28px; }
   .debt-pay-controls button:disabled { opacity: .4; cursor: default; box-shadow: none; }
+  .ver-tag { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--muted); vertical-align: 2px; }
+  .debt-strip { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 6px; margin: 4px 0 12px; scrollbar-width: none; }
+  .debt-strip::-webkit-scrollbar { display: none; }
+  .debt-mhead { padding: 4px 0 18px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+  .debt-mhead h2 { font-size: 18px; margin: 0; }
+  .debt-mhead .month-picker { display: flex; align-items: center; gap: 6px; }
+  .debt-mhead .month-picker input { flex: 1; width: 0; min-height: 44px; padding: 6px 12px; font-size: 17px; font-weight: 600; }
+  .debt-mhead .tool-btn { width: 40px; height: 40px; flex-shrink: 0; }
+  .debt-mline { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 12px 0 8px; font-size: 15px; }
+  .debt-card { padding: 16px 0; border-bottom: 1px solid var(--border); }
+  .debt-card h2 { font-size: 16px; margin: 0; overflow-wrap: anywhere; }
+  .debt-card.is-paid { opacity: .75; }
+  .debt-due { display: flex; justify-content: space-between; gap: 10px; margin: 6px 0 10px; font-size: 14px; color: var(--muted); }
+  .debt-due strong { color: var(--text); font-size: 17px; }
+  .debt-paybtn { width: 100%; min-height: 46px; font-size: 15px; }
+  .debt-other > summary, .debt-card .debt-more > summary { cursor: pointer; color: var(--muted); font-size: 13px; padding: 8px 0 2px; }
+  .debt-other .debt-pay-controls input { flex: 1 1 auto; flex-basis: auto; }
+  .debt-other .debt-pay-controls button { flex: 0 0 auto; }
+  .debt-done { color: var(--green); font-weight: 700; padding: 6px 0 2px; }
+  .debt-rest-row { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+  .debt-rest-row > div { flex: 1; }
+  .debt-rest-row .tool-btn { width: 36px; height: 36px; margin-left: 4px; }
   @media (max-width: 380px) {
     .debt-summary { grid-template-columns: minmax(0,1fr); }
     .debt-summary > div { display: flex; align-items: baseline; justify-content: space-between; gap: 4px 12px; flex-wrap: wrap; }
@@ -353,7 +376,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 74 · simplified More menu";
+  var VERSION = "build 78 · version label on dashboard";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Savings","Other"];
   var CATMETA = {
@@ -1188,7 +1211,8 @@
       '<div class="form-row" style="max-width:560px"><label class="field"><span>Balance target (' + (state.currency || "$") + ')</span><input id="tg_balance" type="number" value="' + num(tgt.balance) + '"/></label>' +
       '<label class="field"><span>Trading target (' + (state.currency || "$") + ')</span><input id="tg_trading" type="number" value="' + num(tgt.trading) + '"/></label><button class="btn" data-act="setTargets">Save</button></div></div></details>';
 
-    return '<h1 class="page-title">Dashboard</h1><p class="page-sub">' + esc(ymLabel(ymOfDate(new Date()), true)) + '</p>' +
+    return '<h1 class="page-title">Dashboard</h1><p class="page-sub">' + esc(ymLabel(ymOfDate(new Date()), true)) +
+      ' <span class="ver-tag" title="' + esc(VERSION) + '">' + esc((VERSION.match(/build \d+/) || [VERSION])[0]) + '</span></p>' +
       overBudgetAlert() + backupNudge() +
       '<div class="cards dashboard-cards">' +
         card("Current Balance", fmt(t.balance), (t.usingAccounts ? "Total across " + state.accounts.length + " accounts" : "Income " + fmt(t.income) + " · Expenses " + fmt(t.expense)), t.balance >= 0 ? "pos" : "neg", "💰", "rgba(52,211,153,.16)", balBar) +
@@ -1783,15 +1807,51 @@
     var cleared = state.debts.filter(function (d) { return !(num(d.remaining) > 0) && debtMonthInfo(d, ym).records.length === 0; });
     var totalLeft = money(active.reduce(function (s, d) { return s + num(d.remaining); }, 0));
     var monthly = 0, paid = 0, left = 0, extra = 0;
-    shown.forEach(function (d) { var info = debtMonthInfo(d, ym); monthly += info.planned; paid += info.paid; left += info.left; extra += info.extra; });
+    // Future months: take "still to pay" from the month-by-month simulation, so debts that will already be
+    // cleared by then (e.g. a one-month bill) aren't counted again — keeps these numbers equal to the strip above.
+    var nowYm = ymOfDate(new Date(today() + "T00:00:00")), schedPay = null;
+    if (ym > nowYm) {
+      var sdm = debtScheduleData(nowYm, ym), lastM = sdm.months[sdm.months.length - 1];
+      schedPay = {}; if (lastM) lastM.rows.forEach(function (r) { schedPay[r.d.id] = money(r.pay); });
+    }
+    function mInfo(d) {
+      var info = debtMonthInfo(d, ym);
+      if (!schedPay) return info;
+      var left = schedPay[d.id] || 0, planned = money(info.paid + left);
+      return Object.assign({}, info, { planned: planned, left: left, extra: 0,
+        status: info.paid > 0 && left === 0 ? "paid" : info.paid > 0 ? "partial" : "unpaid",
+        label: info.paid > 0 && left === 0 ? "Paid" : info.paid > 0 ? "Partly paid" : planned > 0 ? "No payment recorded" : "No payment due" });
+    }
+    shown.forEach(function (d) { var info = mInfo(d); monthly += info.planned; paid += info.paid; left += info.left; extra += info.extra; });
     var debtTotal = '<section class="debt-total" aria-label="Current total debt"><h2>Total debt</h2><div class="value' + (fmt(totalLeft).length > 13 ? ' long-amount' : '') + '" data-debt-total>' + fmt(totalLeft) + '</div><div class="mini">Outstanding today &middot; ' + active.length + ' active ' + (active.length === 1 ? 'debt' : 'debts') + '</div></section>';
-    var monthBar = '<section class="debt-month-bar" aria-label="Payment month"><h2>Monthly payments</h2><div class="month-picker">' +
-      '<button class="tool-btn" data-act="debtMonthPrev" title="Previous month" aria-label="Previous debt month">&#8249;</button><input id="debt_month" type="month" aria-label="Debt payment month" value="' + ym + '"/>' +
-      '<button class="tool-btn" data-act="debtMonthNext" title="Next month" aria-label="Next debt month">&#8250;</button></div></section>';
-    var summary = '<section class="debt-summary" aria-label="Payments for ' + esc(ymLabel(ym, true)) + '">' +
-      '<div><div class="mini">Planned</div><div class="value" data-debt-monthly>' + fmt(monthly) + '</div></div>' +
-      '<div><div class="mini">Paid</div><div class="value pos" data-debt-paid>' + fmt(paid) + '</div>' + (extra > 0 ? '<div class="mini">Includes ' + fmt(extra) + ' extra</div>' : '') + '</div>' +
-      '<div class="debt-still"><div class="mini">Still to pay</div><div class="value ' + (left > 0 ? 'neg' : 'pos') + '" data-debt-unpaid>' + fmt(left) + '</div></div></section>';
+    // Month-by-month totals strip: total to pay each month (paid + still due) and what's still left.
+    var stripHtml = "";
+    if (active.length || shown.length) {
+      var curYm = ymOfDate(new Date(today() + "T00:00:00")), sched = debtScheduleData(curYm, ymAdd(curYm, 5));
+      stripHtml = '<section class="debt-strip" aria-label="Monthly totals">' +
+        sched.months.map(function (m) {
+          var paidM = money(state.debts.reduce(function (s, d) { return s + debtMonthInfo(d, m.ym).paid; }, 0));
+          var due = money(m.total), total = money(paidM + due), sel = m.ym === ym;
+          return '<button type="button" data-act="debtMonthPick" data-k="' + m.ym + '" style="flex:0 0 auto;min-width:118px;text-align:left;cursor:pointer;font:inherit;color:var(--text);padding:11px 13px;border-radius:14px;' +
+            'background:' + (sel ? 'rgba(45,212,191,.14)' : 'var(--panel)') + ';border:1px solid ' + (sel ? 'var(--accent)' : 'var(--border)') + '">' +
+            '<div class="mini" style="font-weight:700;letter-spacing:.3px">' + esc(ymLabel(m.ym)).toUpperCase() + '</div>' +
+            '<div style="font-size:19px;font-weight:800;letter-spacing:-.5px;margin-top:2px">' + fmt(total) + '</div>' +
+            '<div class="mini" style="margin-top:2px">' + (total <= 0 ? 'nothing due' : due <= 0 ? '<span class="pos">✓ all paid</span>' : '<span class="neg">' + fmt(due) + '</span> left') + '</div></button>';
+        }).join("") + '</section>';
+    }
+    // One compact header for the selected month (the strip above already shows each month's total).
+    var monthPct = monthly > 0 ? Math.min(100, paid / monthly * 100) : 0;
+    var monthBar = stripHtml + '<section class="debt-mhead" aria-label="Payment month">' +
+      '<div><div class="month-picker">' +
+        '<button class="tool-btn" data-act="debtMonthPrev" title="Previous month" aria-label="Previous debt month">&#8249;</button><input id="debt_month" type="month" aria-label="Debt payment month" value="' + ym + '"/>' +
+        '<button class="tool-btn" data-act="debtMonthNext" title="Next month" aria-label="Next debt month">&#8250;</button></div></div>' +
+      (monthly > 0 || paid > 0 ? '<div class="debt-mline"><span>Paid <strong class="pos">' + fmt(paid) + '</strong> of <strong>' + fmt(monthly) + '</strong></span>' +
+        '<span>' + (left > 0 ? '<strong class="neg">' + fmt(left) + '</strong> left' : '<strong class="pos">✓ all paid</strong>') + '</span></div>' +
+        '<div class="progress" style="height:8px"><div style="width:' + monthPct + '%;background:var(--green)"></div></div>' +
+        (extra > 0 ? '<div class="mini" style="margin-top:6px">Includes ' + fmt(extra) + ' extra</div>' : '')
+        : '<div class="mini" style="margin-top:6px">Nothing due this month 🎉</div>') +
+      '</section>';
+    var summary = '';
     var addForm = pageDebt.adding ? '<section class="panel debt-add-form"><div class="row-between"><h3 style="margin:0">Add a debt</h3><button class="tool-btn" data-act="debtAddToggle" aria-label="Cancel adding debt" title="Cancel">&#215;</button></div>' +
         '<div class="form-row" style="margin-top:14px">' +
           '<label class="field"><span>Name</span><input id="d_creditor" placeholder="e.g. UOB credit card"/></label>' +
@@ -1802,25 +1862,47 @@
           '<label class="field"><span>Annual interest (%)</span><input id="d_rate" type="number" min="0" step="0.01" placeholder="0"/></label>' +
           '<label class="field"><span>Original total (' + cur + ')</span><input id="d_total" type="number" min="0" step="0.01" placeholder="Same as remaining"/></label>' +
         '</div></details><div class="toolbar" style="margin-top:16px"><button class="btn" data-act="addDebt">Save debt</button><button class="btn ghost" data-act="debtAddToggle">Cancel</button></div></section>' : '';
-    var rows = shown.map(function (d) {
-        var info = debtMonthInfo(d, ym);
-        var orig = Math.max(num(d.total), num(d.remaining)), pct = orig > 0 ? (orig - num(d.remaining)) / orig * 100 : 0;
-        var history = Array.isArray(d.payments) ? d.payments : [];
-        var details = '<div class="debt-more-content"><div style="display:flex;align-items:center;gap:16px">' + ring(pct, 'var(--green)', 70) + '<div class="mini">Paid off<br><strong>' + fmt(orig - num(d.remaining)) + '</strong> of ' + fmt(orig) + '</div></div>' +
-          '<p class="mini">Annual interest: ' + num(d.rate) + '%' + (d.startYm ? ' · First payment: ' + esc(ymLabel(d.startYm)) : '') + '</p>' +
-          (history.length ? '<h3 style="font-size:14px;margin:16px 0 4px">Recorded payments</h3><ul class="debt-history">' + history.slice().reverse().map(function (p) { return '<li><span>' + esc(ymLabel(debtPaymentMonth(p))) + ' · ' + (p.kind === 'reversal' ? 'Added back' : 'Paid') + '<br><span class="mini">Recorded ' + esc(fmtDay(p.date)) + '</span></span><strong>' + fmt(p.amount) + '</strong></li>'; }).join('') + '</ul>' : '') +
-          '<label class="field"><span>New charge (' + cur + ')</span><div class="debt-pay-controls"><input id="dc_' + esc(d.id) + '" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00"/><button class="btn ghost" data-act="addDebtAmt" data-id="' + esc(d.id) + '">Add charge</button></div></label></div>';
-        var editing = pageDebt.editMonthId === d.id ? '<div class="debt-plan-edit"><h3 style="font-size:15px;margin:0 0 12px">' + esc(d.creditor) + ' · ' + esc(ymLabel(ym, true)) + '</h3><div class="form-row"><label class="field"><span>Planned payment (' + cur + ')</span><input id="dmp_amount" type="number" min="0" step="0.01" inputmode="decimal" value="' + info.planned + '"/></label>' +
-          '<label class="field"><span>Month note (optional)</span><input id="dmp_note" value="' + esc(info.note) + '"/></label></div><div class="toolbar" style="margin-top:12px"><button class="btn sm" data-act="debtMonthSave" data-id="' + esc(d.id) + '">Save month</button><button class="btn ghost sm" data-act="debtMonthCancel">Cancel</button></div></div>' : '';
-        return '<article class="debt-row" aria-label="' + esc(d.creditor) + '"><div><div class="debt-name"><h2>' + esc(d.creditor) + '</h2><button class="btn ghost sm" data-act="editDebt" data-id="' + esc(d.id) + '" aria-label="Edit ' + esc(d.creditor) + '">Edit</button></div>' +
-          '<div class="mini" style="margin-top:10px">Current balance</div><div class="debt-value neg" data-debt-balance="' + esc(d.id) + '">' + fmt(d.remaining) + '</div></div>' +
-          '<div><div class="debt-plan-heading"><span class="mini">Monthly payment</span><button class="tool-btn" data-act="debtMonthEdit" data-id="' + esc(d.id) + '" title="Edit payment for ' + esc(ymLabel(ym)) + '" aria-label="Edit monthly payment for ' + esc(d.creditor) + '">&#9998;</button></div><div class="debt-value">' + fmt(info.planned) + '</div><div class="mini" style="margin-top:8px">' + esc(ymLabel(ym)) + '</div></div>' +
-          '<div><div class="mini">Paid this month</div><div class="debt-value pos" data-month-paid="' + esc(d.id) + '">' + fmt(info.paid) + '</div><div class="mini" style="margin-top:8px">Still to pay <strong>' + fmt(info.left) + '</strong></div><div class="debt-status" data-status="' + info.status + '">' + info.label + '</div>' + (info.extra > 0 ? '<div class="mini">Extra paid ' + fmt(info.extra) + '</div>' : '') + (info.note ? '<p class="mini">' + esc(info.note) + '</p>' : '') + '</div>' +
-          '<div class="debt-pay"><label class="field" for="dp_' + esc(d.id) + '"><span>Amount (' + cur + ')</span></label><div class="debt-pay-controls"><input id="dp_' + esc(d.id) + '" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0.00" aria-label="Amount paid for ' + esc(d.creditor) + '"/>' +
-          '<button class="btn" data-act="payDebt" data-id="' + esc(d.id) + '" aria-label="Record payment for ' + esc(d.creditor) + '" title="Deduct from debt and record for ' + esc(ymLabel(ym)) + '"' + (num(d.remaining) <= 0 ? ' disabled' : '') + '>&#8722; Paid</button>' +
-          '<button class="btn ghost" data-act="reverseDebtPayment" data-id="' + esc(d.id) + '" aria-label="Add payment back for ' + esc(d.creditor) + '" title="Reverse a payment recorded for ' + esc(ymLabel(ym)) + '"' + (info.paid <= 0 ? ' disabled' : '') + '>+ Add back</button></div></div>' + editing +
-          '<details class="debt-more"><summary>Details & payment history</summary>' + details + '</details></article>';
-      }).join("");
+    // Debts with something due (or paid) this month get a compact card; the rest go in one collapsed list.
+    var dueList = [], restList = [];
+    shown.forEach(function (d) { var info = mInfo(d); if (info.planned > 0 || info.paid > 0 || pageDebt.editMonthId === d.id) dueList.push({ d: d, info: info }); else restList.push({ d: d, info: info }); });
+    function moreBox(d, info) {
+      var orig = Math.max(num(d.total), num(d.remaining)), pct = orig > 0 ? (orig - num(d.remaining)) / orig * 100 : 0;
+      var history = Array.isArray(d.payments) ? d.payments : [];
+      return '<details class="debt-more"><summary>More</summary><div class="debt-more-content">' +
+        '<div class="toolbar"><button class="btn ghost sm" data-act="debtMonthEdit" data-id="' + esc(d.id) + '">✎ Change ' + esc(ymMonthName(ym)) + ' amount</button><button class="btn ghost sm" data-act="editDebt" data-id="' + esc(d.id) + '">✎ Edit debt</button></div>' +
+        (info.paid > 0 ? '<label class="field" style="margin-top:12px"><span>Undo a payment for ' + esc(ymLabel(ym)) + ' (' + cur + ')</span><div class="debt-pay-controls"><input id="dr_' + esc(d.id) + '" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="' + info.paid.toFixed(2) + '"/><button class="btn ghost" data-act="debtAddBack" data-id="' + esc(d.id) + '">+ Add back</button></div></label>' : '') +
+        '<label class="field" style="margin-top:12px"><span>New charge on this debt (' + cur + ')</span><div class="debt-pay-controls"><input id="dc_' + esc(d.id) + '" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00"/><button class="btn ghost" data-act="addDebtAmt" data-id="' + esc(d.id) + '">Add charge</button></div></label>' +
+        '<div style="display:flex;align-items:center;gap:14px;margin-top:14px">' + ring(pct, 'var(--green)', 56) + '<div class="mini">Paid off <strong>' + fmt(orig - num(d.remaining)) + '</strong> of ' + fmt(orig) +
+          (num(d.rate) ? '<br>' + num(d.rate) + '% interest' : '') + (d.startYm ? '<br>First payment ' + esc(ymLabel(d.startYm)) : '') + '</div></div>' +
+        (history.length ? '<h3 style="font-size:14px;margin:16px 0 4px">Recorded payments</h3><ul class="debt-history">' + history.slice().reverse().map(function (p) { return '<li><span>' + esc(ymLabel(debtPaymentMonth(p))) + ' · ' + (p.kind === 'reversal' ? 'Added back' : 'Paid') + '<br><span class="mini">Recorded ' + esc(fmtDay(p.date)) + '</span></span><strong>' + fmt(p.amount) + '</strong></li>'; }).join('') + '</ul>' : '') +
+        '</div></details>';
+    }
+    var rows = dueList.map(function (x) {
+      var d = x.d, info = x.info, payNow = money(Math.min(info.left, Math.max(0, num(d.remaining))));
+      var editing = pageDebt.editMonthId === d.id ? '<div class="debt-plan-edit"><h3 style="font-size:15px;margin:0 0 12px">' + esc(d.creditor) + ' · ' + esc(ymLabel(ym, true)) + '</h3><div class="form-row"><label class="field"><span>Amount due this month (' + cur + ')</span><input id="dmp_amount" type="number" min="0" step="0.01" inputmode="decimal" value="' + info.planned + '"/></label>' +
+        '<label class="field"><span>Note (optional)</span><input id="dmp_note" value="' + esc(info.note) + '"/></label></div><div class="toolbar" style="margin-top:12px"><button class="btn sm" data-act="debtMonthSave" data-id="' + esc(d.id) + '">Save</button><button class="btn ghost sm" data-act="debtMonthCancel">Cancel</button></div></div>' : '';
+      var mpct = info.planned > 0 ? Math.min(100, info.paid / info.planned * 100) : 100;
+      var action = payNow > 0
+        ? '<button class="btn debt-paybtn" data-act="payDebtFull" data-id="' + esc(d.id) + '" data-k="' + payNow + '">✓ Paid ' + fmt(payNow) + '</button>' +
+          '<details class="debt-other"><summary>Paid a different amount?</summary><div class="debt-pay-controls"><input id="dp_' + esc(d.id) + '" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0.00" aria-label="Amount paid for ' + esc(d.creditor) + '"/>' +
+          '<button class="btn" data-act="payDebt" data-id="' + esc(d.id) + '">Record</button></div></details>'
+        : '<div class="debt-done">✓ Paid for ' + esc(ymMonthName(ym)) + (info.extra > 0 ? ' · ' + fmt(info.extra) + ' extra' : '') + '</div>';
+      return '<article class="debt-card' + (payNow > 0 ? '' : ' is-paid') + '" aria-label="' + esc(d.creditor) + '">' +
+        '<div class="row-between" style="align-items:baseline;gap:10px"><h2>' + esc(d.creditor) + '</h2><span class="mini">' + fmt(d.remaining) + ' left</span></div>' +
+        '<div class="debt-due"><span>Due ' + esc(ymMonthName(ym)) + ' <strong>' + fmt(info.planned) + '</strong></span>' + (info.paid > 0 ? '<span class="pos">paid ' + fmt(info.paid) + '</span>' : '') + '</div>' +
+        (info.paid > 0 && payNow > 0 ? '<div class="progress" style="height:5px;margin:2px 0 10px"><div style="width:' + mpct + '%;background:var(--green)"></div></div>' : '') +
+        (info.note ? '<p class="mini" style="margin:0 0 8px">📝 ' + esc(info.note) + '</p>' : '') +
+        action + editing + moreBox(d, info) + '</article>';
+    }).join("");
+    if (restList.length) {
+      rows += '<details class="debt-extra debt-rest"><summary>Not due in ' + esc(ymMonthName(ym)) + ' (' + restList.length + ')</summary>' + restList.map(function (x) {
+        var d = x.d, when = d.startYm && d.startYm > ym ? 'starts ' + esc(ymLabel(d.startYm)) : (!num(d.payment) ? 'no monthly payment set' : 'nothing due this month');
+        return '<div class="debt-rest-row"><div style="min-width:0"><strong>' + esc(d.creditor) + '</strong><div class="mini">' + when + '</div></div>' +
+          '<span class="neg" style="font-weight:700;white-space:nowrap">' + fmt(d.remaining) + '</span>' +
+          '<span style="white-space:nowrap"><button class="tool-btn" data-act="debtMonthEdit" data-id="' + esc(d.id) + '" title="Add a payment for ' + esc(ymLabel(ym)) + '" aria-label="Add a payment for ' + esc(d.creditor) + ' this month">+</button>' +
+          '<button class="tool-btn" data-act="editDebt" data-id="' + esc(d.id) + '" title="Edit debt" aria-label="Edit ' + esc(d.creditor) + '">&#9998;</button></span></div>';
+      }).join("") + '</details>';
+    }
     var done = cleared.length ? '<details class="debt-extra"><summary>Paid off (' + cleared.length + ')</summary>' + cleared.map(function (d) {
       var history = Array.isArray(d.payments) ? d.payments : [];
       return '<div style="padding:14px 0;border-bottom:1px solid var(--border)"><div class="row-between"><strong>' + esc(d.creditor) + '</strong><span class="pos">' + fmt(0) + ' remaining</span><button class="btn ghost sm" data-act="editDebt" data-id="' + esc(d.id) + '">Edit</button></div>' +
@@ -3401,8 +3483,26 @@
       state.fire = { expense: num(val("fr_exp")), assets: num(val("fr_assets")), growth: num(val("fr_growth")), swr: num(val("fr_swr")) || 4, invest: num(val("fr_invest")) };
       save(); render(); toast("Freedom plan updated", "🔥");
     },
+    fillDebtPayment: function (e) {
+      var d = state.debts.filter(function (x) { return x.id === e.id; })[0], input = el("dp_" + e.id);
+      if (!d || !input) return;
+      var btn = document.querySelector('[data-act="fillDebtPayment"][data-id="' + e.id + '"]');
+      var due = btn && btn.getAttribute("data-left") != null ? num(btn.getAttribute("data-left")) : debtMonthInfo(d, selectedDebtMonth()).left;
+      var amount = money(Math.min(due, Math.max(0, num(d.remaining))));
+      if (amount <= 0) return;
+      input.value = amount.toFixed(2);
+      input.focus();
+    },
     payDebt: function (e) { adjustDebtPayment(e.id, "dp_" + e.id, selectedDebtMonth(), false); },
     reverseDebtPayment: function (e) { adjustDebtPayment(e.id, "dp_" + e.id, selectedDebtMonth(), true); },
+    payDebtFull: function (e) {
+      // One tap: record exactly what's still due for this month (the amount shown on the button).
+      var holder = document.createElement("input"); holder.id = "dpf_tmp"; holder.type = "hidden"; holder.value = String(num(e.k));
+      document.body.appendChild(holder);
+      try { adjustDebtPayment(e.id, "dpf_tmp", selectedDebtMonth(), false); } finally { if (holder.parentNode) holder.parentNode.removeChild(holder); }
+    },
+    debtAddBack: function (e) { adjustDebtPayment(e.id, "dr_" + e.id, selectedDebtMonth(), true); },
+    debtMonthPick: function (e) { if (validDebtMonth(e.k)) { pageDebt.month = e.k; pageDebt.editMonthId = null; render(); } },
     debtMonthPrev: function () { pageDebt.month = prevMonth(selectedDebtMonth()); pageDebt.editMonthId = null; render(); },
     debtMonthNext: function () { pageDebt.month = nextMonth(selectedDebtMonth()); pageDebt.editMonthId = null; render(); },
     debtMonthEdit: function (e) { pageDebt.editMonthId = e.id; render(); },
