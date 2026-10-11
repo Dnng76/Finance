@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 79</title>
+<title>Finance Tracker · build 80</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -284,6 +284,10 @@
   .debt-plan-heading { display: flex; align-items: center; gap: 8px; }
   .debt-plan-heading .tool-btn { width: 28px; height: 28px; }
   .debt-pay-controls button:disabled { opacity: .4; cursor: default; box-shadow: none; }
+  .card-link { cursor: pointer; }
+  .card-link:active { transform: scale(.98); }
+  .card-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .card-go { display: block; margin-top: 6px; color: var(--accent); font-weight: 600; font-size: 12px; }
   .ver-tag { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--muted); vertical-align: 2px; }
   .debt-strip { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 6px; margin: 4px 0 12px; scrollbar-width: none; }
   .debt-strip::-webkit-scrollbar { display: none; }
@@ -376,7 +380,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 79 · lock only when you tap 🔒";
+  var VERSION = "build 80 · tap Total Debt to open Debt";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Savings","Other"];
   var CATMETA = {
@@ -1220,7 +1224,7 @@
       '<div class="cards dashboard-cards">' +
         card("Current Balance", fmt(t.balance), (t.usingAccounts ? "Total across " + state.accounts.length + " accounts" : "Income " + fmt(t.income) + " · Expenses " + fmt(t.expense)), t.balance >= 0 ? "pos" : "neg", "💰", "rgba(52,211,153,.16)", balBar) +
         card("Safe to Spend", fmt(safe), "After " + fmt(safeInfo.commitments) + " due through " + safeInfo.until + (safeInfo.usesPayday ? " (payday)" : " (30 days)"), safe >= 0 ? "pos" : "neg", "💸", "rgba(251,191,36,.16)") +
-        card("Total Debt", fmt(t.totalDebt), state.debts.length + " debt" + (state.debts.length !== 1 ? "s" : "") + " tracked", "neg", "💳", "rgba(248,113,113,.16)") +
+        cardLink("debt", "Open Debt", card("Total Debt", fmt(t.totalDebt), state.debts.length + " debt" + (state.debts.length !== 1 ? "s" : "") + " tracked <span class=\"card-go\">View debts ›</span>", "neg", "💳", "rgba(248,113,113,.16)")) +
         card("Net Worth", fmt(t.netWorth), "Gifts excluded", t.netWorth >= 0 ? "pos" : "neg", "📈", "rgba(56,189,248,.16)") +
       '</div>' + dashboardMonthSummary(ym) +
       '<section class="holdings" aria-label="Savings and trading"><div><div class="mini">Emergency fund</div><div class="value">' + fmt(t.emFund) + '</div><div class="mini">Target ' + fmt(emTarget) + '</div></div>' +
@@ -1240,6 +1244,11 @@
     var ic = icon ? '<span class="cicon" style="background:' + (iconBg || "rgba(45,212,191,.16)") + '">' + icon + '</span>' : '';
     var bar = (barPct != null) ? '<div class="progress" style="margin-top:12px;height:7px"><div style="width:' + Math.max(0, Math.min(100, barPct)) + '%"></div></div><div class="mini" style="margin-top:5px">' + Math.max(0, barPct).toFixed(0) + '% of target</div>' : '';
     return '<div class="card"><div class="label"><span>' + label + '</span>' + ic + '</div><div class="value ' + (cls || "") + '">' + value + '</div>' + (sub ? '<div class="sub">' + sub + '</div>' : '') + bar + '</div>';
+  }
+
+  // Make a dashboard card open another tab when tapped.
+  function cardLink(tab, label, html) {
+    return html.replace('<div class="card">', '<div class="card card-link" data-tab="' + tab + '" role="button" tabindex="0" aria-label="' + esc(label) + '">');
   }
 
   function ensureGoalBuckets(g) {
@@ -3835,7 +3844,10 @@
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     };
     if (el("dash_month")) el("dash_month").onchange = function () { pageDashboard.ym = /^\d{4}-(0[1-9]|1[0-2])$/.test(this.value) ? this.value : ymOfDate(new Date()); render(); };
-    root.querySelectorAll("[data-tab]").forEach(function (b) { b.onclick = function () { currentTab = b.getAttribute("data-tab"); moreOpen = false; window.scrollTo(0, 0); render(); }; });
+    root.querySelectorAll("[data-tab]").forEach(function (b) {
+      b.onclick = function () { currentTab = b.getAttribute("data-tab"); moreOpen = false; window.scrollTo(0, 0); render(); };
+      if (b.getAttribute("role") === "button") b.onkeydown = function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); b.onclick(); } };
+    });
     root.querySelectorAll("[data-act]").forEach(function (b) {
       var act = b.getAttribute("data-act");
       if (act === "filter") { b.value = pageTransactions.filter || "all"; b.onchange = function () { pageTransactions.filter = b.value; render(); }; return; }
