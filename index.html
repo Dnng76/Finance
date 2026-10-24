@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 82</title>
+<title>Finance Tracker · build 83</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -288,12 +288,14 @@
   .card-link { cursor: pointer; }
   .card-link:active { transform: scale(.98); }
   .card-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .debtfree { padding: 16px 18px; margin-bottom: 22px; }
-  .debtfree-label { font-size: 12px; font-weight: 700; letter-spacing: .4px; color: var(--muted); text-transform: uppercase; }
-  .debtfree-row { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
-  .debtfree-big { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.05; color: var(--accent); font-variant-numeric: tabular-nums; }
-  .debtfree-check { margin-top: 10px; font-size: 13px; font-weight: 600; }
-  .debtfree-check.warn { color: var(--yellow); }
+  .countdowns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px; margin-bottom: 22px; }
+  .countdown { padding: 16px 18px; margin-bottom: 0; }
+  .cd-big.pay { color: var(--green); }
+  .cd-label { font-size: 12px; font-weight: 700; letter-spacing: .4px; color: var(--muted); text-transform: uppercase; }
+  .cd-row { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
+  .cd-big { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.05; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .cd-check { margin-top: 10px; font-size: 13px; font-weight: 600; }
+  .cd-check.warn { color: var(--yellow); }
   .card-go { display: block; margin-top: 6px; color: var(--accent); font-weight: 600; font-size: 12px; }
   .ver-tag { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--muted); vertical-align: 2px; }
   .debt-strip { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 6px; margin: 4px 0 12px; scrollbar-width: none; }
@@ -387,7 +389,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 82 · debt-free countdown on dashboard";
+  var VERSION = "build 83 · salary countdown on dashboard";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Savings","Other"];
   var CATMETA = {
@@ -553,7 +555,8 @@
   function calendarEvents(ym) {
     var evs = [];
     var p = state.payday || {};
-    if (p.date && p.date.slice(0, 7) === ym) evs.push({ day: +p.date.slice(8, 10), label: (p.label || "Payday") + (num(p.amount) > 0 ? " " + fmt(p.amount) : ""), ico: "⏰", color: "#fbbf24" });
+    var pBase = localDateFromYmd(p.date);
+    if (pBase && ym >= p.date.slice(0, 7)) evs.push({ day: Math.min(pBase.getDate(), ymLastDay(ym).getDate()), label:(p.label || "Payday") + (num(p.amount) > 0 ? " " + fmt(p.amount) : ""), ico: "⏰", color: "#fbbf24" });
     state.subscriptions.forEach(function (s) { if (s.nextDate && s.nextDate.slice(0, 7) === ym) evs.push({ day: +s.nextDate.slice(8, 10), label: s.name + " " + fmt(s.amount), ico: "🧾", color: "#f87171" }); });
     state.goals.forEach(function (g) { if (g.deadline && g.deadline.slice(0, 7) === ym) evs.push({ day: +g.deadline.slice(8, 10), label: "Goal due: " + g.name, ico: "◎", color: "#38bdf8" }); });
     if (state.debtFree && state.debtFree.date && state.debtFree.date.slice(0, 7) === ym) evs.push({ day: +state.debtFree.date.slice(8, 10), label: "Debt-free day!", ico: "🎯", color: "#34d399" });
@@ -647,9 +650,9 @@
       var days = Math.round((new Date(x.nextDate + "T00:00:00") - now) / 86400000);
       if (days >= 0 && days <= horizon) events.push({ days: days, icon: "🧾", label: x.name, amt: -num(x.amount), tag: "Subscription", act: "delSub", srcId: x.id });
     });
-    var p = state.payday || {};
-    if (p.date) {
-      var pdays = Math.round((new Date(p.date + "T00:00:00") - now) / 86400000);
+    var p = state.payday || {}, pnx = nextPayday(false);
+    if (pnx) {
+      var pdays = Math.round((pnx.date - now) / 86400000);
       if (pdays >= 0 && pdays <= horizon) events.push({ days: pdays, icon: "⏰", label: p.label || "Payday", amt: num(p.amount), tag: "Income" });
     }
     (state.recurring || []).forEach(function (r) {
@@ -916,10 +919,19 @@
     var p = value.split("-"), d = new Date(+p[0], +p[1] - 1, +p[2]);
     return isNaN(d.getTime()) || ymdLocal(d) !== value ? null : d;
   }
+  // Salary repeats monthly on the saved date's day (clamped to short months), so a past date rolls forward by itself.
+  function paydayAt(base, n) { var y = base.getFullYear(), m = base.getMonth() + n; return new Date(y, m, Math.min(base.getDate(), new Date(y, m + 1, 0).getDate())); }
+  function nextPayday(afterToday) {
+    var base = localDateFromYmd((state.payday || {}).date);
+    if (!base) return null;
+    var t0 = new Date(today() + "T00:00:00"), n = 0, d = base;
+    while (d < t0 || (afterToday && d.getTime() === t0.getTime())) d = paydayAt(base, ++n);
+    return { date: d, prev: paydayAt(base, n - 1) };
+  }
   function safeToSpendInfo(balance) {
     var nowRaw = new Date(), now = new Date(nowRaw.getFullYear(), nowRaw.getMonth(), nowRaw.getDate());
-    var payday = localDateFromYmd((state.payday || {}).date);
-    var usesPayday = payday && payday > now;
+    var nx = nextPayday(true), payday = nx && nx.date;
+    var usesPayday = !!payday;
     var end = usesPayday ? payday : new Date(now.getFullYear(), now.getMonth(), now.getDate() + 30);
     var subscriptions = 0, recurring = 0, debt = 0;
 
@@ -1238,7 +1250,7 @@
         card("Total Assets", fmt(assetsTotal), assetParts.length ? assetParts.join(" · ") : "Cash, goals, emergency fund & trading", assetsTotal >= 0 ? "pos" : "neg", "🏦", "rgba(52,211,153,.16)") +
         cardLink("debt", "Open Debt", card("Total Debt", fmt(t.totalDebt), state.debts.length + " debt" + (state.debts.length !== 1 ? "s" : "") + " tracked <span class=\"card-go\">View debts ›</span>", "neg", "💳", "rgba(248,113,113,.16)")) +
         card("Net Worth", fmt(t.netWorth), "Assets " + fmt(assetsTotal) + " − Debt " + fmt(t.totalDebt) + " · gifts excluded", t.netWorth >= 0 ? "pos" : "neg", "📈", "rgba(56,189,248,.16)").replace('<div class="card">', '<div class="card card-wide">') +
-      '</div>' + dashDebtFreePanel() + dashboardMonthSummary(ym) +
+      '</div><div class="countdowns">' + dashPaydayPanel(safe) + dashDebtFreePanel() + '</div>' + dashboardMonthSummary(ym) +
       '<section class="holdings" aria-label="Savings and trading"><div><div class="mini">Emergency fund</div><div class="value">' + fmt(t.emFund) + '</div><div class="mini">Target ' + fmt(emTarget) + '</div></div>' +
       '<div><div class="mini">Trading balance</div><div class="value ' + (t.tradingBalance >= 0 ? 'pos' : 'neg') + '">' + fmt(t.tradingBalance) + '</div><div class="mini">' + state.trading.trades.length + ' trades</div></div>' +
       '<div><div class="mini">Gift saved</div><div class="value">' + fmt(t.goalGift) + '</div><div class="mini">Excluded from net worth</div></div></section>' +
@@ -1837,12 +1849,33 @@
       days: main ? Math.round((main.getTime() - t0.getTime()) / 86400000) : null,
       orig: orig, left: left, paidPct: orig > 0 ? Math.min(100, (orig - left) / orig * 100) : 0 };
   }
+  function dashPaydayPanel(safe) {
+    var p = state.payday || {}, nx = nextPayday(false);
+    var open = 'data-tab="payday" role="button" tabindex="0" aria-label="Open Payday"';
+    var title = '<div class="cd-label">💰 ' + esc(p.label && p.label !== "Payday" ? p.label : "Salary") + ' countdown</div>';
+    if (!nx) return '<section class="panel card-link countdown" ' + open + '>' + title +
+      '<div class="mini" style="margin-top:6px">Set your payday once and it counts down every month. Tap to set it.</div></section>';
+    var days = Math.round((nx.date.getTime() - new Date(today() + "T00:00:00").getTime()) / 86400000);
+    var cycle = Math.max(1, Math.round((nx.date.getTime() - nx.prev.getTime()) / 86400000)), into = Math.max(0, cycle - days);
+    var dateL = nx.date.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+    var expected = num(p.amount) > 0 ? " · " + fmt(p.amount) + " coming in" : "";
+    if (days === 0) return '<section class="panel card-link countdown" ' + open + '>' + title +
+      '<div class="cd-big pay" style="font-size:30px;margin-top:6px">🎉 It\'s payday!</div><div class="mini">' + esc(dateL) + expected + '</div></section>';
+    var perDay = safe > 0 ? '<div class="cd-check">≈ ' + fmt(safe / days) + ' a day safe to spend until then</div>'
+      : '<div class="cd-check warn">⚠ Bills due before payday use up your cash — go easy until then</div>';
+    return '<section class="panel card-link countdown" ' + open + '>' + title +
+      '<div class="cd-row"><div class="cd-big pay">' + days + '</div><div><div style="font-weight:700">' + (days === 1 ? "day to go" : "days to go") + '</div>' +
+        '<div class="mini">' + esc(dateL) + expected + '</div></div></div>' + perDay +
+      '<div class="progress" style="height:8px;margin-top:12px"><div style="width:' + Math.min(100, into / cycle * 100) + '%;background:var(--green)"></div></div>' +
+      '<div class="row-between mini" style="margin-top:6px"><span>Day ' + into + ' of ' + cycle + ' this pay cycle</span><span>Payday ›</span></div>' +
+      '</section>';
+  }
   function dashDebtFreePanel() {
     var f = debtFreeInfo();
     if (!f.any) return "";
     var open = 'data-tab="debt" role="button" tabindex="0" aria-label="Open Debt"';
-    if (f.done) return '<section class="panel card-link debtfree" ' + open + '><div class="debtfree-big pos">🎉 Debt-free!</div><div class="mini">Every debt is paid off. Amazing work.</div></section>';
-    if (f.never && !f.target) return '<section class="panel card-link debtfree" ' + open + '><div class="debtfree-label">🎯 Debt-free countdown</div>' +
+    if (f.done) return '<section class="panel card-link countdown debtfree" ' + open + '><div class="cd-big pos">🎉 Debt-free!</div><div class="mini">Every debt is paid off. Amazing work.</div></section>';
+    if (f.never && !f.target) return '<section class="panel card-link countdown debtfree" ' + open + '><div class="cd-label">🎯 Debt-free countdown</div>' +
       '<div class="mini" style="margin-top:6px">⚠ Some debts have no monthly payment, so there\'s no finish date yet. Tap to set them.</div></section>';
     var fmtD = function (d) { return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }); };
     var days = f.days, past = days < 0;
@@ -1851,12 +1884,12 @@
     var check = "";
     if (f.target && f.proj) {
       var late = (f.proj.getFullYear() - f.target.getFullYear()) * 12 + (f.proj.getMonth() - f.target.getMonth());
-      check = late <= 0 ? '<div class="debtfree-check pos">✓ On track — your plan clears it by ' + esc(ymLabel(f.projYm)) + '</div>'
-        : '<div class="debtfree-check warn">⚠ Your plan finishes ' + esc(ymLabel(f.projYm)) + ' — ' + late + ' month' + (late === 1 ? "" : "s") + ' after your target</div>';
-    } else if (f.target && f.never) check = '<div class="debtfree-check warn">⚠ Some debts have no monthly payment, so your plan never clears them</div>';
-    return '<section class="panel card-link debtfree" ' + open + '>' +
-      '<div class="debtfree-label">🎯 Debt-free countdown</div>' +
-      '<div class="debtfree-row"><div class="debtfree-big">' + (past ? "—" : days) + '</div><div><div style="font-weight:700">' + (past ? "Target date has passed" : days === 1 ? "day to go" : "days to go") + '</div>' +
+      check = late <= 0 ? '<div class="cd-check pos">✓ On track — your plan clears it by ' + esc(ymLabel(f.projYm)) + '</div>'
+        : '<div class="cd-check warn">⚠ Your plan finishes ' + esc(ymLabel(f.projYm)) + ' — ' + late + ' month' + (late === 1 ? "" : "s") + ' after your target</div>';
+    } else if (f.target && f.never) check = '<div class="cd-check warn">⚠ Some debts have no monthly payment, so your plan never clears them</div>';
+    return '<section class="panel card-link countdown debtfree" ' + open + '>' +
+      '<div class="cd-label">🎯 Debt-free countdown</div>' +
+      '<div class="cd-row"><div class="cd-big">' + (past ? "—" : days) + '</div><div><div style="font-weight:700">' + (past ? "Target date has passed" : days === 1 ? "day to go" : "days to go") + '</div>' +
         '<div class="mini">' + (past ? "Set a new target on the Debt page" : 'by ' + esc(fmtD(f.main)) + (f.target ? " · your target" : " · on your current plan") + (approx ? " · " + approx : "")) + '</div></div></div>' +
       check +
       '<div class="progress" style="height:8px;margin-top:12px"><div style="width:' + f.paidPct + '%;background:var(--green)"></div></div>' +
@@ -2465,30 +2498,30 @@
 
   function pagePayday() {
     var p = state.payday || {};
-    var view;
-    if (!p.date) {
+    var view, nx = nextPayday(false), shownDate = p.date || "";
+    if (!nx) {
       view = '<div class="panel"><div class="empty">Set your next payday above to start the countdown.</div></div>';
     } else {
-      var dl = new Date(p.date + "T00:00:00");
+      var dl = nx.date;
+      // Show the rolled-forward date in the input, unless it was clamped for a short month (saving that would move the day).
+      if (dl.getDate() === localDateFromYmd(p.date).getDate()) shownDate = ymdLocal(dl);
       var days = Math.round((dl.getTime() - new Date(today() + "T00:00:00").getTime()) / 86400000);
       var dateLabel = dl.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
       var lbl = esc(p.label || "Payday");
       var big;
       if (days > 0) {
         big = '<div class="card" style="text-align:center"><div class="label">' + lbl + ' in</div><div class="value" style="font-size:48px;color:var(--accent)">' + days + '</div><div class="sub">day' + (days === 1 ? "" : "s") + ' · ' + dateLabel + '</div></div>';
-      } else if (days === 0) {
-        big = '<div class="card" style="text-align:center"><div class="value" style="font-size:30px;color:var(--green)">🎉 Today is ' + lbl + '!</div><div class="sub">' + dateLabel + '</div></div>';
       } else {
-        big = '<div class="card" style="text-align:center"><div class="label">' + lbl + ' was</div><div class="value" style="font-size:40px;color:var(--red)">' + (-days) + ' day' + ((-days) === 1 ? "" : "s") + ' ago</div><div class="sub">' + dateLabel + ' — update the date below</div></div>';
+        big = '<div class="card" style="text-align:center"><div class="value" style="font-size:30px;color:var(--green)">🎉 Today is ' + lbl + '!</div><div class="sub">' + dateLabel + '</div></div>';
       }
       var weeks = days > 0 ? '<div class="card"><div class="label">That\'s about</div><div class="value">' + (days / 7).toFixed(1) + ' weeks</div></div>' : '';
       var amt = num(p.amount) > 0 ? '<div class="card"><div class="label">Expected amount</div><div class="value pos">' + fmt(p.amount) + '</div>' + (days > 0 ? '<div class="sub">' + fmt(num(p.amount) / days) + ' / day until then</div>' : '') + '</div>' : '';
       view = '<div class="cards">' + big + amt + weeks + '</div>';
     }
-    return '<h1 class="page-title">Payday Countdown</h1><p class="page-sub">Count down to your next paycheck.</p>' +
+    return '<h1 class="page-title">Payday Countdown</h1><p class="page-sub">Count down to your next paycheck — it repeats every month on the same day, so you only set it once.</p>' +
       '<div class="panel"><h3>Set Payday</h3><div class="form-row" style="max-width:640px">' +
         '<label class="field"><span>Label</span><input id="pd_label" value="' + esc(p.label || "Payday") + '"/></label>' +
-        '<label class="field"><span>Next payday date</span><input id="pd_date" type="date" value="' + esc(p.date || "") + '"/></label>' +
+        '<label class="field"><span>Next payday date</span><input id="pd_date" type="date" value="' + esc(shownDate) + '"/></label>' +
         '<label class="field"><span>Amount (' + (state.currency || "$") + ')</span><input id="pd_amount" type="number" value="' + num(p.amount) + '"/></label>' +
         '<button class="btn" data-act="setPayday">Save</button>' +
       '</div></div>' + view;
