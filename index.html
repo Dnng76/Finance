@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 83</title>
+<title>Finance Tracker · build 84</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -296,6 +296,11 @@
   .cd-big { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.05; color: var(--accent); font-variant-numeric: tabular-nums; }
   .cd-check { margin-top: 10px; font-size: 13px; font-weight: 600; }
   .cd-check.warn { color: var(--yellow); }
+  .cd-edit { flex: none; background: transparent; border: 1px solid var(--border); color: var(--accent); border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .df-editor { margin-top: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg2); }
+  .df-steps { display: flex; gap: 6px; align-items: center; }
+  .df-steps button { flex: none; min-width: 44px; min-height: 42px; background: var(--panel2); border: 1px solid var(--border); color: var(--text); border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .df-steps input { flex: 1; min-width: 0; text-align: center; font-size: 18px; font-weight: 800; padding: 8px; }
   .card-go { display: block; margin-top: 6px; color: var(--accent); font-weight: 600; font-size: 12px; }
   .ver-tag { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--muted); vertical-align: 2px; }
   .debt-strip { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 6px; margin: 4px 0 12px; scrollbar-width: none; }
@@ -389,7 +394,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 83 · salary countdown on dashboard";
+  var VERSION = "build 84 · edit debt-free days on dashboard";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Savings","Other"];
   var CATMETA = {
@@ -1870,12 +1875,38 @@
       '<div class="row-between mini" style="margin-top:6px"><span>Day ' + into + ' of ' + cycle + ' this pay cycle</span><span>Payday ›</span></div>' +
       '</section>';
   }
+  // The date `n` days from today (YYYY-MM-DD, local).
+  function dfDateIn(n) { var d = new Date(today() + "T12:00:00"); d.setDate(d.getDate() + n); return ymdLocal(d); }
+  // ✎ Edit days (user, 2026-10-24): change the days to go right on the Dashboard. Saving sets the target date
+  // (state.debtFree.date), the same one the Debt page's countdown uses; "Use my plan's date" clears it.
+  function dfEditor(f) {
+    var typed = dashDebtFreePanel.typed != null ? dashDebtFreePanel.typed : (f.days > 0 ? String(f.days) : "");
+    return '<div class="df-editor">' +
+      '<div class="mini" style="margin-bottom:8px">Days to go</div>' +
+      '<div class="df-steps">' +
+        '<button type="button" data-dfstep="-30">−30</button><button type="button" data-dfstep="-7">−7</button>' +
+        '<input id="dfd_days" type="number" inputmode="numeric" min="0" aria-label="Days to go until debt-free" value="' + esc(typed) + '" data-proj="' + esc(f.projYm || "") + '"/>' +
+        '<button type="button" data-dfstep="7">+7</button><button type="button" data-dfstep="30">+30</button>' +
+      '</div>' +
+      '<div class="mini" id="dfd_prev" style="margin-top:8px"></div>' +
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
+        '<button class="btn sm" id="dfd_save" data-act="dfSave">Save</button>' +
+        '<button class="btn sm ghost" data-act="dfCancel">Cancel</button>' +
+        (f.target ? '<button class="btn sm ghost" data-act="dfPlan">↺ Use my plan\'s date</button>' : "") +
+      '</div>' +
+      (f.projYm ? '<div class="mini" style="margin-top:8px">Your payment plan clears it by ' + esc(ymLabel(f.projYm)) + '.</div>' : "") +
+    '</div>';
+  }
   function dashDebtFreePanel() {
     var f = debtFreeInfo();
     if (!f.any) return "";
     var open = 'data-tab="debt" role="button" tabindex="0" aria-label="Open Debt"';
     if (f.done) return '<section class="panel card-link countdown debtfree" ' + open + '><div class="cd-big pos">🎉 Debt-free!</div><div class="mini">Every debt is paid off. Amazing work.</div></section>';
-    if (f.never && !f.target) return '<section class="panel card-link countdown debtfree" ' + open + '><div class="cd-label">🎯 Debt-free countdown</div>' +
+    var editing = !!dashDebtFreePanel.edit;
+    var head = '<div class="row-between"><div class="cd-label">🎯 Debt-free countdown</div>' +
+      (editing ? "" : '<button type="button" class="cd-edit df-stop" data-act="dfEdit" aria-label="Edit days to go">✎ Edit days</button>') + '</div>';
+    if (editing) return '<section class="panel countdown debtfree">' + head + dfEditor(f) + '</section>';
+    if (f.never && !f.target) return '<section class="panel card-link countdown debtfree" ' + open + '>' + head +
       '<div class="mini" style="margin-top:6px">⚠ Some debts have no monthly payment, so there\'s no finish date yet. Tap to set them.</div></section>';
     var fmtD = function (d) { return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }); };
     var days = f.days, past = days < 0;
@@ -1887,10 +1918,9 @@
       check = late <= 0 ? '<div class="cd-check pos">✓ On track — your plan clears it by ' + esc(ymLabel(f.projYm)) + '</div>'
         : '<div class="cd-check warn">⚠ Your plan finishes ' + esc(ymLabel(f.projYm)) + ' — ' + late + ' month' + (late === 1 ? "" : "s") + ' after your target</div>';
     } else if (f.target && f.never) check = '<div class="cd-check warn">⚠ Some debts have no monthly payment, so your plan never clears them</div>';
-    return '<section class="panel card-link countdown debtfree" ' + open + '>' +
-      '<div class="cd-label">🎯 Debt-free countdown</div>' +
+    return '<section class="panel card-link countdown debtfree" ' + open + '>' + head +
       '<div class="cd-row"><div class="cd-big">' + (past ? "—" : days) + '</div><div><div style="font-weight:700">' + (past ? "Target date has passed" : days === 1 ? "day to go" : "days to go") + '</div>' +
-        '<div class="mini">' + (past ? "Set a new target on the Debt page" : 'by ' + esc(fmtD(f.main)) + (f.target ? " · your target" : " · on your current plan") + (approx ? " · " + approx : "")) + '</div></div></div>' +
+        '<div class="mini">' + (past ? "Tap ✎ Edit days to set a new one" : 'by ' + esc(fmtD(f.main)) + (f.target ? " · your target" : " · on your current plan") + (approx ? " · " + approx : "")) + '</div></div></div>' +
       check +
       '<div class="progress" style="height:8px;margin-top:12px"><div style="width:' + f.paidPct + '%;background:var(--green)"></div></div>' +
       '<div class="row-between mini" style="margin-top:6px"><span>' + f.paidPct.toFixed(0) + '% paid off</span><span>' + fmt(f.left) + ' to go · View debts ›</span></div>' +
@@ -3535,6 +3565,20 @@
     planPrev: function () { commitPlan(); planMonth = prevMonth(planMonth); render(); },
     planNext: function () { commitPlan(); planMonth = nextMonth(planMonth); render(); },
     setDebtFree: function () { state.debtFree = { date: val("df_date") || "", start: val("df_start") || "" }; save(); render(); },
+    dfEdit: function () { dashDebtFreePanel.edit = true; dashDebtFreePanel.typed = null; render(); if (el("dfd_days")) el("dfd_days").focus(); },
+    dfCancel: function () { dashDebtFreePanel.edit = false; render(); },
+    dfSave: function () {
+      var x = el("dfd_days"); if (!x || x.value === "") return;
+      var n = Math.max(0, Math.min(36500, Math.round(num(x.value))));
+      state.debtFree = Object.assign({}, state.debtFree || {}, { date: dfDateIn(n) });
+      dashDebtFreePanel.edit = false; save(); render();
+      toast("Debt-free countdown: " + n + " day" + (n === 1 ? "" : "s") + " to go", "🎯");
+    },
+    dfPlan: function () {
+      state.debtFree = Object.assign({}, state.debtFree || {}, { date: "" });
+      dashDebtFreePanel.edit = false; save(); render();
+      toast("Countdown follows your payment plan again", "↺");
+    },
     uploadDebtPhoto: function () { if (el("debtPhotoFile")) el("debtPhotoFile").click(); },
     delDebtPhoto: function (e) { debtPhotos = debtPhotos.filter(function (p) { return p.id !== e.id; }); saveDebtPhotos(); render(); },
     uploadBudgetPhoto: function () { if (el("budgetPhotoFile")) el("budgetPhotoFile").click(); },
@@ -3944,6 +3988,32 @@
       if (act === "filter") { b.value = pageTransactions.filter || "all"; b.onchange = function () { pageTransactions.filter = b.value; render(); }; return; }
       if (actions[act]) b.onclick = function () { actions[act]({ id: b.getAttribute("data-id"), amt: b.getAttribute("data-amt"), c: b.getAttribute("data-c"), k: b.getAttribute("data-k") }); };
     });
+    // ✎ Edit days sits inside the tappable debt-free card: keep its tap/keys from also opening the Debt tab
+    root.querySelectorAll(".df-stop").forEach(function (x) {
+      x.addEventListener("click", function (ev) { ev.stopPropagation(); });
+      x.addEventListener("keydown", function (ev) { ev.stopPropagation(); });
+    });
+    // Debt-free days editor: the steps and the preview update in place (no re-render, so typing survives)
+    if (el("dfd_days")) {
+      var dfd = el("dfd_days"), dfdShow = function () {
+        dashDebtFreePanel.typed = dfd.value;
+        var n = Math.round(num(dfd.value)), ok = dfd.value !== "" && n >= 0 && n <= 36500, prev = el("dfd_prev"), saveB = el("dfd_save");
+        saveB.disabled = !ok; saveB.textContent = ok ? "Save " + n + " day" + (n === 1 ? "" : "s") : "Save";
+        if (!ok) { prev.textContent = "Type how many days are left"; return; }
+        var d = new Date(dfDateIn(n) + "T00:00:00"), proj = dfd.getAttribute("data-proj"), note = "";
+        if (proj) {
+          var late = (+proj.slice(0, 4) - d.getFullYear()) * 12 + (+proj.slice(5, 7) - 1 - d.getMonth());
+          note = late <= 0 ? " · ✓ your plan makes it" : " · ⚠ your plan finishes " + late + " month" + (late === 1 ? "" : "s") + " later";
+        }
+        prev.innerHTML = "New target: <b>" + esc(d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })) + "</b>" + esc(note);
+      };
+      dfd.oninput = dfdShow;
+      dfd.onkeydown = function (ev) { if (ev.key === "Enter") { ev.preventDefault(); actions.dfSave(); } };
+      root.querySelectorAll("[data-dfstep]").forEach(function (b) {
+        b.onclick = function () { dfd.value = Math.max(0, Math.min(36500, (dfd.value === "" ? 0 : Math.round(num(dfd.value))) + num(b.getAttribute("data-dfstep")))); dfdShow(); };
+      });
+      dfdShow();
+    }
     root.querySelectorAll('.debt-pay input').forEach(function (input) { input.onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); actions.payDebt({ id: input.id.slice(3) }); } }; });
     // Transactions quick add: switch type / pick category without re-rendering (keeps what you've typed)
     root.querySelectorAll("[data-qtype]").forEach(function (b) {
