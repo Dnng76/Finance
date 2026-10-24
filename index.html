@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 80</title>
+<title>Finance Tracker · build 81</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -208,6 +208,7 @@
   .dashboard-cards .card { border-radius: 8px; padding: 18px; min-width: 0; }
   .dashboard-cards .card .value { letter-spacing: 0; }
   .dashboard-cards .card:hover { transform: none; }
+  .dashboard-cards .card-wide { grid-column: 1 / -1; }
   .spend-amount { font-size: 32px; font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
   .spend-columns { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr); gap: 16px; text-align: center; }
   .spend-columns > div + div { border-left: 1px solid var(--border); padding-left: 16px; }
@@ -380,7 +381,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 80 · tap Total Debt to open Debt";
+  var VERSION = "build 81 · total assets on dashboard";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Savings","Other"];
   var CATMETA = {
@@ -1218,14 +1219,19 @@
       '<div class="form-row" style="max-width:560px"><label class="field"><span>Balance target (' + (state.currency || "$") + ')</span><input id="tg_balance" type="number" value="' + num(tgt.balance) + '"/></label>' +
       '<label class="field"><span>Trading target (' + (state.currency || "$") + ')</span><input id="tg_trading" type="number" value="' + num(tgt.trading) + '"/></label><button class="btn" data-act="setTargets">Save</button></div></div></details>';
 
+    // Assets = everything counted in net worth before debt is subtracted (gift money excluded, same as net worth).
+    var assetsTotal = money(t.balance + t.goalCash + t.emFund + t.tradingBalance);
+    var assetParts = [["Cash", t.balance], ["Goals", t.goalCash], ["Emergency", t.emFund], ["Trading", t.tradingBalance]]
+      .filter(function (p) { return Math.abs(num(p[1])) >= 0.005; }).map(function (p) { return p[0] + " " + fmt(p[1]); });
     return '<h1 class="page-title">Dashboard</h1><p class="page-sub">' + esc(ymLabel(ymOfDate(new Date()), true)) +
       ' <span class="ver-tag" title="' + esc(VERSION) + '">' + esc((VERSION.match(/build \d+/) || [VERSION])[0]) + '</span></p>' +
       overBudgetAlert() + backupNudge() +
       '<div class="cards dashboard-cards">' +
         card("Current Balance", fmt(t.balance), (t.usingAccounts ? "Total across " + state.accounts.length + " accounts" : "Income " + fmt(t.income) + " · Expenses " + fmt(t.expense)), t.balance >= 0 ? "pos" : "neg", "💰", "rgba(52,211,153,.16)", balBar) +
         card("Safe to Spend", fmt(safe), "After " + fmt(safeInfo.commitments) + " due through " + safeInfo.until + (safeInfo.usesPayday ? " (payday)" : " (30 days)"), safe >= 0 ? "pos" : "neg", "💸", "rgba(251,191,36,.16)") +
+        card("Total Assets", fmt(assetsTotal), assetParts.length ? assetParts.join(" · ") : "Cash, goals, emergency fund & trading", assetsTotal >= 0 ? "pos" : "neg", "🏦", "rgba(52,211,153,.16)") +
         cardLink("debt", "Open Debt", card("Total Debt", fmt(t.totalDebt), state.debts.length + " debt" + (state.debts.length !== 1 ? "s" : "") + " tracked <span class=\"card-go\">View debts ›</span>", "neg", "💳", "rgba(248,113,113,.16)")) +
-        card("Net Worth", fmt(t.netWorth), "Gifts excluded", t.netWorth >= 0 ? "pos" : "neg", "📈", "rgba(56,189,248,.16)") +
+        card("Net Worth", fmt(t.netWorth), "Assets " + fmt(assetsTotal) + " − Debt " + fmt(t.totalDebt) + " · gifts excluded", t.netWorth >= 0 ? "pos" : "neg", "📈", "rgba(56,189,248,.16)").replace('<div class="card">', '<div class="card card-wide">') +
       '</div>' + dashboardMonthSummary(ym) +
       '<section class="holdings" aria-label="Savings and trading"><div><div class="mini">Emergency fund</div><div class="value">' + fmt(t.emFund) + '</div><div class="mini">Target ' + fmt(emTarget) + '</div></div>' +
       '<div><div class="mini">Trading balance</div><div class="value ' + (t.tradingBalance >= 0 ? 'pos' : 'neg') + '">' + fmt(t.tradingBalance) + '</div><div class="mini">' + state.trading.trades.length + ' trades</div></div>' +
