@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 81</title>
+<title>Finance Tracker · build 82</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -288,6 +288,12 @@
   .card-link { cursor: pointer; }
   .card-link:active { transform: scale(.98); }
   .card-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .debtfree { padding: 16px 18px; margin-bottom: 22px; }
+  .debtfree-label { font-size: 12px; font-weight: 700; letter-spacing: .4px; color: var(--muted); text-transform: uppercase; }
+  .debtfree-row { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
+  .debtfree-big { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.05; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .debtfree-check { margin-top: 10px; font-size: 13px; font-weight: 600; }
+  .debtfree-check.warn { color: var(--yellow); }
   .card-go { display: block; margin-top: 6px; color: var(--accent); font-weight: 600; font-size: 12px; }
   .ver-tag { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--muted); vertical-align: 2px; }
   .debt-strip { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 6px; margin: 4px 0 12px; scrollbar-width: none; }
@@ -381,7 +387,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 81 · total assets on dashboard";
+  var VERSION = "build 82 · debt-free countdown on dashboard";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Savings","Other"];
   var CATMETA = {
@@ -1232,7 +1238,7 @@
         card("Total Assets", fmt(assetsTotal), assetParts.length ? assetParts.join(" · ") : "Cash, goals, emergency fund & trading", assetsTotal >= 0 ? "pos" : "neg", "🏦", "rgba(52,211,153,.16)") +
         cardLink("debt", "Open Debt", card("Total Debt", fmt(t.totalDebt), state.debts.length + " debt" + (state.debts.length !== 1 ? "s" : "") + " tracked <span class=\"card-go\">View debts ›</span>", "neg", "💳", "rgba(248,113,113,.16)")) +
         card("Net Worth", fmt(t.netWorth), "Assets " + fmt(assetsTotal) + " − Debt " + fmt(t.totalDebt) + " · gifts excluded", t.netWorth >= 0 ? "pos" : "neg", "📈", "rgba(56,189,248,.16)").replace('<div class="card">', '<div class="card card-wide">') +
-      '</div>' + dashboardMonthSummary(ym) +
+      '</div>' + dashDebtFreePanel() + dashboardMonthSummary(ym) +
       '<section class="holdings" aria-label="Savings and trading"><div><div class="mini">Emergency fund</div><div class="value">' + fmt(t.emFund) + '</div><div class="mini">Target ' + fmt(emTarget) + '</div></div>' +
       '<div><div class="mini">Trading balance</div><div class="value ' + (t.tradingBalance >= 0 ? 'pos' : 'neg') + '">' + fmt(t.tradingBalance) + '</div><div class="mini">' + state.trading.trades.length + ' trades</div></div>' +
       '<div><div class="mini">Gift saved</div><div class="value">' + fmt(t.goalGift) + '</div><div class="mini">Excluded from net worth</div></div></section>' +
@@ -1811,6 +1817,52 @@
 
 
   function ymAdd(ym, k) { for (var i = 0; i < k; i++) ym = nextMonth(ym); return ym; }
+  function ymLastDay(ym) { var p = ym.split("-"); return new Date(+p[0], +p[1], 0); }
+  // When will all debt be gone? Projected from the real month-by-month plan (incl. edited months & payments made).
+  function debtFreeInfo() {
+    var debts = state.debts || [], active = debts.filter(function (d) { return num(d.remaining) > 0; });
+    var t0 = new Date(today() + "T00:00:00"), cur = ymOfDate(t0), projYm = null;
+    if (active.length) {
+      var sd = debtScheduleData(cur, ymAdd(cur, 239));
+      for (var i = 0; i < sd.months.length; i++) if (sd.months[i].left <= 0.005) { projYm = sd.months[i].ym; break; }
+    }
+    var df = state.debtFree || {}, target = df.date ? new Date(df.date + "T00:00:00") : null;
+    if (target && isNaN(target.getTime())) target = null;
+    var proj = projYm ? ymLastDay(projYm) : null;
+    var main = target || proj;
+    var orig = debts.reduce(function (s, d) { return s + Math.max(num(d.total), num(d.remaining)); }, 0);
+    var left = active.reduce(function (s, d) { return s + num(d.remaining); }, 0);
+    return { any: debts.length > 0, done: debts.length > 0 && !active.length, never: active.length > 0 && !projYm,
+      projYm: projYm, proj: proj, target: target, main: main,
+      days: main ? Math.round((main.getTime() - t0.getTime()) / 86400000) : null,
+      orig: orig, left: left, paidPct: orig > 0 ? Math.min(100, (orig - left) / orig * 100) : 0 };
+  }
+  function dashDebtFreePanel() {
+    var f = debtFreeInfo();
+    if (!f.any) return "";
+    var open = 'data-tab="debt" role="button" tabindex="0" aria-label="Open Debt"';
+    if (f.done) return '<section class="panel card-link debtfree" ' + open + '><div class="debtfree-big pos">🎉 Debt-free!</div><div class="mini">Every debt is paid off. Amazing work.</div></section>';
+    if (f.never && !f.target) return '<section class="panel card-link debtfree" ' + open + '><div class="debtfree-label">🎯 Debt-free countdown</div>' +
+      '<div class="mini" style="margin-top:6px">⚠ Some debts have no monthly payment, so there\'s no finish date yet. Tap to set them.</div></section>';
+    var fmtD = function (d) { return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }); };
+    var days = f.days, past = days < 0;
+    var totM = Math.round(days / 30.44), yrs = Math.floor(totM / 12), mos = totM % 12;
+    var approx = days > 60 ? '<span style="white-space:nowrap">≈ ' + (yrs ? yrs + " yr" + (mos ? " " + mos + " mo" : "") : totM + " months") + '</span>' : "";
+    var check = "";
+    if (f.target && f.proj) {
+      var late = (f.proj.getFullYear() - f.target.getFullYear()) * 12 + (f.proj.getMonth() - f.target.getMonth());
+      check = late <= 0 ? '<div class="debtfree-check pos">✓ On track — your plan clears it by ' + esc(ymLabel(f.projYm)) + '</div>'
+        : '<div class="debtfree-check warn">⚠ Your plan finishes ' + esc(ymLabel(f.projYm)) + ' — ' + late + ' month' + (late === 1 ? "" : "s") + ' after your target</div>';
+    } else if (f.target && f.never) check = '<div class="debtfree-check warn">⚠ Some debts have no monthly payment, so your plan never clears them</div>';
+    return '<section class="panel card-link debtfree" ' + open + '>' +
+      '<div class="debtfree-label">🎯 Debt-free countdown</div>' +
+      '<div class="debtfree-row"><div class="debtfree-big">' + (past ? "—" : days) + '</div><div><div style="font-weight:700">' + (past ? "Target date has passed" : days === 1 ? "day to go" : "days to go") + '</div>' +
+        '<div class="mini">' + (past ? "Set a new target on the Debt page" : 'by ' + esc(fmtD(f.main)) + (f.target ? " · your target" : " · on your current plan") + (approx ? " · " + approx : "")) + '</div></div></div>' +
+      check +
+      '<div class="progress" style="height:8px;margin-top:12px"><div style="width:' + f.paidPct + '%;background:var(--green)"></div></div>' +
+      '<div class="row-between mini" style="margin-top:6px"><span>' + f.paidPct.toFixed(0) + '% paid off</span><span>' + fmt(f.left) + ' to go · View debts ›</span></div>' +
+      '</section>';
+  }
   // Month of the last payment for a debt (null if it never clears).
   function debtEndYm(d) {
     var n = payoffMonths(d.remaining, d.rate, d.payment);
