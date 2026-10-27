@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 88</title>
+<title>Finance Tracker · build 89</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -310,6 +310,9 @@
   .debt-mhead .month-picker { display: flex; align-items: center; gap: 6px; }
   .debt-mhead .month-picker input { flex: 1; width: 0; min-height: 44px; padding: 6px 12px; font-size: 17px; font-weight: 600; }
   .debt-mhead .tool-btn { width: 40px; height: 40px; flex-shrink: 0; }
+  .pay-log { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(52,211,153,.10); border: 1px solid rgba(52,211,153,.35); font-size: 14px; font-weight: 600; }
+  .debt-payfrom { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; font-size: 13px; color: var(--muted); }
+  .debt-payfrom select { width: auto; max-width: 100%; padding: 8px 10px; font-size: 14px; }
   .debt-mline { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 12px 0 8px; font-size: 15px; }
   .debt-card { padding: 16px 0; border-bottom: 1px solid var(--border); }
   .debt-card h2 { font-size: 16px; margin: 0; overflow-wrap: anywhere; }
@@ -418,9 +421,9 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 88 · bug fixes";
+  var VERSION = "build 89 · debt payments update balance, one-tap salary";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
-  var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Savings","Other"];
+  var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Debt","Savings","Other"];
   var CATMETA = {
     Food: { e: "🍔", bg: "#fef3c7", ic: "#f59e0b" },
     Rent: { e: "🏠", bg: "#ffedd5", ic: "#f97316" },
@@ -429,6 +432,7 @@
     Shopping: { e: "🛍️", bg: "#fce7f3", ic: "#ec4899" },
     Entertainment: { e: "🎮", bg: "#ede9fe", ic: "#8b5cf6" },
     Health: { e: "🏥", bg: "#d1fae5", ic: "#10b981" },
+    Debt: { e: "📉", bg: "#fee2e2", ic: "#ef4444" },
     Salary: { e: "💳", bg: "#d1fae5", ic: "#10b981" },
     Investment: { e: "💰", bg: "#fef3c7", ic: "#f59e0b" },
     Freelance: { e: "💼", bg: "#e0e7ff", ic: "#6366f1" },
@@ -463,6 +467,8 @@
     fire: { expense: 0, assets: 0, growth: 6, swr: 4, invest: 0 },
     leave: { entitlement: 14, carry: 0, start: "", end: "", entries: [] },
     debtBudget: 0,
+    debtLogTx: true,
+    debtAccount: "",
     spendLimit: 0,
     pin: "",
     currency: "$"
@@ -612,10 +618,14 @@
     state.goals.forEach(function (g) { if (g.deadline && g.deadline.slice(0, 7) === ym) evs.push({ day: +g.deadline.slice(8, 10), label: "Goal due: " + g.name, ico: "◎", color: "#38bdf8" }); });
     if (state.debtFree && state.debtFree.date && state.debtFree.date.slice(0, 7) === ym) evs.push({ day: +state.debtFree.date.slice(8, 10), label: "Debt-free day!", ico: "🎯", color: "#34d399" });
     state.recurring.forEach(function (r) { if (r.created && ym < r.created) return; evs.push({ day: recurDateIn(r, +ym.slice(0, 4), +ym.slice(5, 7) - 1).getDate(), label: (r.note || r.category) + " " + fmt(r.amount), ico: "🔁", color: r.type === "income" ? "#34d399" : "#a78bfa" }); });
-    // Planned debt payments for this month
-    (state.debts || []).forEach(function (d) {
+    // Debt payments due this month (regular ones too, not only custom plans). Future months follow the payoff
+    // schedule, so a debt stops showing once it would be cleared.
+    if (ym > ymOfDate(new Date(today() + "T00:00:00"))) {
+      var schedM = debtScheduleData(ym, ym).months[0];
+      (schedM ? schedM.rows : []).forEach(function (r) { evs.push({ day: 1, label: "Pay " + r.d.creditor + " " + fmt(r.pay), ico: "💳", color: "#f87171" }); });
+    } else (state.debts || []).forEach(function (d) {
       var info = debtMonthInfo(d, ym);
-      if (num(d.remaining) > 0 && planHas(d, ym) && info.left > 0) evs.push({ day: 1, label: "Pay " + d.creditor + " " + fmt(info.left), ico: "💳", color: "#f87171" });
+      if (num(d.remaining) > 0 && info.left > 0) evs.push({ day: 1, label: "Pay " + d.creditor + " " + fmt(info.left), ico: "💳", color: "#f87171" });
     });
     // Planned goal savings for this month
     (state.goals || []).forEach(function (g) {
@@ -714,7 +724,8 @@
     });
     events.sort(function (a, b) { return a.days - b.days; });
     var curYm = ymOfDate(now);
-    var plannedDebt = (state.debts || []).reduce(function (s, d) { return s + (num(d.remaining) > 0 && planHas(d, curYm) ? debtMonthInfo(d, curYm).left : 0); }, 0);
+    // What's still due on debts this month — regular payments too, not only months with a custom plan.
+    var plannedDebt = (state.debts || []).reduce(function (s, d) { return s + (num(d.remaining) > 0 ? debtMonthInfo(d, curYm).left : 0); }, 0);
     if (!events.length && plannedDebt <= 0) return "";
     var rows = events.map(function (e) {
       var whenTxt = e.days === 0 ? "today" : "in " + e.days + " day" + (e.days === 1 ? "" : "s");
@@ -1018,7 +1029,7 @@
     while (monthCursor <= lastMonth) {
       var ym = ymOfDate(monthCursor);
       (state.debts || []).forEach(function (d) {
-        if (num(d.remaining) > 0 && planHas(d, ym)) debt += debtMonthInfo(d, ym).left;
+        if (num(d.remaining) > 0) debt += debtMonthInfo(d, ym).left;
       });
       monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 1);
     }
@@ -1609,6 +1620,37 @@
     if (!d.monthlyPlans) d.monthlyPlans = {};
     d.monthlyPlans[ym] = { amount: money(amount), note: note || "" };
   }
+  // Debt payments come out of your money too (user, 2026-10-27): each one is logged as a "Debt" expense so the
+  // balance and Safe to Spend stay true. state.debtLogTx === false turns it off; state.debtAccount picks the account.
+  function debtPayAccount() {
+    var accs = state.accounts || [];
+    if (!accs.length) return "";
+    return accs.some(function (a) { return a.id === state.debtAccount; }) ? state.debtAccount : accs[0].id;
+  }
+  // Log a payment (or take a corrected one back off) in Transactions. Returns how to undo it.
+  function logDebtCash(d, ym, amount, reverse) {
+    if (state.debtLogTx === false) return function () {};
+    if (!reverse) {
+      var tx = { id: uid(), date: today(), type: "expense", category: "Debt", amount: amount, note: d.creditor + " · " + ymLabel(ym), account: debtPayAccount(), budget: "", debtId: d.id, debtMonth: ym };
+      state.transactions.push(tx); applyTxToAccount(tx, 1);
+      return function () { var t = state.transactions.filter(function (x) { return x.id === tx.id; })[0]; if (!t) return; applyTxToAccount(t, -1); state.transactions = state.transactions.filter(function (x) { return x.id !== tx.id; }); };
+    }
+    // Add back = a correction: shrink the payments logged for this debt and month, newest first.
+    var left = amount, saved = [];
+    state.transactions.slice().reverse().forEach(function (t) {
+      if (left <= 0 || t.debtId !== d.id || t.debtMonth !== ym) return;
+      saved.push(clone(t)); var cut = Math.min(left, num(t.amount));
+      applyTxToAccount(t, -1); t.amount = money(num(t.amount) - cut); left = money(left - cut); applyTxToAccount(t, 1);
+    });
+    state.transactions = state.transactions.filter(function (t) { return !(t.debtId && num(t.amount) <= 0); });
+    return function () {
+      saved.forEach(function (old) {
+        var cur = state.transactions.filter(function (x) { return x.id === old.id; })[0];
+        if (cur) { applyTxToAccount(cur, -1); state.transactions = state.transactions.filter(function (x) { return x.id !== old.id; }); }
+        state.transactions.push(old); applyTxToAccount(old, 1);
+      });
+    };
+  }
   function adjustDebtPayment(id, inputId, ym, reverse) {
     if (!validDebtMonth(ym)) { toast("Choose a valid payment month", "!"); return; }
     var amount = positiveAmount(inputId); if (amount === null) return;
@@ -1622,11 +1664,12 @@
     if (!Array.isArray(d.payments)) d.payments = [];
     d.payments.push({ id: uid(), date: today(), month: ym, kind: reverse ? "reversal" : "payment", amount: amount, remaining: d.remaining });
     var after = JSON.stringify(d);
+    var undoCash = logDebtCash(d, ym, amount, reverse), from = state.debtLogTx === false ? "" : (accountName(debtPayAccount()) || "your balance");
     save(); render();
-    toast((reverse ? "Added back " : "Paid ") + fmt(amount) + " · " + ymLabel(ym) + " · " + fmt(d.remaining) + " debt left", "✓", "Undo", function () {
+    toast((reverse ? "Added back " : "Paid ") + fmt(amount) + " · " + ymLabel(ym) + " · " + fmt(d.remaining) + " debt left" + (from ? (reverse ? " · back to " : " · from ") + from : ""), "✓", "Undo", function () {
       var index = -1; state.debts.forEach(function (x, i) { if (x.id === id) index = i; });
       if (index < 0 || JSON.stringify(state.debts[index]) !== after) { toast("Debt has changed since that entry. Use Add back to make a correction.", "!"); return; }
-      state.debts[index] = clone(before); save(); render(); toast("Entry undone", "↶");
+      state.debts[index] = clone(before); undoCash(); save(); render(); toast("Entry undone", "↶");
     });
   }
   // Save the Plan to Pay boxes — but ONLY the ones the user actually changed, so this can never
@@ -1932,6 +1975,25 @@
         : "Your salary will then count down to that day every month.") + '</div>' +
     '</div>';
   }
+  // One-tap salary (user, 2026-10-27): on payday, or within a week after if it wasn't logged, offer to log the pay.
+  // Any Salary income (or one of the expected amount) within 3 days of that payday counts as already logged —
+  // whether typed in, added by Recurring, or logged here — so it's never offered twice.
+  function salaryLoggedFor(ds) {
+    var p = state.payday || {}, d0 = new Date(ds + "T00:00:00").getTime();
+    return state.transactions.some(function (t) {
+      if (t.type !== "income" || !(t.category === "Salary" || (num(p.amount) > 0 && num(t.amount) === num(p.amount)))) return false;
+      var td = new Date((t.date || "") + "T00:00:00").getTime();
+      return !isNaN(td) && Math.abs(td - d0) <= 3 * 86400000;
+    });
+  }
+  function salaryPrompt(ds) {
+    var p = state.payday || {};
+    if (salaryLoggedFor(ds)) return ds === today() ? '<div class="cd-check">✓ Salary logged</div>' : "";
+    var lbl = new Date(ds + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short" });
+    return '<div class="pay-log df-stop"><span>' + (ds === today() ? "Salary in?" : "Salary from " + esc(lbl) + " not logged yet") + '</span>' +
+      (num(p.amount) > 0 ? '<button type="button" class="btn sm" data-act="pdLog" data-k="' + ds + '">+ Log ' + fmt(p.amount) + '</button>'
+        : '<button type="button" class="btn ghost sm" data-tab="payday">Set salary amount</button>') + '</div>';
+  }
   function dashPaydayPanel(safe) {
     var p = state.payday || {}, nx = nextPayday(false), editing = !!dashPaydayPanel.edit;
     var open = 'data-tab="payday" role="button" tabindex="0" aria-label="Open Payday"';
@@ -1946,12 +2008,15 @@
       (nx.moved ? " (moved — usually " + nx.usual.toLocaleDateString(undefined, { day: "numeric", month: "short" }) + ")" : "");
     var expected = num(p.amount) > 0 ? " · " + fmt(p.amount) + " coming in" : "";
     if (days === 0) return '<section class="panel card-link countdown" ' + open + '>' + title +
-      '<div class="cd-big pay" style="font-size:30px;margin-top:6px">🎉 It\'s payday!</div><div class="mini">' + esc(dateL) + expected + '</div></section>';
+      '<div class="cd-big pay" style="font-size:30px;margin-top:6px">🎉 It\'s payday!</div><div class="mini">' + esc(dateL) + expected + '</div>' +
+      salaryPrompt(ymdLocal(nx.date)) + '</section>';
+    var lastPay = ymdLocal(nx.prev), sinceLast = Math.round((new Date(today() + "T00:00:00").getTime() - nx.prev.getTime()) / 86400000);
     var perDay = safe > 0 ? '<div class="cd-check">≈ ' + fmt(safe / days) + ' a day of spare cash until then (after bills)</div>'
       : '<div class="cd-check warn">⚠ Bills due before payday use up your cash — go easy until then</div>';
     return '<section class="panel card-link countdown" ' + open + '>' + title +
       '<div class="cd-row"><div class="cd-big pay">' + days + '</div><div><div style="font-weight:700">' + (days === 1 ? "day to go" : "days to go") + '</div>' +
         '<div class="mini">' + esc(dateL) + expected + '</div></div></div>' + perDay +
+      (sinceLast >= 1 && sinceLast <= 7 ? salaryPrompt(lastPay) : "") +
       '<div class="progress" style="height:8px;margin-top:12px"><div style="width:' + Math.min(100, into / cycle * 100) + '%;background:var(--green)"></div></div>' +
       '<div class="row-between mini" style="margin-top:6px"><span>Day ' + into + ' of ' + cycle + ' this pay cycle</span><span>Payday ›</span></div>' +
       '</section>';
@@ -2064,6 +2129,10 @@
         '<div class="progress" style="height:8px"><div style="width:' + monthPct + '%;background:var(--green)"></div></div>' +
         (extra > 0 ? '<div class="mini" style="margin-top:6px">Includes ' + fmt(extra) + ' extra</div>' : '')
         : '<div class="mini" style="margin-top:6px">Nothing due this month 🎉</div>') +
+      '<label class="debt-payfrom"><span>💳 When I pay, take it from</span><select id="debt_payfrom" aria-label="Where debt payments come out of">' +
+        ((state.accounts || []).length ? (state.accounts || []).map(function (a) { return '<option value="' + a.id + '"' + (state.debtLogTx !== false && debtPayAccount() === a.id ? " selected" : "") + '>' + (a.emoji || "🏦") + " " + esc(a.name) + '</option>'; }).join("")
+          : '<option value="on"' + (state.debtLogTx !== false ? " selected" : "") + '>my balance</option>') +
+        '<option value="off"' + (state.debtLogTx === false ? " selected" : "") + '>nowhere (don\'t change my balance)</option></select></label>' +
       '</section>';
     var summary = '';
     var addForm = pageDebt.adding ? '<section class="panel debt-add-form"><div class="row-between"><h3 style="margin:0">Add a debt</h3><button class="tool-btn" data-act="debtAddToggle" aria-label="Cancel adding debt" title="Cancel">&#215;</button></div>' +
@@ -2223,7 +2292,7 @@
     var isDefault = target === paceDefaultTarget();
     var curYm = ymOfDate(now);
     var spent = 0, txCount = 0;
-    state.transactions.forEach(function (t) { if ((t.date || "").slice(0, 7) === curYm && t.type === "expense") { spent += num(t.amount); txCount++; } });
+    state.transactions.forEach(function (t) { if ((t.date || "").slice(0, 7) === curYm && t.type === "expense" && t.category !== "Debt") { spent += num(t.amount); txCount++; } });
     var avgDay = daysElapsed > 0 ? spent / daysElapsed : 0;
     var totalDays = daysElapsed + daysLeft;
     var projected = avgDay * totalDays;
@@ -2245,7 +2314,8 @@
     var days = Math.max(1,Math.round((targetDate.getTime() - now.getTime()) / 86400000) + 1); // includes today
     var spent = 0, spentToday = 0;
     state.transactions.forEach(function (t) {
-      if (t.type !== "expense" || (t.date || "").slice(0, 7) !== curYm) return;
+      // Debt payments have their own plan, so they don't eat into the monthly spending limit.
+      if (t.type !== "expense" || t.category === "Debt" || (t.date || "").slice(0, 7) !== curYm) return;
       spent += num(t.amount); if (t.date === td) spentToday += num(t.amount);
     });
     var budgets = state.budgets || {};
@@ -2657,6 +2727,7 @@
         '<label class="field"><span>Label</span><input id="pd_label" value="' + esc(p.label || "Payday") + '"/></label>' +
         '<label class="field"><span>Next payday date</span><input id="pd_date" type="date" value="' + esc(shownDate) + '"/></label>' +
         '<label class="field"><span>Amount (' + (state.currency || "$") + ')</span><input id="pd_amount" type="number" value="' + num(p.amount) + '"/></label>' +
+        ((state.accounts || []).length ? '<label class="field"><span>Paid into</span><select id="pd_account">' + accountOptions(p.account, true) + '</select></label>' : '') +
         '<button class="btn" data-act="setPayday">Save</button>' +
       '</div></div>' + view;
   }
@@ -3488,7 +3559,7 @@
       var old = state.payday || {}, date = val("pd_date") || "";
       // Keep a hand-moved pay cycle only while the usual day of the month is unchanged.
       var keep = old.moved && date && (old.date || "").slice(8) === date.slice(8);
-      state.payday = { label: val("pd_label") || "Payday", date: date, amount: num(val("pd_amount")) };
+      state.payday = { label: val("pd_label") || "Payday", date: date, amount: num(val("pd_amount")), account: val("pd_account") || old.account || "" };
       if (keep) state.payday.moved = old.moved;
       save(); render();
     },
@@ -3695,6 +3766,19 @@
       state.debtFree = Object.assign({}, state.debtFree || {}, { date: "" });
       dashDebtFreePanel.edit = false; save(); render();
       toast("Countdown follows your payment plan again", "↺");
+    },
+    pdLog: function (e) {
+      var p = state.payday || {}, ds = e.k;
+      if (!localDateFromYmd(ds) || !(num(p.amount) > 0) || salaryLoggedFor(ds)) return;
+      var accs = state.accounts || [], acc = accs.some(function (a) { return a.id === p.account; }) ? p.account : (accs[0] ? accs[0].id : "");
+      var tx = { id: uid(), date: ds, type: "income", category: "Salary", amount: num(p.amount), note: p.label && p.label !== "Payday" ? p.label : "Salary", account: acc, budget: "" };
+      state.transactions.push(tx); applyTxToAccount(tx, 1);
+      save(); render();
+      toast("Salary logged: +" + fmt(tx.amount) + (acc ? " to " + accountName(acc) : ""), "💰", "Undo", function () {
+        var t = state.transactions.filter(function (x) { return x.id === tx.id; })[0]; if (!t) return;
+        applyTxToAccount(t, -1); state.transactions = state.transactions.filter(function (x) { return x.id !== tx.id; });
+        save(); render(); toast("Salary entry removed", "↶");
+      });
     },
     pdEdit: function () { dashPaydayPanel.edit = true; dashPaydayPanel.typed = null; render(); if (el("pdd_days")) el("pdd_days").focus(); },
     pdCancel: function () { dashPaydayPanel.edit = false; render(); },
@@ -4104,6 +4188,10 @@
 
   function wire() {
     var root = el("root");
+    if (el("debt_payfrom")) el("debt_payfrom").onchange = function () {
+      state.debtLogTx = this.value !== "off"; if (this.value !== "off" && this.value !== "on") state.debtAccount = this.value;
+      save(); toast(state.debtLogTx ? "Debt payments now come out of " + (accountName(debtPayAccount()) || "your balance") : "Debt payments won't change your balance", "💳");
+    };
     if (el("debt_month")) el("debt_month").onchange = function () { pageDebt.month = validDebtMonth(this.value) ? this.value : ymOfDate(new Date()); pageDebt.editMonthId = null; render(); };
     if (el("tab_customize")) el("tab_customize").ontoggle = function () { tabOrderPanel.open = this.open; };
     if (el("debt_plan")) el("debt_plan").ontoggle = function () { pageDebt.planOpen = this.open; };
