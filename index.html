@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 87</title>
+<title>Finance Tracker · build 88</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -391,6 +391,11 @@
   body.light { --muted: #526071; }
   /* `hidden` must win over display:flex classes (e.g. .qa-chips) — income chips were showing in Expense mode. */
   #root [hidden] { display: none !important; }
+  /* Transactions month totals: three equal columns that shrink to fit (4-digit amounts ran off a phone screen). */
+  .tx-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; text-align: center; }
+  .tx-totals .amt { font-size: clamp(15px, 4.6vw, 22px); font-weight: 800; white-space: nowrap; }
+  /* Long button labels wrap instead of running off the screen. */
+  button.btn.wrap { white-space: normal; max-width: 100%; text-align: left; }
   @media (max-width: 760px) {
     .botnav button .label { font-size: 11px; }
     .dashboard-cards .label { font-size: 12px; }
@@ -413,7 +418,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 87 · bigger, clearer text and buttons";
+  var VERSION = "build 88 · bug fixes";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Savings","Other"];
   var CATMETA = {
@@ -470,12 +475,26 @@
     if (m) m.setAttribute("content", theme === "light" ? "#f1f5f9" : "#0b1120");
   }
 
+  // Fill in anything missing or the wrong type (old/partial backups, damaged data) so no page can crash on it.
+  function normalizeState(obj) {
+    var s = Object.assign(clone(defaultData), obj && typeof obj === "object" && !Array.isArray(obj) ? obj : {});
+    Object.keys(defaultData).forEach(function (k) {
+      var d = defaultData[k];
+      if (Array.isArray(d)) { if (!Array.isArray(s[k])) s[k] = clone(d); }
+      else if (d && typeof d === "object") s[k] = s[k] && typeof s[k] === "object" && !Array.isArray(s[k]) ? Object.assign(clone(d), s[k]) : clone(d);
+    });
+    return s;
+  }
+  // Does this look like one of our backups? (Picking some other .json must not wipe everything.)
+  function looksLikeBackup(obj) {
+    return !!obj && typeof obj === "object" && !Array.isArray(obj) &&
+      ["transactions", "debts", "goals", "accounts", "subscriptions", "recurring"].some(function (k) { return Array.isArray(obj[k]); });
+  }
   function load() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return clone(defaultData);
-      var obj = JSON.parse(raw);
-      return Object.assign(clone(defaultData), obj);
+      return normalizeState(JSON.parse(raw));
     } catch (e) { return clone(defaultData); }
   }
   var localSaveError = "";
@@ -518,12 +537,11 @@
     if (!state.recurring || !state.recurring.length) return;
     var now = new Date(today() + "T00:00:00"), nowYm = ymOfDate(now), changed = false;
     state.recurring.forEach(function (r) {
-      var day = Math.min(28, Math.max(1, num(r.day) || 1));
       var ym = r.lastApplied ? nextMonth(r.lastApplied) : (r.created || nowYm);
       var guard = 0;
       while (ym <= nowYm && guard < 240) {
         guard++;
-        var occDate = ym + "-" + (day < 10 ? "0" : "") + day;
+        var occDate = ymdLocal(recurDateIn(r, +ym.slice(0, 4), +ym.slice(5, 7) - 1));
         if (new Date(occDate + "T00:00:00") <= now) {
           var recurringTx = { id: uid(), date: occDate, type: r.type, category: r.category, amount: num(r.amount), note: (r.note ? r.note + " " : "") + "(recurring)", account: r.account || "" };
           state.transactions.push(recurringTx);
@@ -586,10 +604,14 @@
       Object.keys(pMoved).forEach(function (k) { if ((pMoved[k] || "").slice(0, 7) === ym) pDays.push(pMoved[k]); });
       pDays.forEach(function (ds) { evs.push({ day: +ds.slice(8, 10), label: (p.label || "Payday") + (num(p.amount) > 0 ? " " + fmt(p.amount) : ""), ico: "⏰", color: "#fbbf24" }); });
     }
-    state.subscriptions.forEach(function (s) { if (s.nextDate && s.nextDate.slice(0, 7) === ym) evs.push({ day: +s.nextDate.slice(8, 10), label: s.name + " " + fmt(s.amount), ico: "🧾", color: "#f87171" }); });
+    state.subscriptions.forEach(function (s) {
+      var sb = localDateFromYmd(s.nextDate); if (!sb) return;
+      var diff = (+ym.slice(0, 4) - sb.getFullYear()) * 12 + (+ym.slice(5, 7) - 1 - sb.getMonth()), step = s.cycle === "yearly" ? 12 : 1;
+      if (diff >= 0 && diff % step === 0) evs.push({ day: sameDayMonthsLater(sb, diff).getDate(), label: s.name + " " + fmt(s.amount), ico: "🧾", color: "#f87171" });
+    });
     state.goals.forEach(function (g) { if (g.deadline && g.deadline.slice(0, 7) === ym) evs.push({ day: +g.deadline.slice(8, 10), label: "Goal due: " + g.name, ico: "◎", color: "#38bdf8" }); });
     if (state.debtFree && state.debtFree.date && state.debtFree.date.slice(0, 7) === ym) evs.push({ day: +state.debtFree.date.slice(8, 10), label: "Debt-free day!", ico: "🎯", color: "#34d399" });
-    state.recurring.forEach(function (r) { evs.push({ day: Math.min(28, Math.max(1, num(r.day) || 1)), label: (r.note || r.category) + " " + fmt(r.amount), ico: "🔁", color: r.type === "income" ? "#34d399" : "#a78bfa" }); });
+    state.recurring.forEach(function (r) { if (r.created && ym < r.created) return; evs.push({ day: recurDateIn(r, +ym.slice(0, 4), +ym.slice(5, 7) - 1).getDate(), label: (r.note || r.category) + " " + fmt(r.amount), ico: "🔁", color: r.type === "income" ? "#34d399" : "#a78bfa" }); });
     // Planned debt payments for this month
     (state.debts || []).forEach(function (d) {
       var info = debtMonthInfo(d, ym);
@@ -675,8 +697,8 @@
   function dueSoonPanel() {
     var now = new Date(today() + "T00:00:00"), horizon = 14, events = [];
     (state.subscriptions || []).forEach(function (x) {
-      if (!x.nextDate) return;
-      var days = Math.round((new Date(x.nextDate + "T00:00:00") - now) / 86400000);
+      var due = subNextDate(x); if (!due) return;
+      var days = Math.round((due - now) / 86400000);
       if (days >= 0 && days <= horizon) events.push({ days: days, icon: "🧾", label: x.name, amt: -num(x.amount), tag: "Subscription", act: "delSub", srcId: x.id });
     });
     var p = state.payday || {}, pnx = nextPayday(false);
@@ -685,9 +707,8 @@
       if (pdays >= 0 && pdays <= horizon) events.push({ days: pdays, icon: "⏰", label: p.label || "Payday", amt: num(p.amount), tag: "Income" });
     }
     (state.recurring || []).forEach(function (r) {
-      var day = Math.min(28, Math.max(1, num(r.day) || 1));
-      var occ = new Date(now.getFullYear(), now.getMonth(), day);
-      if (occ < now) occ = new Date(now.getFullYear(), now.getMonth() + 1, day);
+      var occ = recurDateIn(r, now.getFullYear(), now.getMonth());
+      if (occ < now) occ = recurDateIn(r, now.getFullYear(), now.getMonth() + 1);
       var rdays = Math.round((occ - now) / 86400000);
       if (rdays >= 0 && rdays <= horizon) events.push({ days: rdays, icon: r.type === "income" ? "⏰" : "🔁", label: r.note || r.category || "Recurring", amt: r.type === "income" ? num(r.amount) : -num(r.amount), tag: "Recurring", act: "delRecurring", srcId: r.id });
     });
@@ -885,7 +906,7 @@
             return;
           }
           var typing = document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA");
-          state = Object.assign(clone(defaultData), JSON.parse(d.payload)); saveLocal();
+          state = normalizeState(JSON.parse(d.payload)); saveLocal();
           setSyncTs("ft_localTs", num(d.updated)); setSyncTs("ft_pushedTs", num(d.updated));
           if (!doc.metadata.fromCache) setSyncTs("ft_lastSync", Date.now());
           setSyncPhase(doc.metadata.fromCache ? "cached" : "synced");
@@ -949,7 +970,14 @@
     return isNaN(d.getTime()) || ymdLocal(d) !== value ? null : d;
   }
   // Salary repeats monthly on the saved date's day (clamped to short months), so a past date rolls forward by itself.
-  function paydayUsual(base, n) { var y = base.getFullYear(), m = base.getMonth() + n; return new Date(y, m, Math.min(base.getDate(), new Date(y, m + 1, 0).getDate())); }
+  // `base`'s day of the month, n months later (clamped to short months: the 31st → Feb 28).
+  function sameDayMonthsLater(base, n) { var y = base.getFullYear(), m = base.getMonth() + n; return new Date(y, m, Math.min(base.getDate(), new Date(y, m + 1, 0).getDate())); }
+  function paydayUsual(base, n) { return sameDayMonthsLater(base, n); }
+  // Subscriptions renew by themselves: renewal k cycles after the saved date, and the next one on/after today.
+  function subRenewal(x, k) { var b = localDateFromYmd(x.nextDate); return b ? sameDayMonthsLater(b, k * (x.cycle === "yearly" ? 12 : 1)) : null; }
+  function subNextDate(x) { var t0 = new Date(today() + "T00:00:00"), k = 0, d = subRenewal(x, 0); while (d && d < t0 && k < 1200) d = subRenewal(x, ++k); return d; }
+  // A recurring item's date in month m of year y: its day, or the month's last day for 29–31 in short months.
+  function recurDateIn(r, y, m) { return new Date(y, m, Math.min(Math.max(1, num(r.day) || 1), new Date(y, m + 1, 0).getDate())); }
   // state.payday.moved = { usualDate: actualDate } — one pay cycle moved by hand (e.g. paid early before a holiday).
   function paydayAt(base, n) { var d = paydayUsual(base, n); return localDateFromYmd(((state.payday || {}).moved || {})[ymdLocal(d)]) || d; }
   function nextPayday(afterToday) {
@@ -968,17 +996,17 @@
     var subscriptions = 0, recurring = 0, debt = 0;
 
     (state.subscriptions || []).forEach(function (s) {
-      var due = localDateFromYmd(s.nextDate);
-      if (due && due >= now && due <= end) subscriptions += num(s.amount);
+      for (var k = 0, due = subRenewal(s, 0); due && due <= end && k < 1200; due = subRenewal(s, ++k)) {
+        if (due >= now) subscriptions += num(s.amount);
+      }
     });
 
     (state.recurring || []).forEach(function (r) {
       if (r.type !== "expense") return;
-      var day = Math.min(28, Math.max(1, num(r.day) || 1));
       var cursor = new Date(now.getFullYear(), now.getMonth(), 1);
       var endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
       while (cursor <= endMonth) {
-        var due = new Date(cursor.getFullYear(), cursor.getMonth(), day);
+        var due = recurDateIn(r, cursor.getFullYear(), cursor.getMonth());
         // Today's recurring item is already applied to the transaction balance at boot.
         if (due > now && due <= end) recurring += num(r.amount);
         cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
@@ -1339,7 +1367,8 @@
     if (remaining <= 0) return 0;
     var days = goalDaysLeft(g);
     if (days == null || days <= 0) return 0;
-    return remaining / Math.max(0.5, days / 30.44);
+    // Under a month left: what's left is what you need this month (dividing by a part-month used to double it).
+    return remaining / Math.max(1, days / 30.44);
   }
   function goalStatus(g) {
     if (goalDone(g)) return { label: "✓ Reached", color: "var(--green)", bg: "rgba(52,211,153,.16)" };
@@ -2345,10 +2374,10 @@
       '<div class="row-between" style="margin-bottom:12px"><button class="btn ghost sm" data-act="txPrevM">◀</button>' +
         '<strong style="font-size:17px">' + ymLabel(ym, true) + '</strong>' +
         '<span style="display:flex;gap:6px">' + (ym !== realYm ? '<button class="btn ghost sm" data-act="txNowM">↺</button>' : '') + '<button class="btn ghost sm" data-act="txNextM">▶</button></span></div>' +
-      '<div style="display:flex;justify-content:space-around;text-align:center;gap:10px">' +
-        '<div><div class="mini">Spent</div><div style="font-size:22px;font-weight:800" class="neg">' + fmt(mExp) + '</div></div>' +
-        '<div><div class="mini">Income</div><div style="font-size:22px;font-weight:800" class="pos">' + fmt(mInc) + '</div></div>' +
-        '<div><div class="mini">Net</div><div style="font-size:22px;font-weight:800" class="' + (mInc - mExp >= 0 ? "pos" : "neg") + '">' + (mInc - mExp >= 0 ? "+" : "−") + fmt(Math.abs(mInc - mExp)) + '</div></div>' +
+      '<div class="tx-totals">' +
+        '<div><div class="mini">Spent</div><div class="amt neg">' + fmt(mExp) + '</div></div>' +
+        '<div><div class="mini">Income</div><div class="amt pos">' + fmt(mInc) + '</div></div>' +
+        '<div><div class="mini">Net</div><div class="amt ' + (mInc - mExp >= 0 ? "pos" : "neg") + '">' + (mInc - mExp >= 0 ? "+" : "−") + fmt(Math.abs(mInc - mExp)) + '</div></div>' +
       '</div></div>';
 
     // ---- list grouped by day ----
@@ -2494,7 +2523,7 @@
         '<label class="field"><span>Type</span><select id="rc_type"><option value="expense">Expense</option><option value="income">Income</option></select></label>' +
         '<label class="field"><span>Category</span><select id="rc_cat">' + opts + '</select></label>' +
         '<label class="field"><span>Amount</span><input id="rc_amount" type="number" placeholder="0.00"/></label>' +
-        '<label class="field"><span>Day of month</span><input id="rc_day" type="number" min="1" max="28" placeholder="1"/></label>' +
+        '<label class="field"><span>Day of month (29–31 = last day in short months)</span><input id="rc_day" type="number" min="1" max="31" placeholder="1"/></label>' +
         (hasAcc ? '<label class="field"><span>Account' + (state.accountMode ? " (required)" : "") + '</span><select id="rc_account">' + accountOptions("", state.accountMode) + '</select></label>' : '') +
         '<label class="field"><span>Note (optional)</span><input id="rc_note" placeholder="Rent, Netflix…"/></label>' +
         '<button class="btn" data-act="addRecurring">+ Add</button>' +
@@ -2508,14 +2537,14 @@
     var subs = state.subscriptions;
     var monthly = subs.reduce(function (s, x) { return s + (x.cycle === "yearly" ? num(x.amount) / 12 : num(x.amount)); }, 0);
     var yearly = monthly * 12;
-    var sorted = subs.slice().sort(function (a, b) { return (a.nextDate || "9999").localeCompare(b.nextDate || "9999"); });
+    var nextOf = function (x) { var d = subNextDate(x); return d ? ymdLocal(d) : "9999"; };
+    var sorted = subs.slice().sort(function (a, b) { return nextOf(a).localeCompare(nextOf(b)); });
     var rows = subs.length ? sorted.map(function (x) {
-      var when = "—";
-      if (x.nextDate) {
-        var d = new Date(x.nextDate + "T00:00:00");
+      var when = "—", d = subNextDate(x);
+      if (d) {
         var days = Math.round((d.getTime() - new Date(today() + "T00:00:00").getTime()) / 86400000);
         var lab = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-        when = days < 0 ? '<span class="neg">overdue</span>' : days === 0 ? '<span class="pos">today</span>' : 'in ' + days + 'd · ' + lab;
+        when = days === 0 ? '<span class="pos">today</span>' : 'in ' + days + 'd · ' + lab;
       }
       return '<tr><td><strong>' + esc(x.name) + '</strong></td>' +
         '<td class="neg">' + fmt(x.amount) + ' <span class="mini">/' + (x.cycle === "yearly" ? "yr" : "mo") + '</span></td>' +
@@ -2699,19 +2728,15 @@
     var now = new Date(today() + "T00:00:00");
     var events = [];
     (state.recurring || []).forEach(function (r) {
-      var day = Math.min(28, Math.max(1, num(r.day) || 1));
       for (var mo = 0; mo <= Math.ceil(days / 28) + 1; mo++) {
-        var d = new Date(now.getFullYear(), now.getMonth() + mo, day);
+        var d = recurDateIn(r, now.getFullYear(), now.getMonth() + mo);
         var di = Math.round((d - now) / 86400000);
         if (di >= 0 && di <= days) events.push({ di: di, date: d, label: r.note || r.category || "Recurring", amt: r.type === "income" ? num(r.amount) : -num(r.amount) });
       }
     });
     (state.subscriptions || []).forEach(function (x) {
-      if (!x.nextDate) return;
-      var base = new Date(x.nextDate + "T00:00:00"); if (isNaN(base.getTime())) return;
-      var step = x.cycle === "yearly" ? 12 : 1;
-      for (var k = 0; k < 60; k++) {
-        var d = new Date(base.getFullYear(), base.getMonth() + step * k, base.getDate());
+      for (var k = 0; k < 1200; k++) {
+        var d = subRenewal(x, k); if (!d) return;
         var di = Math.round((d - now) / 86400000);
         if (di > days) break;
         if (di >= 0) events.push({ di: di, date: d, label: x.name, amt: -num(x.amount) });
@@ -2877,7 +2902,7 @@
           '<div class="card"><div class="label">Average monthly spending</div><div class="value neg">' + fmt(avgExp) + '</div><div class="sub">' + (completed.length ? "based on last " + avgBase.length + " full month" + (avgBase.length === 1 ? "" : "s") : "based on this month so far") + '</div></div>' +
           '<div class="card"><div class="label">' + (isCurrent ? "This month so far" : "Spent in " + monthShort(curYm) + " " + curYm.slice(0, 4)) + '</div><div class="value neg">' + fmt(expCur) + '</div><div class="sub">' + (avgExp > 0 ? (expCur > avgExp ? fmt(expCur - avgExp) + " above" : fmt(avgExp - expCur) + " below") + " average" : "") + '</div></div>' +
         '</div>' +
-        (avgExp > 0 ? '<button class="btn ghost sm" data-act="useAvgExpense" data-amt="' + avgExp.toFixed(2) + '" style="margin-bottom:16px">🛡 Use ' + fmt(avgExp) + ' as my emergency-fund monthly expense</button>' : '') +
+        (avgExp > 0 ? '<button class="btn ghost sm wrap" data-act="useAvgExpense" data-amt="' + avgExp.toFixed(2) + '" style="margin-bottom:16px">🛡 Use ' + fmt(avgExp) + ' as my emergency-fund monthly expense</button>' : '') +
         monthlyChart() +
         '<div style="overflow-x:auto;margin-top:18px"><table><thead><tr><th>Month</th><th style="text-align:right">Income</th><th style="text-align:right">Expenses</th><th style="text-align:right">Net</th><th style="text-align:right">Saved</th></tr></thead><tbody>' + tableRows + '</tbody></table></div>' +
       '</div>' : '';
@@ -2892,18 +2917,19 @@
       var sum = 0; avgBase.forEach(function (k) { sum += (perMonthCat[k] && perMonthCat[k][c]) ? perMonthCat[k][c] : 0; });
       return { c: c, now: catThisM[c] || 0, avg: avgBase.length ? sum / avgBase.length : (catThisM[c] || 0) };
     });
-    // Fold the Subscriptions-tab monthly cost into a Subscriptions row so tracked subs always show
+    // Fold the Subscriptions-tab monthly cost into a Subscriptions row so tracked subs always show. If the charges
+    // were also logged as Subscriptions spending, take the bigger of the two instead of adding (no double count).
     var subsMonthly = (state.subscriptions || []).reduce(function (s, x) { return s + (x.cycle === "yearly" ? num(x.amount) / 12 : num(x.amount)); }, 0);
     if (subsMonthly > 0) {
       var subRow = null; catList.forEach(function (x) { if (x.c === "Subscriptions") subRow = x; });
-      if (subRow) { subRow.now += subsMonthly; subRow.avg += subsMonthly; subRow.fromTab = subsMonthly; }
+      if (subRow) { subRow.now = Math.max(subRow.now, subsMonthly); subRow.avg = Math.max(subRow.avg, subsMonthly); subRow.fromTab = subsMonthly; }
       else catList.push({ c: "Subscriptions", now: subsMonthly, avg: subsMonthly, fromTab: subsMonthly });
     }
     catList.sort(function (a, b) { return b.avg - a.avg || b.now - a.now; });
     var totAvg = catList.reduce(function (s, x) { return s + x.avg; }, 0) || 1;
     var catRows = catList.map(function (x) {
       var mm = catMeta(x.c), share = x.avg / totAvg * 100;
-      var tabTag = x.fromTab ? ' <span class="mini" style="opacity:.7">· incl. ' + fmt(x.fromTab) + '/mo from Subscriptions tab</span>' : '';
+      var tabTag = x.fromTab ? ' <span class="mini" style="opacity:.7">· covers your ' + fmt(x.fromTab) + '/mo Subscriptions tab</span>' : '';
       return '<tr><td><span style="display:inline-flex;align-items:center;gap:8px">' + mm.e + " " + esc(x.c) + '</span>' + tabTag +
         '<div class="progress" style="height:5px;margin-top:6px;max-width:200px"><div style="width:' + Math.min(100, share) + '%;background:' + mm.ic + '"></div></div></td>' +
         '<td class="neg" style="text-align:right">' + fmt(x.now) + '</td>' +
@@ -3591,7 +3617,7 @@
     },
     delTrade: function (e) { removeWithUndo(function () { return state.trading.trades; }, e.id, "Trade"); },
     addGoal: function () {
-      var name = val("g_name"); if (!name || !val("g_target")) return;
+      var name = val("g_name"); if (!name || !(num(val("g_target")) > 0)) { toast("Give the goal a name and a target above 0", "⚠"); return; }
       var cash = num(val("g_current")), gift = num(val("g_gift"));
       state.goals.push({ id: uid(), name: name, target: num(val("g_target")), cashSaved: cash, giftSaved: gift, current: cash + gift, deadline: val("g_deadline") || "" });
       save(); render(); toast("Goal created", "◎");
@@ -3601,7 +3627,7 @@
     editGoalCancel: function () { editGoalId = null; render(); },
     editGoalSave: function (e) {
       state.goals.forEach(function (g) {
-        if (g.id === e.id) { g.name = val("eg_name") || g.name; g.target = num(val("eg_target")); g.cashSaved = num(val("eg_cash")); g.giftSaved = num(val("eg_gift")); g.current = g.cashSaved + g.giftSaved; g.deadline = val("eg_deadline") || ""; }
+        if (g.id === e.id) { g.name = val("eg_name") || g.name; if (num(val("eg_target")) > 0) g.target = num(val("eg_target")); g.cashSaved = num(val("eg_cash")); g.giftSaved = num(val("eg_gift")); g.current = g.cashSaved + g.giftSaved; g.deadline = val("eg_deadline") || ""; }
       });
       editGoalId = null; save(); render();
     },
@@ -4188,12 +4214,16 @@
     });
     if (el("impFile")) el("impFile").onchange = function (ev) {
       var file = ev.target.files[0]; if (!file) return;
+      ev.target.value = ""; // so picking the same file again still triggers a restore
       var reader = new FileReader();
       reader.onload = function (e) {
         try {
           var obj = JSON.parse(e.target.result);
+          if (!looksLikeBackup(obj)) { el("dataMsg").innerHTML = '<div class="hint" style="color:#fca5a5">✕ That file isn\'t a Finance Tracker backup — nothing was changed.</div>'; return; }
+          var count = function (k) { return Array.isArray(obj[k]) ? obj[k].length : 0; };
+          if (!confirm("Replace everything on this device with this backup?\n\n" + count("transactions") + " transactions · " + count("debts") + " debts · " + count("goals") + " goals\n\nYour current data will be overwritten.")) return;
           var ph = obj._photos; delete obj._photos;
-          state = Object.assign(clone(defaultData), obj);
+          state = normalizeState(obj);
           var restored = 0;
           if (ph) {
             if (ph.debt && ph.debt.length) { debtPhotos = ph.debt; saveDebtPhotos(); restored += ph.debt.length; }
