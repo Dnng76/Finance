@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 86</title>
+<title>Finance Tracker · build 87</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -382,6 +382,25 @@
     .dashboard-cards .label { font-size: 11px; letter-spacing: 0; align-items: flex-start; }
     .dashboard-cards .sub { line-height: 1.45; }
   }
+  /* Readability pass (build 87, user 2026-10-27: "anything that can be bigger or clearer"): larger small print,
+     darker light-mode grey, finger-sized tap targets on phones. */
+  .mini { font-size: 13px; line-height: 1.45; }
+  label.field span { font-size: 13px; }
+  .card-go, .cd-label, .cd-edit { font-size: 13px; }
+  .cd-edit { padding: 8px 14px; }
+  body.light { --muted: #526071; }
+  /* `hidden` must win over display:flex classes (e.g. .qa-chips) — income chips were showing in Expense mode. */
+  #root [hidden] { display: none !important; }
+  @media (max-width: 760px) {
+    .botnav button .label { font-size: 11px; }
+    .dashboard-cards .label { font-size: 12px; }
+    .holdings .mini, .debt-summary .mini { font-size: 12px; }
+    button.btn.sm { min-height: 40px; padding: 9px 14px; font-size: 14px; }
+    button.icon-btn { min-width: 38px; min-height: 38px; }
+    .qa-chip { padding: 9px 13px; font-size: 14px; }
+    .cd-edit { min-height: 38px; }
+    summary.mini, .panel > summary, .debt-other > summary, .debt-card .debt-more > summary, .debt-extra > summary { padding-top: 11px; padding-bottom: 11px; }
+  }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 </style>
 </head>
@@ -394,7 +413,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 86 · edit spending days left";
+  var VERSION = "build 87 · bigger, clearer text and buttons";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Savings","Other"];
   var CATMETA = {
@@ -1263,7 +1282,8 @@
         card("Total Assets", fmt(assetsTotal), assetParts.length ? assetParts.join(" · ") : "Cash, goals, emergency fund & trading", assetsTotal >= 0 ? "pos" : "neg", "🏦", "rgba(52,211,153,.16)") +
         cardLink("debt", "Open Debt", card("Total Debt", fmt(t.totalDebt), state.debts.length + " debt" + (state.debts.length !== 1 ? "s" : "") + " tracked <span class=\"card-go\">View debts ›</span>", "neg", "💳", "rgba(248,113,113,.16)")) +
         card("Net Worth", fmt(t.netWorth), "Assets " + fmt(assetsTotal) + " − Debt " + fmt(t.totalDebt) + " · gifts excluded", t.netWorth >= 0 ? "pos" : "neg", "📈", "rgba(56,189,248,.16)").replace('<div class="card">', '<div class="card card-wide">') +
-      '</div><div class="countdowns">' + dashPaydayPanel(safe) + dashDebtFreePanel() + '</div>' + dashboardMonthSummary(ym) +
+      '</div>' + (num(state.spendLimit) > 0 || Object.keys(state.budgets || {}).length ? spendHero() : '<details class="dashboard-detail"><summary>Monthly spending limit</summary>' + spendHero() + '</details>') +
+      '<div class="countdowns">' + dashPaydayPanel(safe) + dashDebtFreePanel() + '</div>' + dashboardMonthSummary(ym) +
       '<section class="holdings" aria-label="Savings and trading"><div><div class="mini">Emergency fund</div><div class="value">' + fmt(t.emFund) + '</div><div class="mini">Target ' + fmt(emTarget) + '</div></div>' +
       '<div><div class="mini">Trading balance</div><div class="value ' + (t.tradingBalance >= 0 ? 'pos' : 'neg') + '">' + fmt(t.tradingBalance) + '</div><div class="mini">' + state.trading.trades.length + ' trades</div></div>' +
       '<div><div class="mini">Gift saved</div><div class="value">' + fmt(t.goalGift) + '</div><div class="mini">Excluded from net worth</div></div></section>' +
@@ -1273,8 +1293,7 @@
         '<div class="panel"><h3>Spending by Category <span class="mini">' + esc(ymLabel(ym, true)) + '</span></h3>' + (cats.length ? donut(cats) + legend(cats) : '<div class="empty">No expenses this month.</div>') + '</div>' +
       '</div>' +
       '<div class="panel"><h3>Monthly Income vs Expense</h3>' + monthlyChart() + '</div>' + nwPanel +
-      '<div class="panel"><h3>Net Worth Composition</h3>' + compHtml + '</div></details>' +
-      (num(state.spendLimit) > 0 || Object.keys(state.budgets || {}).length ? spendHero() : '<details class="dashboard-detail"><summary>Monthly spending limit</summary>' + spendHero() + '</details>') + dashboardSetup;
+      '<div class="panel"><h3>Net Worth Composition</h3>' + compHtml + '</div></details>' + dashboardSetup;
   }
 
   function card(label, value, sub, cls, icon, iconBg, barPct) {
@@ -1368,8 +1387,8 @@
       var st = goalStatus(g);
       var need = goalMonthlyNeed(g);
       var remaining = Math.max(0, num(g.target) - num(g.current));
-      var pill = '<span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;color:' + st.color + ';background:' + st.bg + ';white-space:nowrap">' + st.label + '</span>';
-      var nextUp = (!isDone && realIdx === 0) ? '<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;color:var(--accent);background:rgba(45,212,191,.16);white-space:nowrap">★ NEXT UP</span>' : '';
+      var pill = '<span style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;color:' + st.color + ';background:' + st.bg + ';white-space:nowrap">' + st.label + '</span>';
+      var nextUp = (!isDone && realIdx === 0) ? '<span style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;color:var(--accent);background:rgba(45,212,191,.16);white-space:nowrap">★ NEXT UP</span>' : '';
       var needLine = need > 0 ? '<div style="margin-top:9px;padding:8px 11px;border-radius:10px;background:var(--bg);font-size:13px">Save <strong style="color:var(--accent)">' + fmt(need) + '</strong>/mo to make it</div>' : '';
       var togo = (!isDone && remaining > 0) ? '<div class="mini" style="margin-top:6px">' + fmt(remaining) + ' to go</div>' : '';
       return '<div class="goal"' + (isDone ? ' style="opacity:.72"' : '') + '>' +
@@ -1745,7 +1764,7 @@
         list = '<div style="display:grid;gap:7px">' + active.map(function (d) {
           var shown = payById[d.id] || 0;
           return '<div style="display:flex;align-items:center;gap:8px"><span style="flex:1;min-width:0">' + esc(d.creditor) +
-            ' <button class="icon-btn" data-act="editDebt" data-id="' + d.id + '" title="Change this debt for every month" style="font-size:11px;padding:1px 4px;color:var(--accent2)">✎ debt</button></span>' +
+            ' <button class="icon-btn" data-act="editDebt" data-id="' + d.id + '" title="Change this debt for every month" style="font-size:13px;padding:4px 8px;color:var(--accent2)">✎ debt</button></span>' +
             '<input id="se_' + d.id + '" type="number" step="0.01" min="0" value="' + (shown > 0.005 ? shown.toFixed(2) : "") + '" placeholder="0" data-shown="' + shown.toFixed(2) + '" style="width:110px;text-align:right"/></div>';
         }).join("") + '</div>' +
         '<div class="toolbar" style="margin-top:10px"><button class="btn sm" data-act="schedEditSave" data-k="' + m.ym + '">Save ' + ymMonthName(m.ym) + '</button><button class="btn ghost sm" data-act="schedEditCancel">Cancel</button>' +
@@ -1899,7 +1918,7 @@
     var expected = num(p.amount) > 0 ? " · " + fmt(p.amount) + " coming in" : "";
     if (days === 0) return '<section class="panel card-link countdown" ' + open + '>' + title +
       '<div class="cd-big pay" style="font-size:30px;margin-top:6px">🎉 It\'s payday!</div><div class="mini">' + esc(dateL) + expected + '</div></section>';
-    var perDay = safe > 0 ? '<div class="cd-check">≈ ' + fmt(safe / days) + ' a day safe to spend until then</div>'
+    var perDay = safe > 0 ? '<div class="cd-check">≈ ' + fmt(safe / days) + ' a day of spare cash until then (after bills)</div>'
       : '<div class="cd-check warn">⚠ Bills due before payday use up your cash — go easy until then</div>';
     return '<section class="panel card-link countdown" ' + open + '>' + title +
       '<div class="cd-row"><div class="cd-big pay">' + days + '</div><div><div style="font-weight:700">' + (days === 1 ? "day to go" : "days to go") + '</div>' +
@@ -2248,7 +2267,7 @@
       '<div style="text-align:center;margin:12px 0 14px;font-size:15px">' +
         (over ? '⚠ You\'ve gone past your limit — try to keep spending to essentials until ' + s.endLabel + '.'
           : '≈ <strong>' + fmt(s.perDay) + '</strong> a day until ' + s.endLabel +
-            ' · today: <strong class="' + (s.todayLeft < 0 ? "neg" : "pos") + '">' + (s.todayLeft < 0 ? fmt(-s.todayLeft) + ' over' : fmt(s.todayLeft) + ' left') + '</strong>') + '</div>' +
+            ' · <span style="white-space:nowrap">today: <strong class="' + (s.todayLeft < 0 ? "neg" : "pos") + '">' + (s.todayLeft < 0 ? fmt(-s.todayLeft) + ' over' : fmt(s.todayLeft) + ' left') + '</strong></span>') + '</div>' +
       '<div class="progress" style="height:10px"><div style="width:' + pct + '%;background:' + (over ? "var(--red)" : pct > 85 ? "var(--yellow)" : "linear-gradient(90deg,var(--accent),var(--accent2))") + '"></div></div>' +
       '<div class="row-between mini" style="margin-top:7px"><span>Spent ' + fmt(s.spent) + ' of ' + fmt(s.limit) + (s.fromCats ? ' (your category budgets)' : '') + '</span>' +
         '<span>' + (s.isDefault ? s.days + (s.days === 1 ? " day" : " days") + " incl. today" : "counting to " + s.endLabel) + '</span></div>' +
@@ -3161,7 +3180,7 @@
       { at: 100, label: "🕊 Financially free" }
     ].map(function (c) {
       var got = pct >= c.at;
-      return '<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;margin:0 6px 6px 0;display:inline-block;' + (got ? "color:var(--accent);background:rgba(45,212,191,.16)" : "color:var(--muted);background:var(--bg2);opacity:.7") + '">' + c.label + '</span>';
+      return '<span style="font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;margin:0 6px 6px 0;display:inline-block;' + (got ? "color:var(--accent);background:rgba(45,212,191,.16)" : "color:var(--muted);background:var(--bg2);opacity:.7") + '">' + c.label + '</span>';
     }).join("");
     var hero = noData ? '' : '<div class="panel"><div style="display:flex;align-items:center;gap:22px;flex-wrap:wrap">' +
       ring(Math.min(100, pct), "#fbbf24", 120) +
