@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 84</title>
+<title>Finance Tracker · build 85</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -394,7 +394,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 84 · edit debt-free days on dashboard";
+  var VERSION = "build 85 · edit salary days on dashboard";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Savings","Other"];
   var CATMETA = {
@@ -560,8 +560,13 @@
   function calendarEvents(ym) {
     var evs = [];
     var p = state.payday || {};
-    var pBase = localDateFromYmd(p.date);
-    if (pBase && ym >= p.date.slice(0, 7)) evs.push({ day: Math.min(pBase.getDate(), ymLastDay(ym).getDate()), label:(p.label || "Payday") + (num(p.amount) > 0 ? " " + fmt(p.amount) : ""), ico: "⏰", color: "#fbbf24" });
+    var pBase = localDateFromYmd(p.date), pMoved = p.moved || {};
+    if (pBase && ym >= p.date.slice(0, 7)) {
+      var pUsual = ym + "-" + pad2(Math.min(pBase.getDate(), ymLastDay(ym).getDate()));
+      var pDays = pMoved[pUsual] ? [] : [pUsual];
+      Object.keys(pMoved).forEach(function (k) { if ((pMoved[k] || "").slice(0, 7) === ym) pDays.push(pMoved[k]); });
+      pDays.forEach(function (ds) { evs.push({ day: +ds.slice(8, 10), label: (p.label || "Payday") + (num(p.amount) > 0 ? " " + fmt(p.amount) : ""), ico: "⏰", color: "#fbbf24" }); });
+    }
     state.subscriptions.forEach(function (s) { if (s.nextDate && s.nextDate.slice(0, 7) === ym) evs.push({ day: +s.nextDate.slice(8, 10), label: s.name + " " + fmt(s.amount), ico: "🧾", color: "#f87171" }); });
     state.goals.forEach(function (g) { if (g.deadline && g.deadline.slice(0, 7) === ym) evs.push({ day: +g.deadline.slice(8, 10), label: "Goal due: " + g.name, ico: "◎", color: "#38bdf8" }); });
     if (state.debtFree && state.debtFree.date && state.debtFree.date.slice(0, 7) === ym) evs.push({ day: +state.debtFree.date.slice(8, 10), label: "Debt-free day!", ico: "🎯", color: "#34d399" });
@@ -925,13 +930,16 @@
     return isNaN(d.getTime()) || ymdLocal(d) !== value ? null : d;
   }
   // Salary repeats monthly on the saved date's day (clamped to short months), so a past date rolls forward by itself.
-  function paydayAt(base, n) { var y = base.getFullYear(), m = base.getMonth() + n; return new Date(y, m, Math.min(base.getDate(), new Date(y, m + 1, 0).getDate())); }
+  function paydayUsual(base, n) { var y = base.getFullYear(), m = base.getMonth() + n; return new Date(y, m, Math.min(base.getDate(), new Date(y, m + 1, 0).getDate())); }
+  // state.payday.moved = { usualDate: actualDate } — one pay cycle moved by hand (e.g. paid early before a holiday).
+  function paydayAt(base, n) { var d = paydayUsual(base, n); return localDateFromYmd(((state.payday || {}).moved || {})[ymdLocal(d)]) || d; }
   function nextPayday(afterToday) {
     var base = localDateFromYmd((state.payday || {}).date);
     if (!base) return null;
-    var t0 = new Date(today() + "T00:00:00"), n = 0, d = base;
+    var t0 = new Date(today() + "T00:00:00"), n = 0, d = paydayAt(base, 0);
     while (d < t0 || (afterToday && d.getTime() === t0.getTime())) d = paydayAt(base, ++n);
-    return { date: d, prev: paydayAt(base, n - 1) };
+    var usual = paydayUsual(base, n);
+    return { date: d, prev: paydayAt(base, n - 1), usual: usual, moved: d.getTime() !== usual.getTime() };
   }
   function safeToSpendInfo(balance) {
     var nowRaw = new Date(), now = new Date(nowRaw.getFullYear(), nowRaw.getMonth(), nowRaw.getDate());
@@ -1854,15 +1862,40 @@
       days: main ? Math.round((main.getTime() - t0.getTime()) / 86400000) : null,
       orig: orig, left: left, paidPct: orig > 0 ? Math.min(100, (orig - left) / orig * 100) : 0 };
   }
+  // ✎ Edit days (user, 2026-10-27): change the salary days to go on the Dashboard. With a payday set, saving moves
+  // THIS pay cycle only (state.payday.moved); the usual monthly date stays. With none set, it becomes the payday.
+  function pdEditor(nx, days) {
+    var typed = dashPaydayPanel.typed != null ? dashPaydayPanel.typed : (days != null ? String(days) : "");
+    var dayL = function (d) { return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); };
+    return '<div class="df-editor">' +
+      '<div class="mini" style="margin-bottom:8px">Days until salary</div>' +
+      '<div class="df-steps">' +
+        '<button type="button" data-pdstep="-7">−7</button><button type="button" data-pdstep="-1">−1</button>' +
+        '<input id="pdd_days" type="number" inputmode="numeric" min="0" aria-label="Days until salary" value="' + esc(typed) + '" data-usual="' + (nx ? ymdLocal(nx.usual) : "") + '"/>' +
+        '<button type="button" data-pdstep="1">+1</button><button type="button" data-pdstep="7">+7</button>' +
+      '</div>' +
+      '<div class="mini" id="pdd_prev" style="margin-top:8px"></div>' +
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
+        '<button class="btn sm" id="pdd_save" data-act="pdSave">Save</button>' +
+        '<button class="btn sm ghost" data-act="pdCancel">Cancel</button>' +
+        (nx && nx.moved ? '<button class="btn sm ghost" data-act="pdUsual">↺ Back to usual date</button>' : "") +
+      '</div>' +
+      '<div class="mini" style="margin-top:8px">' + (nx ? "This pay cycle only — your usual payday (" + esc(dayL(nx.usual)) + ") stays the same for next month."
+        : "Your salary will then count down to that day every month.") + '</div>' +
+    '</div>';
+  }
   function dashPaydayPanel(safe) {
-    var p = state.payday || {}, nx = nextPayday(false);
+    var p = state.payday || {}, nx = nextPayday(false), editing = !!dashPaydayPanel.edit;
     var open = 'data-tab="payday" role="button" tabindex="0" aria-label="Open Payday"';
-    var title = '<div class="cd-label">💰 ' + esc(p.label && p.label !== "Payday" ? p.label : "Salary") + ' countdown</div>';
+    var days = nx ? Math.round((nx.date.getTime() - new Date(today() + "T00:00:00").getTime()) / 86400000) : null;
+    var title = '<div class="row-between"><div class="cd-label">💰 ' + esc(p.label && p.label !== "Payday" ? p.label : "Salary") + ' countdown</div>' +
+      (editing ? "" : '<button type="button" class="cd-edit df-stop" data-act="pdEdit" aria-label="Edit days until salary">✎ Edit days</button>') + '</div>';
+    if (editing) return '<section class="panel countdown">' + title + pdEditor(nx, days) + '</section>';
     if (!nx) return '<section class="panel card-link countdown" ' + open + '>' + title +
       '<div class="mini" style="margin-top:6px">Set your payday once and it counts down every month. Tap to set it.</div></section>';
-    var days = Math.round((nx.date.getTime() - new Date(today() + "T00:00:00").getTime()) / 86400000);
     var cycle = Math.max(1, Math.round((nx.date.getTime() - nx.prev.getTime()) / 86400000)), into = Math.max(0, cycle - days);
-    var dateL = nx.date.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+    var dateL = nx.date.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) +
+      (nx.moved ? " (moved — usually " + nx.usual.toLocaleDateString(undefined, { day: "numeric", month: "short" }) + ")" : "");
     var expected = num(p.amount) > 0 ? " · " + fmt(p.amount) + " coming in" : "";
     if (days === 0) return '<section class="panel card-link countdown" ' + open + '>' + title +
       '<div class="cd-big pay" style="font-size:30px;margin-top:6px">🎉 It\'s payday!</div><div class="mini">' + esc(dateL) + expected + '</div></section>';
@@ -2534,9 +2567,11 @@
     } else {
       var dl = nx.date;
       // Show the rolled-forward date in the input, unless it was clamped for a short month (saving that would move the day).
-      if (dl.getDate() === localDateFromYmd(p.date).getDate()) shownDate = ymdLocal(dl);
+      if (nx.usual.getDate() === localDateFromYmd(p.date).getDate()) shownDate = ymdLocal(nx.usual);
       var days = Math.round((dl.getTime() - new Date(today() + "T00:00:00").getTime()) / 86400000);
-      var dateLabel = dl.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+      var dateLabel = dl.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" }) +
+        (nx.moved ? '<br>Moved this pay cycle — usually ' + esc(nx.usual.toLocaleDateString(undefined, { day: "numeric", month: "long" })) +
+          ' <button class="btn sm ghost" data-act="pdUsual" style="margin-top:8px">↺ Back to usual date</button>' : "");
       var lbl = esc(p.label || "Payday");
       var big;
       if (days > 0) {
@@ -2646,7 +2681,7 @@
     if (p.date && num(p.amount) > 0) {
       var pbase = new Date(p.date + "T00:00:00");
       for (var k2 = 0; k2 < Math.ceil(days / 28) + 2; k2++) {
-        var d2 = new Date(pbase.getFullYear(), pbase.getMonth() + k2, pbase.getDate());
+        var d2 = paydayAt(pbase, k2);
         var di2 = Math.round((d2 - now) / 86400000);
         if (di2 > days) break;
         if (di2 >= 0) events.push({ di: di2, date: d2, label: p.label || "Payday", amt: num(p.amount) });
@@ -3383,7 +3418,14 @@
     txFilter: function () { pageTransactions.q = val("tx_q"); pageTransactions.from = val("tx_from"); pageTransactions.to = val("tx_to"); render(); },
     txClear: function () { pageTransactions.q = ""; pageTransactions.from = ""; pageTransactions.to = ""; pageTransactions.filter = "all"; render(); },
     setTradeStart: function () { state.trading.startBalance = num(val("tr_start")); save(); render(); },
-    setPayday: function () { state.payday = { label: val("pd_label") || "Payday", date: val("pd_date") || "", amount: num(val("pd_amount")) }; save(); render(); },
+    setPayday: function () {
+      var old = state.payday || {}, date = val("pd_date") || "";
+      // Keep a hand-moved pay cycle only while the usual day of the month is unchanged.
+      var keep = old.moved && date && (old.date || "").slice(8) === date.slice(8);
+      state.payday = { label: val("pd_label") || "Payday", date: date, amount: num(val("pd_amount")) };
+      if (keep) state.payday.moved = old.moved;
+      save(); render();
+    },
     calcCompound: function () { pageCompound.p = num(val("ci_p")); pageCompound.m = num(val("ci_m")); pageCompound.r = num(val("ci_r")); pageCompound.y = num(val("ci_y")); render(); },
     toggleMore: function () { moreOpen = !moreOpen; render(); if (moreOpen && el("more_close")) el("more_close").focus(); },
     closeMore: function () { moreOpen = false; render(); var buttons = document.querySelectorAll('[data-act="toggleMore"]'); for (var i = 0; i < buttons.length; i++) { if (buttons[i].offsetParent !== null) { buttons[i].focus(); break; } } },
@@ -3578,6 +3620,29 @@
       state.debtFree = Object.assign({}, state.debtFree || {}, { date: "" });
       dashDebtFreePanel.edit = false; save(); render();
       toast("Countdown follows your payment plan again", "↺");
+    },
+    pdEdit: function () { dashPaydayPanel.edit = true; dashPaydayPanel.typed = null; render(); if (el("pdd_days")) el("pdd_days").focus(); },
+    pdCancel: function () { dashPaydayPanel.edit = false; render(); },
+    pdSave: function () {
+      var x = el("pdd_days"); if (!x || x.value === "") return;
+      var n = Math.max(0, Math.min(366, Math.round(num(x.value)))), to = dfDateIn(n), nx = nextPayday(false), p = state.payday || {};
+      if (!nx) state.payday = Object.assign({ label: "Payday", amount: 0 }, p, { date: to });
+      else {
+        var from = ymdLocal(nx.usual), moved = {}, old = p.moved || {}, cutoff = dfDateIn(-62);
+        // Keep other recent moves (so a past early payday isn't counted again); drop ones long gone.
+        Object.keys(old).forEach(function (k) { if (k !== from && (k >= cutoff || old[k] >= cutoff)) moved[k] = old[k]; });
+        if (to !== from) moved[from] = to;
+        state.payday = Object.assign({}, p, { moved: moved });
+      }
+      dashPaydayPanel.edit = false; save(); render();
+      toast("Salary countdown: " + n + " day" + (n === 1 ? "" : "s") + " to go", "💰");
+    },
+    pdUsual: function () {
+      var nx = nextPayday(false), p = state.payday || {}, moved = Object.assign({}, p.moved || {});
+      if (nx) delete moved[ymdLocal(nx.usual)];
+      state.payday = Object.assign({}, p, { moved: moved });
+      dashPaydayPanel.edit = false; save(); render();
+      toast("Back to your usual payday", "↺");
     },
     uploadDebtPhoto: function () { if (el("debtPhotoFile")) el("debtPhotoFile").click(); },
     delDebtPhoto: function (e) { debtPhotos = debtPhotos.filter(function (p) { return p.id !== e.id; }); saveDebtPhotos(); render(); },
@@ -4013,6 +4078,24 @@
         b.onclick = function () { dfd.value = Math.max(0, Math.min(36500, (dfd.value === "" ? 0 : Math.round(num(dfd.value))) + num(b.getAttribute("data-dfstep")))); dfdShow(); };
       });
       dfdShow();
+    }
+    // Salary days editor: same in-place preview as the debt-free one
+    if (el("pdd_days")) {
+      var pdd = el("pdd_days"), pddShow = function () {
+        dashPaydayPanel.typed = pdd.value;
+        var n = Math.round(num(pdd.value)), ok = pdd.value !== "" && n >= 0 && n <= 366, prev = el("pdd_prev"), saveB = el("pdd_save");
+        saveB.disabled = !ok; saveB.textContent = ok ? "Save " + n + " day" + (n === 1 ? "" : "s") : "Save";
+        if (!ok) { prev.textContent = "Type how many days until your salary"; return; }
+        var ds = dfDateIn(n), d = new Date(ds + "T00:00:00"), usual = pdd.getAttribute("data-usual");
+        var note = !usual ? " · then the same day every month" : ds === usual ? " · your usual date" : " · this month only";
+        prev.innerHTML = "Salary on: <b>" + esc(d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" })) + "</b>" + esc(note);
+      };
+      pdd.oninput = pddShow;
+      pdd.onkeydown = function (ev) { if (ev.key === "Enter") { ev.preventDefault(); actions.pdSave(); } };
+      root.querySelectorAll("[data-pdstep]").forEach(function (b) {
+        b.onclick = function () { pdd.value = Math.max(0, Math.min(366, (pdd.value === "" ? 0 : Math.round(num(pdd.value))) + num(b.getAttribute("data-pdstep")))); pddShow(); };
+      });
+      pddShow();
     }
     root.querySelectorAll('.debt-pay input').forEach(function (input) { input.onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); actions.payDebt({ id: input.id.slice(3) }); } }; });
     // Transactions quick add: switch type / pick category without re-rendering (keeps what you've typed)
