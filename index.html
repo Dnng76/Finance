@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 85</title>
+<title>Finance Tracker · build 86</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -394,7 +394,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 85 · edit salary days on dashboard";
+  var VERSION = "build 86 · edit spending days left";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Savings","Other"];
   var CATMETA = {
@@ -2161,12 +2161,16 @@
     var last = new Date(y, m + 1, 0);
     return y + "-" + pad2(m + 1) + "-" + pad2(last.getDate());
   }
+  // The spending countdown's end date: the one you picked, or month-end (also once a picked date has passed).
+  function paceTargetYmd() {
+    var t = state.paceTarget;
+    return localDateFromYmd(t) && t >= today() ? t : paceDefaultTarget();
+  }
   function monthPaceCard() {
     var now = new Date(today() + "T00:00:00");
     var daysElapsed = now.getDate();                // days into the month, includes today
-    var target = state.paceTarget || paceDefaultTarget();
+    var target = paceTargetYmd();
     var targetDate = new Date(target + "T00:00:00");
-    if (isNaN(targetDate.getTime())) { target = paceDefaultTarget(); targetDate = new Date(target + "T00:00:00"); }
     var daysLeft = Math.max(0, Math.round((targetDate.getTime() - now.getTime()) / 86400000));
     var isDefault = target === paceDefaultTarget();
     var curYm = ymOfDate(now);
@@ -2189,9 +2193,8 @@
   // The big "how much can I still spend, and for how many days" panel.
   function spendStatus() {
     var td = today(), now = new Date(td + "T00:00:00"), curYm = ymOfDate(now);
-    var target = state.paceTarget || paceDefaultTarget(), targetDate = new Date(target + "T00:00:00");
-    if (isNaN(targetDate.getTime())) { target = paceDefaultTarget(); targetDate = new Date(target + "T00:00:00"); }
-    var days = Math.max(1, Math.round((targetDate.getTime() - now.getTime()) / 86400000) + 1); // includes today
+    var target = paceTargetYmd(), targetDate = new Date(target + "T00:00:00");
+    var days = Math.max(1,Math.round((targetDate.getTime() - now.getTime()) / 86400000) + 1); // includes today
     var spent = 0, spentToday = 0;
     state.transactions.forEach(function (t) {
       if (t.type !== "expense" || (t.date || "").slice(0, 7) !== curYm) return;
@@ -2206,8 +2209,25 @@
       days: days, perDay: left > 0 ? left / days : 0, todayLeft: daily - spentToday, endLabel: targetDate.toLocaleDateString(undefined, { day: "numeric", month: "short" }),
       isDefault: target === paceDefaultTarget(), monthName: now.toLocaleDateString(undefined, { month: "long" }) };
   }
+  // ✎ Edit days (user, 2026-10-27): set DAYS LEFT directly; it's saved as the countdown date (state.paceTarget).
+  function spEditor(s) {
+    var typed = spendHero.typed != null ? spendHero.typed : String(s.days);
+    return '<div class="df-editor" style="margin-bottom:12px">' +
+      '<div class="mini" style="margin-bottom:8px">Days left, counting today</div>' +
+      '<div class="df-steps">' +
+        '<button type="button" data-spstep="-7">−7</button><button type="button" data-spstep="-1">−1</button>' +
+        '<input id="spd_days" type="number" inputmode="numeric" min="1" aria-label="Days left, counting today" value="' + esc(typed) + '"/>' +
+        '<button type="button" data-spstep="1">+1</button><button type="button" data-spstep="7">+7</button>' +
+      '</div>' +
+      '<div class="mini" id="spd_prev" style="margin-top:8px"></div>' +
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
+        '<button class="btn sm" id="spd_save" data-act="spSave">Save</button>' +
+        '<button class="btn sm ghost" data-act="spCancel">Cancel</button>' +
+        (s.isDefault ? "" : '<button class="btn sm ghost" data-act="paceReset">↺ Month-end</button>') +
+      '</div></div>';
+  }
   function spendHero() {
-    var s = spendStatus(), cur = state.currency || "$";
+    var s = spendStatus(), cur = state.currency || "$", editing = !!spendHero.edit;
     var limitForm = '<div class="toolbar" style="justify-content:center;margin-top:10px">' +
       '<input id="sp_limit" type="number" inputmode="decimal" placeholder="e.g. 1500" value="' + (num(state.spendLimit) > 0 ? num(state.spendLimit) : "") + '" style="width:150px"/>' +
       '<button class="btn sm" data-act="setSpendLimit">Save</button></div>';
@@ -2222,8 +2242,9 @@
         '<div><div class="mini" style="font-weight:700">' + (over ? "OVER BUDGET BY" : "LEFT TO SPEND") + '</div>' +
           '<div class="spend-amount ' + (over ? "neg" : "pos") + '">' + fmt(Math.abs(s.left)) + '</div></div>' +
         '<div><div class="mini" style="font-weight:700">DAYS LEFT</div>' +
-          '<div class="spend-amount" style="color:var(--accent)">' + s.days + '</div></div>' +
-      '</div>' +
+          '<div class="spend-amount" style="color:var(--accent)">' + s.days + '</div>' +
+          (editing ? "" : '<button type="button" class="cd-edit" data-act="spEdit" aria-label="Edit days left" style="margin-top:6px">✎ Edit days</button>') + '</div>' +
+      '</div>' + (editing ? spEditor(s) : "") +
       '<div style="text-align:center;margin:12px 0 14px;font-size:15px">' +
         (over ? '⚠ You\'ve gone past your limit — try to keep spending to essentials until ' + s.endLabel + '.'
           : '≈ <strong>' + fmt(s.perDay) + '</strong> a day until ' + s.endLabel +
@@ -2232,7 +2253,7 @@
       '<div class="row-between mini" style="margin-top:7px"><span>Spent ' + fmt(s.spent) + ' of ' + fmt(s.limit) + (s.fromCats ? ' (your category budgets)' : '') + '</span>' +
         '<span>' + (s.isDefault ? s.days + (s.days === 1 ? " day" : " days") + " incl. today" : "counting to " + s.endLabel) + '</span></div>' +
       '<details style="margin-top:8px"><summary class="mini" style="cursor:pointer">✎ Change monthly limit</summary>' + limitForm +
-        '<p class="mini" style="text-align:center;margin:6px 0 0">Leave empty to use the total of your category budgets. Change the countdown date in Month overview below.</p></details>' +
+        '<p class="mini" style="text-align:center;margin:6px 0 0">Leave empty to use the total of your category budgets. To change how many days it has to last, tap ✎ Edit days.</p></details>' +
       '</div>';
   }
 
@@ -3438,7 +3459,16 @@
       toast(dest === "emergency" ? "Funnel" + money + " into your Emergency Fund 🛡" : "Pour" + money + " into a goal 🎯");
     },
     payoffClose: function () { payoffPrompt = null; render(); },
-    paceReset: function () { state.paceTarget = ""; save(); render(); },
+    paceReset: function () { state.paceTarget = ""; spendHero.edit = false; save(); render(); },
+    spEdit: function () { spendHero.edit = true; spendHero.typed = null; render(); if (el("spd_days")) el("spd_days").focus(); },
+    spCancel: function () { spendHero.edit = false; render(); },
+    spSave: function () {
+      var x = el("spd_days"); if (!x || x.value === "") return;
+      var n = Math.max(1, Math.min(366, Math.round(num(x.value)))), t = dfDateIn(n - 1);
+      state.paceTarget = t === paceDefaultTarget() ? "" : t;
+      spendHero.edit = false; save(); render();
+      toast("Days left: " + n + " (until " + new Date(t + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short" }) + ")", "📅");
+    },
     setSpendLimit: function () { state.spendLimit = Math.max(0, num(val("sp_limit"))); save(); render(); toast(state.spendLimit > 0 ? "Monthly limit set to " + fmt(state.spendLimit) : "Using your category budgets as the limit", "💸"); },
     useAvgExpense: function (e) { state.emergency.monthlyExpenses = num(e.amt); save(); render(); toast("Emergency baseline set to " + fmt(num(e.amt)), "🛡"); },
     addBudgetGroup: function () { var n = val("bg_name"); if (!n) return; if (!state.budgetGroups) state.budgetGroups = []; state.budgetGroups.push({ id: uid(), name: n, emoji: (val("bg_emoji") || "").trim(), limit: num(val("bg_limit")), manual: 0, subs: [] }); save(); render(); toast("Budget group added", "📁"); },
@@ -4078,6 +4108,23 @@
         b.onclick = function () { dfd.value = Math.max(0, Math.min(36500, (dfd.value === "" ? 0 : Math.round(num(dfd.value))) + num(b.getAttribute("data-dfstep")))); dfdShow(); };
       });
       dfdShow();
+    }
+    // Spending DAYS LEFT editor: same in-place preview (counts today, so n days ends n-1 days from now)
+    if (el("spd_days")) {
+      var spd = el("spd_days"), spdShow = function () {
+        spendHero.typed = spd.value;
+        var n = Math.round(num(spd.value)), ok = spd.value !== "" && n >= 1 && n <= 366, prev = el("spd_prev"), saveB = el("spd_save");
+        saveB.disabled = !ok; saveB.textContent = ok ? "Save " + n + " day" + (n === 1 ? "" : "s") : "Save";
+        if (!ok) { prev.textContent = "Type how many days your money has to last (counting today)"; return; }
+        var ds = dfDateIn(n - 1);
+        prev.innerHTML = "Lasts until: <b>" + esc(new Date(ds + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })) + "</b>" + esc(ds === paceDefaultTarget() ? " · end of month" : "");
+      };
+      spd.oninput = spdShow;
+      spd.onkeydown = function (ev) { if (ev.key === "Enter") { ev.preventDefault(); actions.spSave(); } };
+      root.querySelectorAll("[data-spstep]").forEach(function (b) {
+        b.onclick = function () { spd.value = Math.max(1, Math.min(366, (spd.value === "" ? 1 : Math.round(num(spd.value))) + num(b.getAttribute("data-spstep")))); spdShow(); };
+      });
+      spdShow();
     }
     // Salary days editor: same in-place preview as the debt-free one
     if (el("pdd_days")) {
