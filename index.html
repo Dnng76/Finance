@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 92</title>
+<title>Finance Tracker · build 93</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -425,8 +425,14 @@
   .nw-result { border-bottom: 0; padding-top: 12px; }
   .nw-result .nw-name { font-weight: 800; font-size: 17px; }
   .nw-result .nw-amt { font-size: clamp(20px, 6vw, 26px); font-weight: 800; }
-  .nw-say { margin: 2px 0 0; font-size: 14px; line-height: 1.5; }
+  .nw-say { margin: 6px 0 0; }
   .nw-note { margin: 6px 0 0; }
+  .nw-more { margin-top: 6px; }
+  .nw-more > summary { cursor: pointer; color: var(--accent); font-weight: 600; padding: 8px 0; }
+  .nw-panel .nw-line { min-height: 40px; padding: 6px 0; }
+  .prog-tiles { display: flex; gap: 12px; justify-content: space-around; text-align: center; }
+  .prog-tiles > div { flex: 1; min-width: 0; }
+  @media (max-width: 760px) { .prog-tiles svg { width: 84px; height: 84px; } }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 </style>
 </head>
@@ -439,7 +445,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 92 · tap balance to open transactions";
+  var VERSION = "build 93 · tidier dashboard";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Debt","Savings","Other"];
   var CATMETA = {
@@ -1273,20 +1279,25 @@
       return '<button type="button" class="nw-line" data-tab="' + tab + '"><span class="nw-sign">' + sign + '</span>' +
         '<span class="nw-name">' + ic + ' ' + esc(name) + '</span><span class="nw-amt ' + (cls || "") + '">' + fmt(v) + '</span><span class="nw-go" aria-hidden="true">›</span></button>';
     }
-    var say = debt <= 0 ? "You have no debts, so your net worth is everything you own."
-      : nw >= 0 ? "If you paid off every debt today, you'd still have <strong>" + fmt(nw) + "</strong>."
-      : "You owe <strong>" + fmt(-nw) + "</strong> more than you own. This number rises in every month you spend less than you earn.";
-    return '<section class="panel nw-panel" aria-label="Net worth, added up"><h3>🧮 Net worth, added up</h3>' +
-      '<div class="nw-group">What I own</div>' +
-      own.map(function (x, i) { return line(i ? "+" : "", x.ic, x.name, x.v, x.tab, x.v < 0 ? "neg" : ""); }).join("") +
-      '<div class="nw-line nw-total"><span class="nw-sign">=</span><span class="nw-name">Total assets</span><span class="nw-amt">' + fmt(assets) + '</span><span class="nw-go"></span></div>' +
-      '<div class="nw-group">What I owe</div>' +
-      line("−", "💳", nDebts ? "Debts (" + nDebts + ")" : "Debts", debt, "debt", debt > 0 ? "neg" : "") +
+    var say = debt <= 0 ? "No debts, so your net worth is everything you own."
+      : nw >= 0 ? "Pay off every debt today and you'd still have " + fmt(nw) + "."
+      : "You owe " + fmt(-nw) + " more than you own.";
+    // Build 93 (user: "more messy than before"): only the 3-line sum shows; the itemised list folds away.
+    return '<section class="panel nw-panel" aria-label="Net worth">' +
+      '<div class="cd-label" style="margin-bottom:4px">🧮 Net worth</div>' +
+      '<div class="nw-line"><span class="nw-sign"></span><span class="nw-name">What I own</span><span class="nw-amt">' + fmt(assets) + '</span><span class="nw-go"></span></div>' +
+      line("−", "", "What I owe", debt, "debt", debt > 0 ? "neg" : "") +
       '<div class="nw-line nw-result"><span class="nw-sign">=</span><span class="nw-name">Net worth</span><span class="nw-amt ' + (nw >= 0 ? "pos" : "neg") + '">' + fmt(nw) + '</span><span class="nw-go"></span></div>' +
-      '<p class="nw-say">' + say + '</p>' +
-      (debt > 0 && state.debtLogTx !== false ? '<p class="mini nw-note">Paying a debt doesn\'t change your net worth: your cash and your debt go down by the same amount.</p>' : "") +
-      (t.goalGift > 0 ? '<p class="mini nw-note">Not counted: ' + fmt(t.goalGift) + ' of gift money in your goals.</p>' : "") +
-      '</section>';
+      '<p class="mini nw-say">' + say + '</p>' +
+      '<details class="nw-more"><summary class="mini">How it adds up</summary>' +
+        '<div class="nw-group">What I own</div>' +
+        own.map(function (x, i) { return line(i ? "+" : "", x.ic, x.name, x.v, x.tab, x.v < 0 ? "neg" : ""); }).join("") +
+        '<div class="nw-line nw-total"><span class="nw-sign">=</span><span class="nw-name">Total assets</span><span class="nw-amt">' + fmt(assets) + '</span><span class="nw-go"></span></div>' +
+        '<div class="nw-group">What I owe</div>' +
+        line("−", "💳", nDebts ? "Debts (" + nDebts + ")" : "Debts", debt, "debt", debt > 0 ? "neg" : "") +
+        (debt > 0 && state.debtLogTx !== false ? '<p class="mini nw-note">Paying a debt doesn\'t change your net worth: your cash and your debt go down by the same amount.</p>' : "") +
+        (t.goalGift > 0 ? '<p class="mini nw-note">Not counted: ' + fmt(t.goalGift) + ' of gift money in your goals.</p>' : "") +
+      '</details></section>';
   }
   function pageDashboard() {
     var t = totals();
@@ -1325,7 +1336,7 @@
     if (emTarget > 0) ptiles.push(ptile(emPct, "#2dd4bf", "Emergency Fund"));
     if (goalTargetTotal > 0) ptiles.push(ptile(goalPct, "#38bdf8", "Goals Saved"));
     if (debtOrig > 0) ptiles.push(ptile(debtPct, "#34d399", "Debt Paid Off"));
-    var progressPanel = ptiles.length ? '<div class="panel"><h3>Progress at a Glance</h3><div style="display:flex;gap:30px;flex-wrap:wrap;justify-content:space-around;text-align:center">' + ptiles.join("") + '</div></div>' : "";
+    var progressPanel = ptiles.length ? '<div class="panel"><h3>Progress at a Glance</h3><div class="prog-tiles">' + ptiles.join("") + '</div></div>' : "";
 
     var safeInfo = safeToSpendInfo(t.balance), safe = safeInfo.value;
     var nwSeries = (state.nwHistory || []).slice().sort(function (a, b) { return a.ym.localeCompare(b.ym); }).map(function (h) { return { date: monthShort(h.ym), balance: h.value }; });
@@ -1360,10 +1371,9 @@
       '<label class="field"><span>Trading target (' + (state.currency || "$") + ')</span><input id="tg_trading" type="number" value="' + num(tgt.trading) + '"/></label><button class="btn" data-act="setTargets">Save</button></div></div></details>';
 
     // Each card says in plain words how its number is worked out (user, 2026-11-21: "still confused").
-    var balSub = t.usingAccounts
-      ? "Money in your " + state.accounts.length + " account" + (state.accounts.length === 1 ? "" : "s") + " right now"
-      : "Starting cash " + fmt(state.openingBalance) + " + money in " + fmt(t.income) + " − money out " + fmt(t.expense);
-    var safeSub = "Balance − " + fmt(safeInfo.commitments) + " of bills due " + (safeInfo.usesPayday ? "before payday (" + safeInfo.until + ")" : "in the next 30 days");
+    // Kept short (build 93): long formulas made the two boxes tall and busy.
+    var balSub = t.usingAccounts ? "In your " + state.accounts.length + " account" + (state.accounts.length === 1 ? "" : "s") : "Money in − money out";
+    var safeSub = "After " + fmt(safeInfo.commitments) + " of bills " + (safeInfo.usesPayday ? "before payday" : "in 30 days");
     return '<h1 class="page-title">Dashboard</h1><p class="page-sub">' + esc(ymLabel(ymOfDate(new Date()), true)) +
       ' <span class="ver-tag" title="' + esc(VERSION) + '">' + esc((VERSION.match(/build \d+/) || [VERSION])[0]) + '</span></p>' +
       overBudgetAlert() + backupNudge() +
@@ -1371,9 +1381,9 @@
         cardLink(t.usingAccounts ? "accounts" : "transactions", t.usingAccounts ? "Open Accounts" : "Open Transactions",
           card("Current Balance", fmt(t.balance), balSub + ' <span class="card-go">' + (t.usingAccounts ? "View accounts ›" : "View transactions ›") + '</span>', t.balance >= 0 ? "pos" : "neg", "💰", "rgba(52,211,153,.16)", balBar)) +
         card("Safe to Spend", fmt(safe), safeSub, safe >= 0 ? "pos" : "neg", "💸", "rgba(251,191,36,.16)") +
-      '</div>' + dashNetWorthPanel(t) +
+      '</div>' +
       (num(state.spendLimit) > 0 || Object.keys(state.budgets || {}).length ? spendHero() : '<details class="dashboard-detail"><summary>Monthly spending limit</summary>' + spendHero() + '</details>') +
-      '<div class="countdowns">' + dashPaydayPanel(safe) + dashDebtFreePanel() + '</div>' + dashboardMonthSummary(ym) +
+      '<div class="countdowns">' + dashPaydayPanel(safe) + dashDebtFreePanel() + '</div>' + dashNetWorthPanel(t) + dashboardMonthSummary(ym) +
       dueSoonPanel() + progressPanel +
       '<details class="dashboard-detail"><summary>Trends and breakdowns</summary><div class="grid2">' +
         '<div class="panel"><h3>' + (t.usingAccounts ? 'Account balances' : 'Balance Over Time') + '</h3>' + (t.usingAccounts ? dashboardAccountBreakdown() : areaChart(series)) + '</div>' +
