@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 95</title>
+<title>Finance Tracker · build 96</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -447,7 +447,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 95 · edit your balance";
+  var VERSION = "build 96 · clearer labels";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Debt","Savings","Other"];
   var CATMETA = {
@@ -1396,7 +1396,7 @@
     // Kept short (build 93): long formulas made the two boxes tall and busy.
     var balSub = (t.usingAccounts ? "In your " + state.accounts.length + " account" + (state.accounts.length === 1 ? "" : "s") : "Cash you have now") +
       (pageDashboard.balEdit ? "" : ' <span class="card-go">✎ Edit balance</span>');
-    var safeSub = "After " + fmt(safeInfo.commitments) + " of bills " + (safeInfo.usesPayday ? "before payday" : "in 30 days");
+    var safeSub = "Balance − " + fmt(safeInfo.commitments) + " bills due " + (safeInfo.usesPayday ? "before payday" : "in 30 days");
     return '<h1 class="page-title">Dashboard</h1><p class="page-sub">' + esc(ymLabel(ymOfDate(new Date()), true)) +
       ' <span class="ver-tag" title="' + esc(VERSION) + '">' + esc((VERSION.match(/build \d+/) || [VERSION])[0]) + '</span></p>' +
       overBudgetAlert() + backupNudge() +
@@ -1404,7 +1404,8 @@
         // Tap → edit the balance (user, 2026-11-21: "the current balance is confusing, I can't edit").
         card("Current Balance", fmt(t.balance), balSub, t.balance >= 0 ? "pos" : "neg", "💰", "rgba(52,211,153,.16)", balBar)
           .replace('<div class="card">', '<div class="card card-link" data-act="balEdit" role="button" tabindex="0" aria-label="Edit your current balance">') +
-        card("Safe to Spend", fmt(safe), safeSub, safe >= 0 ? "pos" : "neg", "💸", "rgba(251,191,36,.16)") +
+        // Was "Safe to Spend" — too close to LEFT TO SPEND (a different number: the monthly budget). Build 96.
+        card("Cash After Bills", fmt(safe), safeSub, safe >= 0 ? "pos" : "neg", "🧾", "rgba(251,191,36,.16)") +
       '</div>' + (pageDashboard.balEdit ? balEditor(t) : "") +
       (num(state.spendLimit) > 0 || Object.keys(state.budgets || {}).length ? spendHero() : '<details class="dashboard-detail"><summary>Monthly spending limit</summary>' + spendHero() + '</details>') +
       '<div class="countdowns">' + dashPaydayPanel(safe) + dashDebtFreePanel() + '</div>' + dashNetWorthPanel(t) + dashboardMonthSummary(ym) +
@@ -2093,8 +2094,8 @@
       '<div class="cd-big pay" style="font-size:30px;margin-top:6px">🎉 It\'s payday!</div><div class="mini">' + esc(dateL) + expected + '</div>' +
       salaryPrompt(ymdLocal(nx.date)) + '</section>';
     var lastPay = ymdLocal(nx.prev), sinceLast = Math.round((new Date(today() + "T00:00:00").getTime() - nx.prev.getTime()) / 86400000);
-    var perDay = safe > 0 ? '<div class="cd-check">≈ ' + fmt(safe / days) + ' a day of spare cash until then (after bills)</div>'
-      : '<div class="cd-check warn">⚠ Bills due before payday use up your cash — go easy until then</div>';
+    // Build 96: the "≈ S$X a day of spare cash" line was removed. It clashed with LEFT TO SPEND's own per-day amount.
+    var perDay = safe > 0 ? "" : '<div class="cd-check warn">⚠ Bills due before payday use up your cash — go easy until then</div>';
     return '<section class="panel card-link countdown" ' + open + '>' + title +
       '<div class="cd-row"><div class="cd-big pay">' + days + '</div><div><div style="font-weight:700">' + (days === 1 ? "day to go" : "days to go") + '</div>' +
         '<div class="mini">' + esc(dateL) + expected + '</div></div></div>' + perDay +
@@ -2378,7 +2379,7 @@
     var avgDay = daysElapsed > 0 ? spent / daysElapsed : 0;
     var totalDays = daysElapsed + daysLeft;
     var projected = avgDay * totalDays;
-    var spentCard = '<div class="card"><div class="label">Spent this month</div><div class="value neg">' + fmt(spent) + '</div><div class="sub">' + txCount + ' expense' + (txCount === 1 ? "" : "s") + ' · ' + fmt(avgDay) + '/day avg</div></div>';
+    var spentCard = '<div class="card"><div class="label">Spent this month</div><div class="value neg">' + fmt(spent) + '</div><div class="sub">' + txCount + ' expense' + (txCount === 1 ? "" : "s") + ' · ' + fmt(avgDay) + '/day avg · not counting debt</div></div>';
     var projCard = '<div class="card"><div class="label">Projected by ' + (isDefault ? "month-end" : "target") + '</div><div class="value">' + fmt(projected) + '</div><div class="sub">at ' + fmt(avgDay) + ' / day pace</div></div>';
     var setter = '<div class="panel" style="padding:14px 18px;margin-top:-6px"><div class="row-between" style="flex-wrap:wrap;gap:10px">' +
       '<span class="mini">🎯 Count down to (default: end of month — e.g. set it to your payday)</span>' +
@@ -2489,7 +2490,7 @@
       '<div class="row-between mini" style="margin-top:7px"><span>Spent ' + fmt(s.spent) + ' of ' + fmt(s.limit) +
         (s.adj ? ' (' + fmt(s.base) + (s.adj > 0 ? ' + ' : ' − ') + fmt(Math.abs(s.adj)) + (s.adj > 0 ? ' added' : ' taken off') + ' this month)' : s.fromCats ? ' (your category budgets)' : '') + '</span>' +
         '<span>' + (s.isDefault ? s.days + (s.days === 1 ? " day" : " days") + " incl. today" : "counting to " + s.endLabel) + '</span></div>' +
-      (s.debtPaid > 0 ? '<div class="mini" style="margin-top:4px">Debt payments (' + fmt(s.debtPaid) + ' this month) aren\'t counted here; they have their own plan.</div>' : '') +
+      (s.debtPaid > 0 ? '<div class="mini" style="margin-top:4px">Debt payments aren\'t counted here.</div>' : '') +
       '<details style="margin-top:8px"><summary class="mini" style="cursor:pointer">✎ Change monthly limit</summary>' + limitForm +
         '<p class="mini" style="text-align:center;margin:6px 0 0">Leave empty to use the total of your category budgets. To change how many days it has to last, tap ✎ Edit days.</p></details>' +
       '</div>';
@@ -2565,9 +2566,9 @@
         '<strong style="font-size:17px">' + ymLabel(ym, true) + '</strong>' +
         '<span style="display:flex;gap:6px">' + (ym !== realYm ? '<button class="btn ghost sm" data-act="txNowM">↺</button>' : '') + '<button class="btn ghost sm" data-act="txNextM">▶</button></span></div>' +
       '<div class="tx-totals">' +
-        '<div><div class="mini">Spent</div><div class="amt neg">' + fmt(mExp) + '</div></div>' +
-        '<div><div class="mini">Income</div><div class="amt pos">' + fmt(mInc) + '</div></div>' +
-        '<div><div class="mini">Net</div><div class="amt ' + (mInc - mExp >= 0 ? "pos" : "neg") + '">' + (mInc - mExp >= 0 ? "+" : "−") + fmt(Math.abs(mInc - mExp)) + '</div></div>' +
+        '<div><div class="mini">Money out</div><div class="amt neg">' + fmt(mExp) + '</div></div>' +
+        '<div><div class="mini">Money in</div><div class="amt pos">' + fmt(mInc) + '</div></div>' +
+        '<div><div class="mini">Left over</div><div class="amt ' + (mInc - mExp >= 0 ? "pos" : "neg") + '">' + (mInc - mExp >= 0 ? "+" : "−") + fmt(Math.abs(mInc - mExp)) + '</div></div>' +
       '</div></div>';
 
     // ---- list grouped by day ----
@@ -2576,14 +2577,18 @@
     var list = days.map(function (d) {
       var out = 0, inn = 0;
       byDay[d].forEach(function (t) { if (t.type === "income") inn += num(t.amount); else out += num(t.amount); });
+      // A day with one entry doesn't repeat its amount in the header (build 96).
       var head = '<div class="tx-dayhead"><span>' + txDayLabel(d) + (filtering ? ' · ' + d.slice(0, 4) : '') + '</span><span>' +
-        (out ? '<span class="neg">−' + fmt(out) + '</span>' : '') + (inn ? ' <span class="pos">+' + fmt(inn) + '</span>' : '') + '</span></div>';
+        (byDay[d].length < 2 ? '' : (out ? '<span class="neg">−' + fmt(out) + '</span>' : '') + (inn ? ' <span class="pos">+' + fmt(inn) + '</span>' : '')) + '</span></div>';
       return '<div class="tx-day">' + head + byDay[d].map(function (t) {
         if (editTxId === t.id) return txEditForm(t, hasAcc, hasBud);
         var m = catMeta(t.category), inc = t.type === "income";
-        var sub = esc(t.category || "Other") + ((t.account && accountName(t.account)) ? ' · ' + esc(accountName(t.account)) : '');
+        // No note (or note = category): show the category once, not as title AND subtitle (build 96).
+        var cat = t.category || "Other", hasNote = !!t.note && String(t.note).trim().toLowerCase() !== cat.toLowerCase();
+        var accN = (t.account && accountName(t.account)) ? accountName(t.account) : "";
+        var sub = (hasNote ? esc(cat) : "") + (accN ? (hasNote ? ' · ' : '') + esc(accN) : '');
         return '<div class="tx-row"><span class="tx-ico" style="background:' + m.bg + '">' + m.e + '</span>' +
-          '<div class="tx-main"><div class="tx-title">' + esc(t.note || t.category || "Transaction") + '</div><div class="mini">' + sub + '</div></div>' +
+          '<div class="tx-main"><div class="tx-title">' + esc(hasNote ? t.note : cat) + '</div>' + (sub ? '<div class="mini">' + sub + '</div>' : '') + '</div>' +
           '<div class="tx-amt ' + (inc ? "pos" : "neg") + '">' + (inc ? "+" : "−") + fmt(t.amount) + '</div>' +
           '<span class="tx-acts"><button class="icon-btn" data-act="editTx" data-id="' + t.id + '" title="Edit">✎</button><button class="icon-btn" data-act="delTx" data-id="' + t.id + '" title="Delete">✕</button></span></div>';
       }).join("") + '</div>';
