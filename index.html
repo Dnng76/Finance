@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 93</title>
+<title>Finance Tracker · build 94</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -445,7 +445,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 93 · tidier dashboard";
+  var VERSION = "build 94 · balance opens what I own";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Debt","Savings","Other"];
   var CATMETA = {
@@ -1289,7 +1289,7 @@
       line("−", "", "What I owe", debt, "debt", debt > 0 ? "neg" : "") +
       '<div class="nw-line nw-result"><span class="nw-sign">=</span><span class="nw-name">Net worth</span><span class="nw-amt ' + (nw >= 0 ? "pos" : "neg") + '">' + fmt(nw) + '</span><span class="nw-go"></span></div>' +
       '<p class="mini nw-say">' + say + '</p>' +
-      '<details class="nw-more"><summary class="mini">How it adds up</summary>' +
+      '<details class="nw-more"' + (dashNetWorthPanel.open ? " open" : "") + '><summary class="mini">How it adds up</summary>' +
         '<div class="nw-group">What I own</div>' +
         own.map(function (x, i) { return line(i ? "+" : "", x.ic, x.name, x.v, x.tab, x.v < 0 ? "neg" : ""); }).join("") +
         '<div class="nw-line nw-total"><span class="nw-sign">=</span><span class="nw-name">Total assets</span><span class="nw-amt">' + fmt(assets) + '</span><span class="nw-go"></span></div>' +
@@ -1378,8 +1378,10 @@
       ' <span class="ver-tag" title="' + esc(VERSION) + '">' + esc((VERSION.match(/build \d+/) || [VERSION])[0]) + '</span></p>' +
       overBudgetAlert() + backupNudge() +
       '<div class="cards dashboard-cards">' +
-        cardLink(t.usingAccounts ? "accounts" : "transactions", t.usingAccounts ? "Open Accounts" : "Open Transactions",
-          card("Current Balance", fmt(t.balance), balSub + ' <span class="card-go">' + (t.usingAccounts ? "View accounts ›" : "View transactions ›") + '</span>', t.balance >= 0 ? "pos" : "neg", "💰", "rgba(52,211,153,.16)", balBar)) +
+        // Tap → the "everything I own" breakdown (user, 2026-11-21: "current balance is my total asset";
+        // Transactions is their this-month spending page, so linking there was wrong).
+        card("Current Balance", fmt(t.balance), balSub + ' <span class="card-go">All I own: ' + fmt(money(t.balance + t.goalCash + t.emFund + t.tradingBalance)) + ' ›</span>', t.balance >= 0 ? "pos" : "neg", "💰", "rgba(52,211,153,.16)", balBar)
+          .replace('<div class="card">', '<div class="card card-link" data-act="balAssets" role="button" tabindex="0" aria-label="See everything you own">') +
         card("Safe to Spend", fmt(safe), safeSub, safe >= 0 ? "pos" : "neg", "💸", "rgba(251,191,36,.16)") +
       '</div>' +
       (num(state.spendLimit) > 0 || Object.keys(state.budgets || {}).length ? spendHero() : '<details class="dashboard-detail"><summary>Monthly spending limit</summary>' + spendHero() + '</details>') +
@@ -3673,6 +3675,12 @@
     payoffClose: function () { payoffPrompt = null; render(); },
     paceReset: function () { state.paceTarget = ""; spendHero.edit = false; save(); render(); },
     spEdit: function () { spendHero.edit = true; spendHero.saEdit = false; spendHero.typed = null; render(); if (el("spd_days")) el("spd_days").focus(); },
+    // Current Balance card: open the "How it adds up" list (cash + goals + emergency …) and scroll to it.
+    balAssets: function () {
+      dashNetWorthPanel.open = true; render();
+      var p = document.querySelector(".nw-panel"); if (!p) return;
+      window.scrollTo(0, Math.max(0, p.getBoundingClientRect().top + window.scrollY - 70));
+    },
     saEdit: function () { spendHero.saEdit = true; spendHero.edit = false; spendHero.saTyped = ""; render(); if (el("sa_amt")) el("sa_amt").focus(); },
     saCancel: function () { spendHero.saEdit = false; render(); },
     saAdd: function () { saApply(1); },
@@ -4320,7 +4328,10 @@
       var act = b.getAttribute("data-act");
       if (act === "filter") { b.value = pageTransactions.filter || "all"; b.onchange = function () { pageTransactions.filter = b.value; render(); }; return; }
       if (actions[act]) b.onclick = function () { actions[act]({ id: b.getAttribute("data-id"), amt: b.getAttribute("data-amt"), c: b.getAttribute("data-c"), k: b.getAttribute("data-k") }); };
+      if (actions[act] && b.getAttribute("role") === "button") b.onkeydown = function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); b.onclick(); } };
     });
+    // Remember whether "How it adds up" is open, so a re-render doesn't fold it away.
+    root.querySelectorAll(".nw-more").forEach(function (d) { d.ontoggle = function () { dashNetWorthPanel.open = d.open; }; });
     // ✎ Edit days sits inside the tappable debt-free card: keep its tap/keys from also opening the Debt tab
     root.querySelectorAll(".df-stop").forEach(function (x) {
       x.addEventListener("click", function (ev) { ev.stopPropagation(); });
