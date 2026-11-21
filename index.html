@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 94</title>
+<title>Finance Tracker · build 95</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -428,6 +428,8 @@
   .nw-say { margin: 6px 0 0; }
   .nw-note { margin: 6px 0 0; }
   .nw-more { margin-top: 6px; }
+  .panel.bal-editor { margin: -8px 0 22px; padding: 14px; border: 1px solid var(--accent); border-radius: 12px; background: var(--bg2); }
+  .bal-editor input { font-size: 20px; font-weight: 800; }
   .nw-more > summary { cursor: pointer; color: var(--accent); font-weight: 600; padding: 8px 0; }
   .nw-panel .nw-line { min-height: 40px; padding: 6px 0; }
   .prog-tiles { display: flex; gap: 12px; justify-content: space-around; text-align: center; }
@@ -445,7 +447,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 94 · balance opens what I own";
+  var VERSION = "build 95 · edit your balance";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Debt","Savings","Other"];
   var CATMETA = {
@@ -1299,6 +1301,26 @@
         (t.goalGift > 0 ? '<p class="mini nw-note">Not counted: ' + fmt(t.goalGift) + ' of gift money in your goals.</p>' : "") +
       '</details></section>';
   }
+  // ✎ Edit balance (build 95): type what's really in the bank. Without accounts, the app keeps every transaction
+  // and just corrects the starting cash (openingBalance) so the total matches; with accounts, each one is set.
+  function balEditor(t) {
+    var cur = esc(state.currency || "$"), btns = '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">' +
+      '<button class="btn sm" id="be_save" data-act="balSave">Save</button><button class="btn sm ghost" data-act="balCancel">Cancel</button></div>';
+    var head = '<div class="cd-label">✎ Update my balance</div>';
+    if (privacy) return '<section class="panel df-editor bal-editor">' + head + '<p class="mini" style="margin:8px 0 0">Amounts are hidden. Tap 👁 at the top to show them, then edit.</p>' +
+      '<div style="margin-top:10px"><button class="btn sm ghost" data-act="balCancel">Close</button></div></section>';
+    if (t.usingAccounts) return '<section class="panel df-editor bal-editor">' + head +
+      '<p class="mini" style="margin:6px 0 10px">Type what\'s in each account right now.</p>' +
+      state.accounts.map(function (a) {
+        return '<label class="field" style="margin-bottom:8px"><span>' + esc(a.name) + ' (' + cur + ')</span><input type="number" inputmode="decimal" step="0.01" data-beacc="' + esc(a.id) + '" value="' + money(a.balance) + '"/></label>';
+      }).join("") +
+      '<div class="mini" id="be_prev"></div>' + btns + '</section>';
+    return '<section class="panel df-editor bal-editor">' + head +
+      '<label class="field" style="margin-top:8px"><span>What\'s in your bank and wallet right now? (' + cur + ')</span>' +
+      '<input id="be_amt" type="number" inputmode="decimal" step="0.01" value="' + money(t.balance) + '"/></label>' +
+      '<div class="mini" id="be_prev" style="margin-top:6px"></div>' + btns +
+      '<p class="mini" style="margin:10px 0 0">Your transactions stay as they are. The app just corrects your starting cash so the total matches.</p></section>';
+  }
   function pageDashboard() {
     var t = totals();
     var ym = pageDashboard.ym || ymOfDate(new Date());
@@ -1364,7 +1386,7 @@
 
     var balanceSetup = state.accountMode && state.accounts.length
       ? '<p class="mini" style="margin:0 0 14px">Dashboard balance comes from your Accounts total. Update individual balances in <button class="linkbtn" data-tab="accounts">Accounts</button>.</p>'
-      : '<p class="mini" style="margin:0 0 14px">Dashboard balance is your starting balance plus income minus expenses.</p><div class="form-row" style="max-width:420px"><label class="field"><span>Current cash on hand (' + (state.currency || "$") + ')</span><input id="ob_input" type="number" value="' + num(state.openingBalance) + '"/></label><button class="btn" data-act="setOB">Save</button></div>';
+      : '<p class="mini" style="margin:0 0 14px">To correct your balance, tap the Current Balance box at the top and type what\'s really in your bank.</p>';
     var dashboardSetup = privacy ? '<details class="panel"><summary><strong>Dashboard settings</strong></summary><div style="margin-top:18px"><button class="btn ghost sm" data-act="privacy">Show amounts</button></div></details>' : '<details class="panel"><summary><strong>Dashboard settings</strong></summary><div style="margin-top:18px">' + balanceSetup +
       '<h3 style="margin-top:22px">Targets</h3><p class="mini" style="margin:-8px 0 14px">Set targets to show progress on the balance and trading cards.</p>' +
       '<div class="form-row" style="max-width:560px"><label class="field"><span>Balance target (' + (state.currency || "$") + ')</span><input id="tg_balance" type="number" value="' + num(tgt.balance) + '"/></label>' +
@@ -1372,18 +1394,18 @@
 
     // Each card says in plain words how its number is worked out (user, 2026-11-21: "still confused").
     // Kept short (build 93): long formulas made the two boxes tall and busy.
-    var balSub = t.usingAccounts ? "In your " + state.accounts.length + " account" + (state.accounts.length === 1 ? "" : "s") : "Money in − money out";
+    var balSub = (t.usingAccounts ? "In your " + state.accounts.length + " account" + (state.accounts.length === 1 ? "" : "s") : "Cash you have now") +
+      (pageDashboard.balEdit ? "" : ' <span class="card-go">✎ Edit balance</span>');
     var safeSub = "After " + fmt(safeInfo.commitments) + " of bills " + (safeInfo.usesPayday ? "before payday" : "in 30 days");
     return '<h1 class="page-title">Dashboard</h1><p class="page-sub">' + esc(ymLabel(ymOfDate(new Date()), true)) +
       ' <span class="ver-tag" title="' + esc(VERSION) + '">' + esc((VERSION.match(/build \d+/) || [VERSION])[0]) + '</span></p>' +
       overBudgetAlert() + backupNudge() +
       '<div class="cards dashboard-cards">' +
-        // Tap → the "everything I own" breakdown (user, 2026-11-21: "current balance is my total asset";
-        // Transactions is their this-month spending page, so linking there was wrong).
-        card("Current Balance", fmt(t.balance), balSub + ' <span class="card-go">All I own: ' + fmt(money(t.balance + t.goalCash + t.emFund + t.tradingBalance)) + ' ›</span>', t.balance >= 0 ? "pos" : "neg", "💰", "rgba(52,211,153,.16)", balBar)
-          .replace('<div class="card">', '<div class="card card-link" data-act="balAssets" role="button" tabindex="0" aria-label="See everything you own">') +
+        // Tap → edit the balance (user, 2026-11-21: "the current balance is confusing, I can't edit").
+        card("Current Balance", fmt(t.balance), balSub, t.balance >= 0 ? "pos" : "neg", "💰", "rgba(52,211,153,.16)", balBar)
+          .replace('<div class="card">', '<div class="card card-link" data-act="balEdit" role="button" tabindex="0" aria-label="Edit your current balance">') +
         card("Safe to Spend", fmt(safe), safeSub, safe >= 0 ? "pos" : "neg", "💸", "rgba(251,191,36,.16)") +
-      '</div>' +
+      '</div>' + (pageDashboard.balEdit ? balEditor(t) : "") +
       (num(state.spendLimit) > 0 || Object.keys(state.budgets || {}).length ? spendHero() : '<details class="dashboard-detail"><summary>Monthly spending limit</summary>' + spendHero() + '</details>') +
       '<div class="countdowns">' + dashPaydayPanel(safe) + dashDebtFreePanel() + '</div>' + dashNetWorthPanel(t) + dashboardMonthSummary(ym) +
       dueSoonPanel() + progressPanel +
@@ -3632,7 +3654,6 @@
     dashboardMonthPrev: function () { pageDashboard.ym = prevMonth(pageDashboard.ym || ymOfDate(new Date())); render(); },
     dashboardMonthNext: function () { pageDashboard.ym = nextMonth(pageDashboard.ym || ymOfDate(new Date())); render(); },
     dashboardMonthTransactions: function () { pageTransactions.ym = pageDashboard.ym || ymOfDate(new Date()); pageTransactions.q = ""; pageTransactions.from = ""; pageTransactions.to = ""; pageTransactions.filter = "all"; actions.newTx(); },
-    setOB: function () { state.openingBalance = num(val("ob_input")); save(); render(); },
     setTargets: function () { state.targets = { balance: num(val("tg_balance")), trading: num(val("tg_trading")) }; save(); render(); },
     calPrev: function () { pageCalendar.ym = prevMonth(pageCalendar.ym); render(); },
     calNext: function () { pageCalendar.ym = nextMonth(pageCalendar.ym); render(); },
@@ -3675,6 +3696,25 @@
     payoffClose: function () { payoffPrompt = null; render(); },
     paceReset: function () { state.paceTarget = ""; spendHero.edit = false; save(); render(); },
     spEdit: function () { spendHero.edit = true; spendHero.saEdit = false; spendHero.typed = null; render(); if (el("spd_days")) el("spd_days").focus(); },
+    balEdit: function () {
+      pageDashboard.balEdit = true; render();
+      var x = el("be_amt") || document.querySelector("[data-beacc]"); if (x) { x.focus(); try { x.select(); } catch (e) {} }
+    },
+    balCancel: function () { pageDashboard.balEdit = false; render(); },
+    balSave: function () {
+      var t = totals(), oldOB = state.openingBalance, oldAcc = clone(state.accounts || []);
+      if (t.usingAccounts) {
+        document.querySelectorAll("[data-beacc]").forEach(function (x) {
+          if (x.value === "") return;
+          state.accounts.forEach(function (a) { if (a.id === x.getAttribute("data-beacc")) a.balance = money(num(x.value)); });
+        });
+      } else {
+        var x = el("be_amt"); if (!x || x.value === "") { toast("Type your balance first", "⚠️"); return; }
+        state.openingBalance = money(num(state.openingBalance) + money(num(x.value)) - t.balance);
+      }
+      pageDashboard.balEdit = false; save(); render();
+      toast("Balance updated to " + fmt(totals().balance), "💰", "Undo", function () { state.openingBalance = oldOB; state.accounts = oldAcc; save(); render(); });
+    },
     // Current Balance card: open the "How it adds up" list (cash + goals + emergency …) and scroll to it.
     balAssets: function () {
       dashNetWorthPanel.open = true; render();
@@ -4357,6 +4397,21 @@
         b.onclick = function () { dfd.value = Math.max(0, Math.min(36500, (dfd.value === "" ? 0 : Math.round(num(dfd.value))) + num(b.getAttribute("data-dfstep")))); dfdShow(); };
       });
       dfdShow();
+    }
+    // ✎ Edit balance: live "changes by" preview; Enter saves.
+    if (el("be_prev")) {
+      var beIns = Array.prototype.slice.call(root.querySelectorAll("#be_amt,[data-beacc]")), beShow = function () {
+        var t = totals(), next;
+        if (el("be_amt")) next = el("be_amt").value === "" ? null : money(num(el("be_amt").value));
+        else next = money(state.accounts.reduce(function (s, a) {
+          var x = root.querySelector('[data-beacc="' + a.id + '"]'); return s + (x && x.value !== "" ? num(x.value) : num(a.balance));
+        }, 0));
+        var p = el("be_prev"); if (next == null) { p.textContent = ""; el("be_save").disabled = true; return; }
+        var d = money(next - t.balance); el("be_save").disabled = false;
+        p.innerHTML = d === 0 ? "No change" : "Balance becomes <b>" + esc(fmt(next)) + "</b> (" + (d > 0 ? "up " : "down ") + esc(fmt(Math.abs(d))) + ")";
+      };
+      beIns.forEach(function (x) { x.oninput = beShow; x.onkeydown = function (ev) { if (ev.key === "Enter") { ev.preventDefault(); actions.balSave(); } }; });
+      beShow();
     }
     // ± Add / deduct editor: live preview of what LEFT TO SPEND becomes either way (no re-render while typing)
     if (el("sa_amt")) {
