@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 91</title>
+<title>Finance Tracker · build 92</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -439,7 +439,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 91 · add or deduct from left to spend";
+  var VERSION = "build 92 · tap balance to open transactions";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Debt","Savings","Other"];
   var CATMETA = {
@@ -1368,7 +1368,8 @@
       ' <span class="ver-tag" title="' + esc(VERSION) + '">' + esc((VERSION.match(/build \d+/) || [VERSION])[0]) + '</span></p>' +
       overBudgetAlert() + backupNudge() +
       '<div class="cards dashboard-cards">' +
-        card("Current Balance", fmt(t.balance), balSub, t.balance >= 0 ? "pos" : "neg", "💰", "rgba(52,211,153,.16)", balBar) +
+        cardLink(t.usingAccounts ? "accounts" : "transactions", t.usingAccounts ? "Open Accounts" : "Open Transactions",
+          card("Current Balance", fmt(t.balance), balSub + ' <span class="card-go">' + (t.usingAccounts ? "View accounts ›" : "View transactions ›") + '</span>', t.balance >= 0 ? "pos" : "neg", "💰", "rgba(52,211,153,.16)", balBar)) +
         card("Safe to Spend", fmt(safe), safeSub, safe >= 0 ? "pos" : "neg", "💸", "rgba(251,191,36,.16)") +
       '</div>' + dashNetWorthPanel(t) +
       (num(state.spendLimit) > 0 || Object.keys(state.budgets || {}).length ? spendHero() : '<details class="dashboard-detail"><summary>Monthly spending limit</summary>' + spendHero() + '</details>') +
