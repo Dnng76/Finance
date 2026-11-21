@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 90</title>
+<title>Finance Tracker · build 91</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -439,7 +439,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 90 · clearer dashboard: net worth added up";
+  var VERSION = "build 91 · add or deduct from left to spend";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Debt","Savings","Other"];
   var CATMETA = {
@@ -488,6 +488,7 @@
     debtLogTx: true,
     debtAccount: "",
     spendLimit: 0,
+    spendAdjust: {},
     pin: "",
     currency: "$"
   };
@@ -2367,10 +2368,13 @@
     });
     var budgets = state.budgets || {};
     var catTotal = Object.keys(budgets).reduce(function (s, k) { return s + num(budgets[k]); }, 0);
-    var limit = num(state.spendLimit) > 0 ? num(state.spendLimit) : catTotal;
+    var base = num(state.spendLimit) > 0 ? num(state.spendLimit) : catTotal;
+    // ± Add / deduct (user, 2026-11-21): extra money added to (or taken off) THIS month's limit only.
+    var adj = base > 0 ? money(num((state.spendAdjust || {})[curYm])) : 0;
+    var limit = Math.max(0, base + adj);
     var left = limit - spent;
     var daily = Math.max(0, (limit - (spent - spentToday)) / days); // what each remaining day (incl. today) gets
-    return { limit: limit, fromCats: !(num(state.spendLimit) > 0) && catTotal > 0, spent: spent, spentToday: spentToday, left: left, debtPaid: debtPaid,
+    return { base: base, adj: adj, ym: curYm, limit: limit, fromCats: !(num(state.spendLimit) > 0) && catTotal > 0, spent: spent, spentToday: spentToday, left: left, debtPaid: debtPaid,
       days: days, perDay: left > 0 ? left / days : 0, todayLeft: daily - spentToday, endLabel: targetDate.toLocaleDateString(undefined, { day: "numeric", month: "short" }),
       isDefault: target === paceDefaultTarget(), monthName: now.toLocaleDateString(undefined, { month: "long" }) };
   }
@@ -2391,31 +2395,64 @@
         (s.isDefault ? "" : '<button class="btn sm ghost" data-act="paceReset">↺ Month-end</button>') +
       '</div></div>';
   }
+  // ± Add / deduct editor under LEFT TO SPEND: changes this month's limit only (state.spendAdjust[ym]).
+  function saEditor(s) {
+    return '<div class="df-editor" style="margin:10px 0 12px;text-align:left">' +
+      '<div class="mini" style="margin-bottom:8px">Add money to this month, or take some off (resets on the 1st)</div>' +
+      '<div class="df-steps">' +
+        '<button type="button" data-sastep="-50">−50</button><button type="button" data-sastep="-10">−10</button>' +
+        '<input id="sa_amt" type="number" inputmode="decimal" min="0" placeholder="Amount" aria-label="Amount to add or deduct" value="' + esc(spendHero.saTyped || "") + '"/>' +
+        '<button type="button" data-sastep="10">+10</button><button type="button" data-sastep="50">+50</button>' +
+      '</div>' +
+      '<div class="mini" id="sa_prev" style="margin-top:8px"></div>' +
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
+        '<button class="btn sm" id="sa_add" data-act="saAdd">＋ Add</button>' +
+        '<button class="btn sm ghost" id="sa_ded" data-act="saDeduct">− Deduct</button>' +
+        '<button class="btn sm ghost" data-act="saCancel">Cancel</button>' +
+        (s.adj ? '<button class="btn sm ghost" data-act="saReset">↺ Back to ' + fmt(s.base) + '</button>' : "") +
+      '</div></div>';
+  }
+  // Add (sign 1) or deduct (sign −1) the typed amount from this month's spending limit.
+  function saApply(sign) {
+    var amt = money(num(val("sa_amt")));
+    if (!(amt > 0)) { toast("Type an amount first", "⚠️"); return; }
+    var s = spendStatus(), was = s.adj, next = money(was + sign * amt);
+    if (s.base + next < 0) { toast("You can take off at most " + fmt(s.base + was) + " this month", "⚠️"); return; }
+    if (!state.spendAdjust || typeof state.spendAdjust !== "object") state.spendAdjust = {};
+    Object.keys(state.spendAdjust).forEach(function (k) { if (k < s.ym) delete state.spendAdjust[k]; }); // drop old months
+    if (next) state.spendAdjust[s.ym] = next; else delete state.spendAdjust[s.ym];
+    spendHero.saEdit = false; save(); render();
+    toast((sign > 0 ? "Added " : "Took off ") + fmt(amt) + " · " + fmt(Math.max(0, s.limit + sign * amt) - s.spent) + " left to spend", sign > 0 ? "➕" : "➖", "Undo", function () {
+      if (was) state.spendAdjust[s.ym] = was; else delete state.spendAdjust[s.ym]; save(); render();
+    });
+  }
   function spendHero() {
-    var s = spendStatus(), cur = state.currency || "$", editing = !!spendHero.edit;
+    var s = spendStatus(), cur = state.currency || "$", editing = !!spendHero.edit, saEditing = !!spendHero.saEdit;
     var limitForm = '<div class="toolbar" style="justify-content:center;margin-top:10px">' +
       '<input id="sp_limit" type="number" inputmode="decimal" placeholder="e.g. 1500" value="' + (num(state.spendLimit) > 0 ? num(state.spendLimit) : "") + '" style="width:150px"/>' +
       '<button class="btn sm" data-act="setSpendLimit">Save</button></div>';
-    if (!(s.limit > 0)) {
+    if (!(s.base > 0)) {
       return '<div class="panel" style="text-align:center">' +
         '<div style="font-size:30px">💸</div><h3 style="justify-content:center;margin:6px 0 4px">How much can you spend this month?</h3>' +
         '<p class="mini" style="margin:0">Set one number and this shows how much you have left and how many days it has to last.</p>' + limitForm + '</div>';
     }
-    var over = s.left < 0, pct = Math.min(100, s.spent / s.limit * 100);
+    var over = s.left < 0, pct = s.limit > 0 ? Math.min(100, s.spent / s.limit * 100) : 100;
     return '<div class="panel" style="padding:20px 18px;' + (over ? "border-color:rgba(248,113,113,.5)" : "") + '">' +
       '<div class="spend-columns">' +
         '<div><div class="mini" style="font-weight:700">' + (over ? "OVER BUDGET BY" : "LEFT TO SPEND") + '</div>' +
-          '<div class="spend-amount ' + (over ? "neg" : "pos") + '">' + fmt(Math.abs(s.left)) + '</div></div>' +
+          '<div class="spend-amount ' + (over ? "neg" : "pos") + '">' + fmt(Math.abs(s.left)) + '</div>' +
+          (saEditing ? "" : '<button type="button" class="cd-edit" data-act="saEdit" aria-label="Add or deduct money this month" style="margin-top:6px">± Add / deduct</button>') + '</div>' +
         '<div><div class="mini" style="font-weight:700">DAYS LEFT</div>' +
           '<div class="spend-amount" style="color:var(--accent)">' + s.days + '</div>' +
           (editing ? "" : '<button type="button" class="cd-edit" data-act="spEdit" aria-label="Edit days left" style="margin-top:6px">✎ Edit days</button>') + '</div>' +
-      '</div>' + (editing ? spEditor(s) : "") +
+      '</div>' + (saEditing ? saEditor(s) : "") + (editing ? spEditor(s) : "") +
       '<div style="text-align:center;margin:12px 0 14px;font-size:15px">' +
         (over ? '⚠ You\'ve gone past your limit — try to keep spending to essentials until ' + s.endLabel + '.'
           : '≈ <strong>' + fmt(s.perDay) + '</strong> a day until ' + s.endLabel +
             ' · <span style="white-space:nowrap">today: <strong class="' + (s.todayLeft < 0 ? "neg" : "pos") + '">' + (s.todayLeft < 0 ? fmt(-s.todayLeft) + ' over' : fmt(s.todayLeft) + ' left') + '</strong></span>') + '</div>' +
       '<div class="progress" style="height:10px"><div style="width:' + pct + '%;background:' + (over ? "var(--red)" : pct > 85 ? "var(--yellow)" : "linear-gradient(90deg,var(--accent),var(--accent2))") + '"></div></div>' +
-      '<div class="row-between mini" style="margin-top:7px"><span>Spent ' + fmt(s.spent) + ' of ' + fmt(s.limit) + (s.fromCats ? ' (your category budgets)' : '') + '</span>' +
+      '<div class="row-between mini" style="margin-top:7px"><span>Spent ' + fmt(s.spent) + ' of ' + fmt(s.limit) +
+        (s.adj ? ' (' + fmt(s.base) + (s.adj > 0 ? ' + ' : ' − ') + fmt(Math.abs(s.adj)) + (s.adj > 0 ? ' added' : ' taken off') + ' this month)' : s.fromCats ? ' (your category budgets)' : '') + '</span>' +
         '<span>' + (s.isDefault ? s.days + (s.days === 1 ? " day" : " days") + " incl. today" : "counting to " + s.endLabel) + '</span></div>' +
       (s.debtPaid > 0 ? '<div class="mini" style="margin-top:4px">Debt payments (' + fmt(s.debtPaid) + ' this month) aren\'t counted here; they have their own plan.</div>' : '') +
       '<details style="margin-top:8px"><summary class="mini" style="cursor:pointer">✎ Change monthly limit</summary>' + limitForm +
@@ -3624,7 +3661,16 @@
     },
     payoffClose: function () { payoffPrompt = null; render(); },
     paceReset: function () { state.paceTarget = ""; spendHero.edit = false; save(); render(); },
-    spEdit: function () { spendHero.edit = true; spendHero.typed = null; render(); if (el("spd_days")) el("spd_days").focus(); },
+    spEdit: function () { spendHero.edit = true; spendHero.saEdit = false; spendHero.typed = null; render(); if (el("spd_days")) el("spd_days").focus(); },
+    saEdit: function () { spendHero.saEdit = true; spendHero.edit = false; spendHero.saTyped = ""; render(); if (el("sa_amt")) el("sa_amt").focus(); },
+    saCancel: function () { spendHero.saEdit = false; render(); },
+    saAdd: function () { saApply(1); },
+    saDeduct: function () { saApply(-1); },
+    saReset: function () {
+      var s = spendStatus(), was = s.adj;
+      delete state.spendAdjust[s.ym]; spendHero.saEdit = false; save(); render();
+      toast("Back to your usual " + fmt(s.base) + " this month", "↺", "Undo", function () { state.spendAdjust[s.ym] = was; save(); render(); });
+    },
     spCancel: function () { spendHero.edit = false; render(); },
     spSave: function () {
       var x = el("spd_days"); if (!x || x.value === "") return;
@@ -4289,6 +4335,23 @@
         b.onclick = function () { dfd.value = Math.max(0, Math.min(36500, (dfd.value === "" ? 0 : Math.round(num(dfd.value))) + num(b.getAttribute("data-dfstep")))); dfdShow(); };
       });
       dfdShow();
+    }
+    // ± Add / deduct editor: live preview of what LEFT TO SPEND becomes either way (no re-render while typing)
+    if (el("sa_amt")) {
+      var sa = el("sa_amt"), saShow = function () {
+        spendHero.saTyped = sa.value;
+        var s = spendStatus(), a = money(num(sa.value)), ok = a > 0, prev = el("sa_prev");
+        el("sa_add").disabled = !ok; el("sa_ded").disabled = !ok || s.base + s.adj - a < 0;
+        el("sa_add").textContent = ok ? "＋ Add " + fmt(a) : "＋ Add"; el("sa_ded").textContent = ok ? "− Deduct " + fmt(a) : "− Deduct";
+        prev.innerHTML = ok ? "Left to spend would be <b>" + esc(fmt(s.left + a)) + "</b> if you add, or <b>" + esc(fmt(s.left - a)) + "</b> if you deduct."
+          : "Left to spend now: <b>" + esc(fmt(s.left)) + "</b>";
+      };
+      sa.oninput = saShow;
+      sa.onkeydown = function (ev) { if (ev.key === "Enter") { ev.preventDefault(); sa.blur(); } }; // Enter can't know add vs deduct
+      root.querySelectorAll("[data-sastep]").forEach(function (b) {
+        b.onclick = function () { var v = money(num(sa.value) + num(b.getAttribute("data-sastep"))); sa.value = v > 0 ? v : ""; saShow(); };
+      });
+      saShow();
     }
     // Spending DAYS LEFT editor: same in-place preview (counts today, so n days ends n-1 days from now)
     if (el("spd_days")) {
