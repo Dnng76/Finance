@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 101</title>
+<title>Finance Tracker · build 102</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -525,6 +525,25 @@
   @keyframes ftlife { from { transform: scaleX(1); } to { transform: scaleX(0); } }
   /* A wrong value: quick shake and a red outline. */
   .ft-shake { animation: ftnudge .45s ease; border-color: var(--red, #f87171) !important; box-shadow: 0 0 0 3px rgba(248,113,113,.22) !important; }
+  /* ---- Build 102 ---- */
+  /* Light/dark switch: the new colours spread in a circle (the animation itself is set from JS). */
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+  /* New badge pop-up. */
+  .ft-badge-pop { position: fixed; left: 50%; top: calc(14px + env(safe-area-inset-top)); z-index: 99995; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 10px 18px 10px 12px; border-radius: 999px; border: 1px solid var(--accent); background: var(--panel); color: var(--text); font: inherit; text-align: left; cursor: pointer; box-shadow: 0 14px 40px rgba(0,0,0,.4), 0 0 0 4px rgba(45,212,191,.12); animation: ftbadgein .55s cubic-bezier(.2,.9,.3,1.3) both; max-width: calc(100% - 32px); }
+  .ft-badge-pop .bp-ico { font-size: 30px; line-height: 1; animation: fttab .6s cubic-bezier(.2,.9,.3,1.4) .25s both; }
+  .ft-badge-pop .bp-k { display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+  .ft-badge-pop .bp-n { display: block; font-size: 16px; font-weight: 800; }
+  .ft-badge-pop.out { animation: ftbadgeout .3s ease forwards; }
+  @keyframes ftbadgein { from { opacity: 0; transform: translate(-50%, -24px) scale(.85); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+  @keyframes ftbadgeout { to { opacity: 0; transform: translate(-50%, -16px) scale(.95); } }
+  /* Settings → Animations → Calm: keep gentle fades/slides, drop bounces, shakes, shines and glows. */
+  html.motion-calm .app.page-enter .botnav button.active .ico, html.motion-calm .app.page-enter .sidebar .nav button.active .ico,
+  html.motion-calm .ft-flash, html.motion-calm .sheet.open .sheet-grid button, html.motion-calm .ft-badge-pop .bp-ico { animation: none; }
+  html.motion-calm .app.page-enter .ach-shine::after { display: none; }
+  html.motion-calm .app.page-enter .spend-alert.bad { animation: ftrise .42s cubic-bezier(.2,.8,.2,1) both; }
+  html.motion-calm .ft-shake { animation: none; }
+  /* Settings → Animations → Off: nothing moves (same as the phone's Reduce motion). */
+  html.motion-off *, html.motion-off *::before, html.motion-off *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   /* Big buttons and tappable cards press in; on a computer, tappable cards lift when you point at them. */
   button.btn:active { transform: scale(.97); }
   .card-link { transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
@@ -542,7 +561,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 101 · motion polish";
+  var VERSION = "build 102 · animation settings";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Debt","Savings","Other"];
   var CATMETA = {
@@ -2267,7 +2286,7 @@
     var key = "ftPaydayCheer", d = today();
     try { if (localStorage.getItem(key) === d) return; localStorage.setItem(key, d); } catch (e) { if (cheerPayday.done === d) return; }
     cheerPayday.done = d;
-    if (motionOK()) setTimeout(function () { celebrate("💰 It's payday!"); }, 900);
+    if (motionFull()) setTimeout(function () { celebrate("💰 It's payday!"); }, 900);
   }
   function dashPaydayPanel(safe) {
     var p = state.payday || {}, nx = nextPayday(false), editing = !!dashPaydayPanel.edit;
@@ -3351,6 +3370,43 @@
   }
 
   function pageAchievements() {
+    var a = achievementBadges(), badges = a.badges, streak = a.streak;
+    var got = badges.filter(function (b) { return b.got; }).length;
+    var grid = '<div class="cards">' + badges.map(function (b) {
+      return '<div class="card' + (b.got ? ' ach-shine' : '') + '" style="text-align:center;' + (b.got ? "" : "opacity:.5") + '">' +
+        '<div style="font-size:34px;margin-bottom:6px;filter:' + (b.got ? "none" : "grayscale(1)") + '">' + b.icon + '</div>' +
+        '<div style="font-weight:700">' + b.name + '</div><div class="mini" style="margin-top:3px">' + b.desc + '</div>' +
+        (b.got ? '<div class="mini pos" style="margin-top:6px">✓ Unlocked</div>' : '<div class="mini" style="margin-top:6px;opacity:.6">🔒 Locked</div>') + '</div>';
+    }).join("") + '</div>';
+    var streakCard = '<div class="cards"><div class="card" style="text-align:center"><div class="label">🔥 Current logging streak</div><div class="value" style="font-size:44px;color:var(--accent)">' + streak + '</div><div class="sub">day' + (streak === 1 ? "" : "s") + ' in a row · ' + got + '/' + badges.length + ' badges earned</div></div></div>';
+    return '<h1 class="page-title">Achievements</h1><p class="page-sub">Little wins on the road to financial freedom.</p>' + streakCard + grid;
+  }
+  // Build 102: when you earn a badge, it pops up once (per phone). Badges you already had never pop.
+  function checkNewBadges() {
+    if (locked) return;
+    var key = "ftBadgesSeen", seen = null, now;
+    try { now = achievementBadges().badges.filter(function (b) { return b.got; }); } catch (e) { return; }
+    try { seen = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { seen = checkNewBadges.mem || null; }
+    var names = now.map(function (b) { return b.name; });
+    if (!Array.isArray(seen)) { saveSeen(names); return; }   // first time: remember what you already have, no pop-ups
+    var fresh = now.filter(function (b) { return seen.indexOf(b.name) < 0; });
+    if (!fresh.length) return;
+    saveSeen(seen.concat(fresh.map(function (b) { return b.name; })));
+    if (fresh.length > 2) return; // lots at once = data just synced/imported, not something you did now
+    badgePop(fresh[0]);
+    function saveSeen(list) { checkNewBadges.mem = list; try { localStorage.setItem(key, JSON.stringify(list)); } catch (e) {} }
+  }
+  function badgePop(b) {
+    var old = document.querySelector(".ft-badge-pop"); if (old) old.remove();
+    var p = document.createElement("button");
+    p.type = "button"; p.className = "ft-badge-pop";
+    p.innerHTML = '<span class="bp-ico">' + b.icon + '</span><span><span class="bp-k">New badge unlocked</span><span class="bp-n">' + esc(b.name) + '</span></span>';
+    p.setAttribute("aria-label", "New badge unlocked: " + b.name + ". Open Achievements");
+    p.onclick = function () { p.remove(); moreOpen = false; currentTab = "achievements"; render(); window.scrollTo(0, 0); };
+    document.body.appendChild(p);
+    setTimeout(function () { if (p.parentNode) { p.classList.add("out"); setTimeout(function () { if (p.parentNode) p.remove(); }, 350); } }, 3600);
+  }
+  function achievementBadges() {
     var t = totals();
     var dayset = {}; state.transactions.forEach(function (x) { if (x.date) dayset[x.date] = 1; });
     function ymdOffset(n) { return ymdLocal(new Date(new Date(today() + "T00:00:00").getTime() - n * 86400000)); }
@@ -3378,15 +3434,7 @@
       { icon: "📈", name: "In the Black", desc: "Reach positive net worth", got: t.netWorth > 0 },
       { icon: "✅", name: "Under Budget", desc: "Stay under budget this month", got: totalBudget > 0 && expCur <= totalBudget }
     ];
-    var got = badges.filter(function (b) { return b.got; }).length;
-    var grid = '<div class="cards">' + badges.map(function (b) {
-      return '<div class="card' + (b.got ? ' ach-shine' : '') + '" style="text-align:center;' + (b.got ? "" : "opacity:.5") + '">' +
-        '<div style="font-size:34px;margin-bottom:6px;filter:' + (b.got ? "none" : "grayscale(1)") + '">' + b.icon + '</div>' +
-        '<div style="font-weight:700">' + b.name + '</div><div class="mini" style="margin-top:3px">' + b.desc + '</div>' +
-        (b.got ? '<div class="mini pos" style="margin-top:6px">✓ Unlocked</div>' : '<div class="mini" style="margin-top:6px;opacity:.6">🔒 Locked</div>') + '</div>';
-    }).join("") + '</div>';
-    var streakCard = '<div class="cards"><div class="card" style="text-align:center"><div class="label">🔥 Current logging streak</div><div class="value" style="font-size:44px;color:var(--accent)">' + streak + '</div><div class="sub">day' + (streak === 1 ? "" : "s") + ' in a row · ' + got + '/' + badges.length + ' badges earned</div></div></div>';
-    return '<h1 class="page-title">Achievements</h1><p class="page-sub">Little wins on the road to financial freedom.</p>' + streakCard + grid;
+    return { badges: badges, streak: streak };
   }
 
   function budgetPhotosPanel() {
@@ -3789,12 +3837,22 @@
       ' <button class="btn ghost sm" data-act="goBackup" style="margin-left:8px">Back up now</button></div>';
   }
 
+  function motionPanel() {
+    var opts = [["full", "✨ Full"], ["calm", "🌙 Calm"], ["off", "⏸ Off"]];
+    var desc = { full: "Everything moves: numbers count up and roll, amounts float, confetti on payday.", calm: "Gentle only: pages and lists fade in, bars fill. No counting, bubbles or bouncing.", off: "Nothing moves. Everything appears straight away." };
+    var reduced = false; try { reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+    return '<div class="panel"><h3>Animations</h3><div class="toolbar">' +
+      opts.map(function (o) { return '<button class="btn ' + (motionPref === o[0] ? "" : "ghost") + ' sm" data-act="motion" data-c="' + o[0] + '" aria-pressed="' + (motionPref === o[0]) + '">' + o[1] + '</button>'; }).join("") +
+      '</div><div class="mini" style="margin-top:8px">' + desc[motionPref] + ' Saved on this phone only.' +
+      (reduced ? ' <b>Your phone has "Reduce motion" on, so animations stay off anyway.</b>' : '') + '</div></div>';
+  }
   function pageData() {
     var cur = state.currency || "$";
     var currencies = ["$","S$","€","£","₫","¥","₹"].map(function (c) { return '<button class="btn ' + (cur === c ? "" : "ghost") + ' sm" data-act="cur" data-c="' + c + '">' + c + '</button>'; }).join("");
     return '<h1 class="page-title">Settings & Backup</h1><p class="page-sub">Account, security and data.</p>' +
       cloudSection() + securitySection() + privacyLaunchPanel() + tabOrderPanel() +
       '<div class="panel"><h3>Currency</h3><div class="toolbar">' + currencies + '</div></div>' +
+      motionPanel() +
       backupStatusPanel() +
       '<div class="panel"><h3>Export</h3><div class="toolbar"><button class="btn" data-act="expJSON">⤓ Full backup (JSON + photos)</button><button class="btn ghost" data-act="expJSONNoPhotos">⤓ Data only (smaller)</button><button class="btn ghost" data-act="expCSV">⤓ Transactions (CSV)</button></div>' +
         '<p class="mini" style="margin-top:10px">The <strong>full backup</strong> now includes your debt photos, receipts and vision-board pictures — those live only on this device and are <strong>not</strong> covered by cloud sync, so this file is the only way to move them to a new phone. Use <strong>Data only</strong> if the file gets too big to email.</p></div>' +
@@ -3996,7 +4054,26 @@
       save(); render(); toast("Transferred " + fmt(amt), "🔄");
     },
     privacy: function () { privacy = !privacy; try { localStorage.setItem("ft_privacy", privacy ? "1" : "0"); } catch (e) {} render(); },
-    theme: function () { theme = theme === "light" ? "dark" : "light"; try { localStorage.setItem("ft_theme", theme); } catch (e) {} applyTheme(); render(); },
+    theme: function () {
+      var flip = function () { theme = theme === "light" ? "dark" : "light"; try { localStorage.setItem("ft_theme", theme); } catch (e) {} applyTheme(); render(); };
+      // Build 102: the new colours spread out in a circle from the button you tapped (where the browser supports it).
+      if (!document.startViewTransition || !motionOK()) { flip(); return; }
+      var p = lastPointer.x != null ? lastPointer : { x: innerWidth - 40, y: 40 };
+      try {
+        var vt = document.startViewTransition(flip);
+        vt.ready.then(function () {
+          var r = Math.hypot(Math.max(p.x, innerWidth - p.x), Math.max(p.y, innerHeight - p.y));
+          document.documentElement.animate({ clipPath: ["circle(0px at " + p.x + "px " + p.y + "px)", "circle(" + Math.ceil(r) + "px at " + p.x + "px " + p.y + "px)"] },
+            { duration: 560, easing: "cubic-bezier(.4,0,.2,1)", pseudoElement: "::view-transition-new(root)" });
+        }).catch(function () {});
+      } catch (e) { flip(); }
+    },
+    motion: function (e) {
+      motionPref = ["full", "calm", "off"].indexOf(e.c) >= 0 ? e.c : "full";
+      try { localStorage.setItem("ft_motion", motionPref); } catch (x) {}
+      applyMotion(); render();
+      toast(motionPref === "off" ? "Animations off" : motionPref === "calm" ? "Calm animations" : "Full animations", "✨");
+    },
     toggleHideOpen: function () { state.hideOnOpen = !state.hideOnOpen; if (state.hideOnOpen) { privacy = true; try { localStorage.setItem("ft_privacy", "1"); } catch (e) {} } save(); render(); },
     setPin: function () { var v = (val("sp_pin") || "").replace(/\D/g, ""); if (v.length < 4) { msg("PIN must be at least 4 digits."); return; } state.pin = v; save(); render(); toast("PIN saved — tap 🔒 at the top whenever you want to lock", "🔒"); },
     removePin: function () { state.pin = ""; locked = false; setManualLock(false); save(); render(); },
@@ -4557,11 +4634,24 @@
     el("root").innerHTML = '<div class="app' + (entering ? ' page-enter' + dirCls : '') + '"><div class="app-content"' + (moreOpen ? ' inert aria-hidden="true"' : '') + '>' + sidebar + '<main class="main">' + topTools + pages[currentTab]() + '</main>' + botnav + '</div>' + sheet + payoff + debtEditModal() + pinSetup + '</div>';
     wire();
     if (entering) { countUpNumbers(); staggerLists(); endPageEnter(); } else { flashChangedNumbers(before); markNewRows(beforeRows); glideBars(beforeBars); glideRings(beforeRings); }
+    clearTimeout(render.badgeT); render.badgeT = setTimeout(checkNewBadges, 500);
   }
 
   /* ---- Build 99: number animations ---- */
   var ANIM_NUM_SEL = ".dashboard-cards .card .value, .spend-amount, .cd-big, .nw-result .nw-amt, .main > .cards .card .value";
-  function motionOK() { try { return !window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return true; } }
+  // Build 102: Settings → Animations: "full" (everything), "calm" (gentle fades/slides only), "off". Saved per phone.
+  var motionPref = "full";
+  try { motionPref = localStorage.getItem("ft_motion") || "full"; } catch (e) {}
+  function applyMotion() {
+    var h = document.documentElement;
+    h.classList.toggle("motion-off", motionPref === "off");
+    h.classList.toggle("motion-calm", motionPref === "calm");
+  }
+  applyMotion();
+  var lastPointer = {}; // where you last touched, so the light/dark switch can spread from there
+  document.addEventListener("pointerdown", function (e) { lastPointer.x = e.clientX; lastPointer.y = e.clientY; }, true);
+  function motionOK() { if (motionPref === "off") return false; try { return !window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return true; } }
+  function motionFull() { return motionPref === "full" && motionOK(); } // the playful extras: counting, rolling, bubbles, confetti on payday
   // "−S$3,442.00" → { pre: "−S$", n: 3442, dec: 2, post: "" }; null for anything that isn't a plain amount/count.
   function parseShownNumber(txt) {
     var m = /^([^\d]*?)(\d[\d,]*)(\.(\d+))?([^\d]*)$/.exec((txt || "").trim());
@@ -4579,7 +4669,7 @@
     endPageEnter.t = setTimeout(function () { if (a && a.isConnected) a.classList.remove("page-enter", "from-right", "from-left"); }, 1700);
   }
   function countUpNumbers() {
-    if (!motionOK()) return;
+    if (!motionFull()) return;
     var els = Array.prototype.slice.call(document.querySelectorAll(ANIM_NUM_SEL)).map(function (e) {
       var p = parseShownNumber(e.textContent); if (p && p.n > 0 && e.children.length === 0) { e.setAttribute("data-final", e.textContent); return { e: e, p: p, final: e.textContent }; } return null;
     }).filter(Boolean);
@@ -4621,6 +4711,7 @@
   }
   // Build 101: a changed number rolls from its old value to the new one (≈0.55s), always ending on the exact text.
   function rollNumber(e, oldText) {
+    if (!motionFull()) return;
     var a = parseShownNumber(oldText), b = parseShownNumber(e.textContent), final = e.textContent;
     if (!a || !b || a.post !== b.post || e.children.length) return;
     var cur = state.currency || "$", money = b.pre.indexOf(cur) >= 0 || a.pre.indexOf(cur) >= 0;
@@ -4655,6 +4746,7 @@
   }
   // Build 100: the difference floats up from the number ("−S$12.00" red, "+S$50.00" green).
   function floatDelta(e, oldText) {
+    if (!motionFull()) return;
     var a = parseShownNumber(oldText), b = parseShownNumber(e.textContent);
     if (!a || !b || a.post !== b.post) return;
     var sa = /[−-]/.test(a.pre) ? -1 : 1, sb = /[−-]/.test(b.pre) ? -1 : 1;
