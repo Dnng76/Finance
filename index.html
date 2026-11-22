@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 99</title>
+<title>Finance Tracker · build 100</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -478,6 +478,44 @@
   @keyframes ftflash { 0% { text-shadow: 0 0 0 transparent; transform: scale(1); } 25% { text-shadow: 0 0 18px currentColor; transform: scale(1.06); } 100% { text-shadow: 0 0 0 transparent; transform: scale(1); } }
   /* Editors (✎ Edit days, ± Add / deduct, ✎ Edit balance) slide open. */
   .df-editor, .bal-editor { animation: ftrise .28s cubic-bezier(.2,.8,.2,1) both; }
+  /* ---- Build 100: more animation ---- */
+  /* Lists (transactions, tables) cascade in row by row when a page opens. */
+  .app.page-enter .ft-li { animation: ftslide .34s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes ftslide { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+  /* Chart bars grow up from the axis; the trend line draws itself left to right. */
+  .app.page-enter .bar-rise { transform-box: fill-box; transform-origin: 50% 100%; animation: ftbar .7s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes ftbar { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  .app.page-enter .line-draw { stroke-dasharray: 1; animation: ftdraw 1.2s cubic-bezier(.4,0,.2,1) .1s both; }
+  @keyframes ftdraw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  .app.page-enter .area-fade { animation: ftfade .9s ease .5s both; }
+  @keyframes ftfade { from { opacity: 0; } to { opacity: 1; } }
+  /* Something you just added slides in and glows; something you delete folds away. */
+  .ft-new { animation: ftnew 1.6s ease; }
+  @keyframes ftnew { 0% { opacity: 0; transform: translateY(-8px); background: rgba(45,212,191,.28); } 15% { opacity: 1; transform: none; } 100% { background: transparent; } }
+  .ft-out { animation: ftout .24s ease forwards; pointer-events: none; overflow: hidden; }
+  @keyframes ftout { to { opacity: 0; transform: translateX(30px); max-height: 0; padding-top: 0; padding-bottom: 0; } }
+  .tx-row { max-height: 200px; }
+  /* A changed amount floats its difference ("−S$12.00") up and away. */
+  .ft-delta { position: fixed; z-index: 99990; pointer-events: none; font-weight: 800; font-size: 15px; padding: 2px 8px; border-radius: 999px; background: var(--panel); border: 1px solid var(--border); box-shadow: 0 6px 18px rgba(0,0,0,.3); animation: ftfloat 1.3s cubic-bezier(.2,.8,.2,1) forwards; white-space: nowrap; }
+  .ft-delta.up { color: var(--green, #34d399); } .ft-delta.down { color: var(--red, #f87171); }
+  @keyframes ftfloat { 0% { opacity: 0; transform: translate(-50%, 6px) scale(.8); } 18% { opacity: 1; transform: translate(-50%, -6px) scale(1.05); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -34px) scale(1); } }
+  /* The More menu: its icons pop in one after another. */
+  .sheet.open .sheet-grid button { animation: ftpopin .32s cubic-bezier(.2,.9,.3,1.2) both; }
+  .sheet.open .sheet-grid button:nth-child(2) { animation-delay: .02s; } .sheet.open .sheet-grid button:nth-child(3) { animation-delay: .04s; }
+  .sheet.open .sheet-grid button:nth-child(4) { animation-delay: .06s; } .sheet.open .sheet-grid button:nth-child(5) { animation-delay: .08s; }
+  .sheet.open .sheet-grid button:nth-child(6) { animation-delay: .1s; } .sheet.open .sheet-grid button:nth-child(n+7) { animation-delay: .12s; }
+  /* Warnings give one small nudge when the page opens, so you notice them. */
+  .app.page-enter .spend-alert.bad { animation: ftrise .42s cubic-bezier(.2,.8,.2,1) both, ftnudge .5s ease .5s; }
+  @keyframes ftnudge { 0%, 100% { transform: none; } 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(3px); } }
+  /* Unlocked achievements shine once. */
+  .app.page-enter .ach-shine { position: relative; overflow: hidden; }
+  .app.page-enter .ach-shine::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.22) 50%, transparent 70%); transform: translateX(-120%); animation: ftshine 1.1s ease .45s forwards; pointer-events: none; }
+  @keyframes ftshine { to { transform: translateX(120%); } }
+  /* Big buttons and tappable cards press in; on a computer, tappable cards lift when you point at them. */
+  button.btn:active { transform: scale(.97); }
+  .card-link { transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+  .card-link:active { transform: scale(.98); }
+  @media (hover: hover) { .card-link:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0,0,0,.28); } }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 </style>
 </head>
@@ -490,7 +528,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 99 · animations";
+  var VERSION = "build 100 · more animations";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Debt","Savings","Other"];
   var CATMETA = {
@@ -945,7 +983,7 @@
       sp.classList.add("hide"); setTimeout(function () { if (sp.parentNode) sp.parentNode.removeChild(sp); }, 550);
       // Build 99: replay the opening animation as the launch screen fades, so it isn't hidden behind it.
       var a = document.querySelector("#root .app");
-      if (a) { a.classList.remove("page-enter"); void a.offsetWidth; a.classList.add("page-enter"); countUpNumbers(); endPageEnter(); }
+      if (a) { a.classList.remove("page-enter"); void a.offsetWidth; a.classList.add("page-enter"); countUpNumbers(); staggerLists(); endPageEnter(); }
     }, 250);
   }
   var BUILT_IN_CONFIG = {
@@ -1255,8 +1293,8 @@
     return '<div class="chart-wrap"><svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" preserveAspectRatio="xMidYMid meet">' +
       '<defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2dd4bf" stop-opacity="0.45"/><stop offset="100%" stop-color="#2dd4bf" stop-opacity="0"/></linearGradient></defs>' +
       '<line x1="' + p + '" y1="' + zeroY + '" x2="' + (w - p) + '" y2="' + zeroY + '" stroke="var(--border)" stroke-dasharray="3 3"/>' +
-      '<path d="' + area + '" fill="url(#ga)"/>' +
-      '<polyline points="' + pts.join(" ") + '" fill="none" stroke="#2dd4bf" stroke-width="2.5"/>' + dots +
+      '<path class="area-fade" d="' + area + '" fill="url(#ga)"/>' +
+      '<polyline class="line-draw" pathLength="1" points="' + pts.join(" ") + '" fill="none" stroke="#2dd4bf" stroke-width="2.5"/>' + '<g class="area-fade">' + dots + '</g>' +
       '<text x="' + p + '" y="16" fill="var(--muted)" font-size="11">' + fmt(max) + '</text>' +
       '<text x="' + p + '" y="' + (h - 10) + '" fill="var(--muted)" font-size="11">' + fmt(min) + '</text>' +
       '</svg></div>';
@@ -1298,8 +1336,9 @@
     var bars = "";
     data.forEach(function (d, i) {
       var cx = p + slot * i + slot / 2;
-      bars += '<rect x="' + (cx - bw - 2) + '" y="' + Y(d.inc) + '" width="' + bw + '" height="' + (h - p - Y(d.inc)) + '" rx="3" fill="#34d399"/>';
-      bars += '<rect x="' + (cx + 2) + '" y="' + Y(d.exp) + '" width="' + bw + '" height="' + (h - p - Y(d.exp)) + '" rx="3" fill="#f87171"/>';
+      var dl = ' style="animation-delay:' + (0.1 + i * 0.07).toFixed(2) + 's"';
+      bars += '<rect class="bar-rise"' + dl + ' x="' + (cx - bw - 2) + '" y="' + Y(d.inc) + '" width="' + bw + '" height="' + (h - p - Y(d.inc)) + '" rx="3" fill="#34d399"/>';
+      bars += '<rect class="bar-rise"' + dl + ' x="' + (cx + 2) + '" y="' + Y(d.exp) + '" width="' + bw + '" height="' + (h - p - Y(d.exp)) + '" rx="3" fill="#f87171"/>';
       bars += '<text x="' + cx + '" y="' + (h - 12) + '" text-anchor="middle" fill="var(--muted)" font-size="11">' + monthShort(d.ym) + '</text>';
     });
     return '<div class="chart-wrap"><svg viewBox="0 0 ' + w + ' ' + h + '" width="100%">' +
@@ -2713,7 +2752,7 @@
         var cat = t.category || "Other", hasNote = !!t.note && String(t.note).trim().toLowerCase() !== cat.toLowerCase();
         var accN = (t.account && accountName(t.account)) ? accountName(t.account) : "";
         var sub = (hasNote ? esc(cat) : "") + (accN ? (hasNote ? ' · ' : '') + esc(accN) : '');
-        return '<div class="tx-row"><span class="tx-ico" style="background:' + m.bg + '">' + m.e + '</span>' +
+        return '<div class="tx-row" data-rowid="' + esc(t.id) + '"><span class="tx-ico" style="background:' + m.bg + '">' + m.e + '</span>' +
           '<div class="tx-main"><div class="tx-title">' + esc(hasNote ? t.note : cat) + '</div>' + (sub ? '<div class="mini">' + sub + '</div>' : '') + '</div>' +
           '<div class="tx-amt ' + (inc ? "pos" : "neg") + '">' + (inc ? "+" : "−") + fmt(t.amount) + '</div>' +
           '<span class="tx-acts"><button class="icon-btn" data-act="editTx" data-id="' + t.id + '" title="Edit">✎</button><button class="icon-btn" data-act="delTx" data-id="' + t.id + '" title="Delete">✕</button></span></div>';
@@ -3313,7 +3352,7 @@
     ];
     var got = badges.filter(function (b) { return b.got; }).length;
     var grid = '<div class="cards">' + badges.map(function (b) {
-      return '<div class="card" style="text-align:center;' + (b.got ? "" : "opacity:.5") + '">' +
+      return '<div class="card' + (b.got ? ' ach-shine' : '') + '" style="text-align:center;' + (b.got ? "" : "opacity:.5") + '">' +
         '<div style="font-size:34px;margin-bottom:6px;filter:' + (b.got ? "none" : "grayscale(1)") + '">' + b.icon + '</div>' +
         '<div style="font-weight:700">' + b.name + '</div><div class="mini" style="margin-top:3px">' + b.desc + '</div>' +
         (b.got ? '<div class="mini pos" style="margin-top:6px">✓ Unlocked</div>' : '<div class="mini" style="margin-top:6px;opacity:.6">🔒 Locked</div>') + '</div>';
@@ -4479,10 +4518,10 @@
       '<div class="toolbar"><button class="btn" data-act="pinSetupSave">Save & lock now</button><button class="btn ghost" data-act="pinSetupCancel">Cancel</button></div></div></div>' : '';
     // Build 99: animate only when a page is opened (tab change / first show), never on an ordinary re-render.
     var entering = render.lastTab !== currentTab; render.lastTab = currentTab;
-    var before = entering ? null : readAnimNumbers();
+    var before = entering ? null : readAnimNumbers(), beforeRows = entering ? null : readRowIds(), beforeBars = entering ? null : readBars();
     el("root").innerHTML = '<div class="app' + (entering ? ' page-enter' : '') + '"><div class="app-content"' + (moreOpen ? ' inert aria-hidden="true"' : '') + '>' + sidebar + '<main class="main">' + topTools + pages[currentTab]() + '</main>' + botnav + '</div>' + sheet + payoff + debtEditModal() + pinSetup + '</div>';
     wire();
-    if (entering) { countUpNumbers(); endPageEnter(); } else flashChangedNumbers(before);
+    if (entering) { countUpNumbers(); staggerLists(); endPageEnter(); } else { flashChangedNumbers(before); markNewRows(beforeRows); glideBars(beforeBars); }
   }
 
   /* ---- Build 99: number animations ---- */
@@ -4534,10 +4573,55 @@
   function animKey(e, i) { return i + "|" + String(e.className || "").replace(/\s*ft-flash/g, ""); }
   function flashChangedNumbers(before) {
     if (!before || !motionOK() || Date.now() < (countUpNumbers.until || 0)) return;
+    var changed = [];
     document.querySelectorAll(ANIM_NUM_SEL).forEach(function (e, i) {
       var k = animKey(e, i);
-      if (before[k] != null && before[k] !== e.textContent && !/•/.test(e.textContent)) e.classList.add("ft-flash");
+      if (before[k] != null && before[k] !== e.textContent && !/•/.test(e.textContent)) { e.classList.add("ft-flash"); changed.push([e, before[k]]); }
     });
+    // At most two floating amounts, Left to Spend first, so the screen doesn't fill with bubbles.
+    changed.sort(function (x, y) { return (y[0].classList.contains("spend-amount") ? 1 : 0) - (x[0].classList.contains("spend-amount") ? 1 : 0); });
+    changed.slice(0, 2).forEach(function (c) { floatDelta(c[0], c[1]); });
+  }
+  // Build 100: the difference floats up from the number ("−S$12.00" red, "+S$50.00" green).
+  function floatDelta(e, oldText) {
+    var a = parseShownNumber(oldText), b = parseShownNumber(e.textContent);
+    if (!a || !b || a.post !== b.post) return;
+    var sa = /[−-]/.test(a.pre) ? -1 : 1, sb = /[−-]/.test(b.pre) ? -1 : 1;
+    var d = sb * b.n - sa * a.n; if (!d || !isFinite(d)) return;
+    var money = a.pre.indexOf(state.currency || "$") >= 0 || b.pre.indexOf(state.currency || "$") >= 0, dec = Math.max(a.dec, b.dec);
+    var r = e.getBoundingClientRect(); if (!r.width || r.bottom < 0 || r.top > innerHeight) return;
+    var f = document.createElement("div");
+    f.className = "ft-delta " + (d > 0 ? "up" : "down");
+    f.textContent = (d > 0 ? "+" : "−") + (money ? (state.currency || "$") : "") + Math.abs(d).toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec }) + (b.post === "%" ? "%" : "");
+    f.style.left = Math.round(r.left + r.width / 2) + "px"; f.style.top = Math.round(r.top - 6) + "px";
+    document.body.appendChild(f);
+    setTimeout(function () { if (f.parentNode) f.parentNode.removeChild(f); }, 1400);
+  }
+  // Lists cascade in when a page opens (first 20 rows; the rest just appear).
+  function staggerLists() {
+    if (!motionOK()) return;
+    Array.prototype.slice.call(document.querySelectorAll(".main .tx-row, .main table tbody tr")).slice(0, 20).forEach(function (r, i) {
+      r.classList.add("ft-li"); r.style.animationDelay = (0.12 + i * 0.03).toFixed(2) + "s";
+    });
+  }
+  // A transaction you just added slides in with a glow (only 1–3 new rows, so switching month doesn't light everything up).
+  function readRowIds() { var s = {}; document.querySelectorAll("[data-rowid]").forEach(function (r) { s[r.getAttribute("data-rowid")] = 1; }); return s; }
+  function markNewRows(before) {
+    if (!before || !motionOK() || !Object.keys(before).length) return;
+    var fresh = Array.prototype.filter.call(document.querySelectorAll("[data-rowid]"), function (r) { return !before[r.getAttribute("data-rowid")]; });
+    if (fresh.length >= 1 && fresh.length <= 3) fresh.forEach(function (r) { r.classList.add("ft-new"); });
+  }
+  // Progress bars glide from their old width to the new one instead of jumping.
+  function readBars() { return Array.prototype.map.call(document.querySelectorAll(".main .progress > div"), function (b) { return b.style.width; }); }
+  function glideBars(before) {
+    if (!before || !motionOK()) return;
+    var bars = document.querySelectorAll(".main .progress > div");
+    if (bars.length !== before.length) return;
+    var moved = [];
+    bars.forEach(function (b, i) { if (before[i] && before[i] !== b.style.width) { moved.push([b, b.style.width]); b.style.transition = "none"; b.style.width = before[i]; } });
+    if (!moved.length) return;
+    void document.body.offsetWidth;
+    moved.forEach(function (m) { m[0].style.transition = "width .6s cubic-bezier(.2,.8,.2,1)"; m[0].style.width = m[1]; });
   }
 
   function wire() {
@@ -4568,6 +4652,12 @@
     root.querySelectorAll("[data-act]").forEach(function (b) {
       var act = b.getAttribute("data-act");
       if (act === "filter") { b.value = pageTransactions.filter || "all"; b.onchange = function () { pageTransactions.filter = b.value; render(); }; return; }
+      // Build 100: a deleted transaction folds away first (Undo still appears straight after).
+      if (act === "delTx" && actions[act]) { b.onclick = function () {
+        var row = b.closest(".tx-row"), go = function () { actions.delTx({ id: b.getAttribute("data-id") }); };
+        if (!row || !motionOK() || row.classList.contains("ft-out")) { if (!row || !row.classList.contains("ft-out")) go(); return; }
+        row.classList.add("ft-out"); setTimeout(go, 230);
+      }; return; }
       if (actions[act]) b.onclick = function () { actions[act]({ id: b.getAttribute("data-id"), amt: b.getAttribute("data-amt"), c: b.getAttribute("data-c"), k: b.getAttribute("data-k") }); };
       if (actions[act] && b.getAttribute("role") === "button") b.onkeydown = function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); b.onclick(); } };
     });
