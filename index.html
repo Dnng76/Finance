@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 96</title>
+<title>Finance Tracker · build 97</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -447,7 +447,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 96 · clearer labels";
+  var VERSION = "build 97 · plainer payday and accounts";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Debt","Savings","Other"];
   var CATMETA = {
@@ -2843,9 +2843,9 @@
       } else {
         big = '<div class="card" style="text-align:center"><div class="value" style="font-size:30px;color:var(--green)">🎉 Today is ' + lbl + '!</div><div class="sub">' + dateLabel + '</div></div>';
       }
-      var weeks = days > 0 ? '<div class="card"><div class="label">That\'s about</div><div class="value">' + (days / 7).toFixed(1) + ' weeks</div></div>' : '';
-      var amt = num(p.amount) > 0 ? '<div class="card"><div class="label">Expected amount</div><div class="value pos">' + fmt(p.amount) + '</div>' + (days > 0 ? '<div class="sub">' + fmt(num(p.amount) / days) + ' / day until then</div>' : '') + '</div>' : '';
-      view = '<div class="cards">' + big + amt + weeks + '</div>';
+      // Build 97: dropped "S$X / day until then" (salary ÷ days, a meaningless number) and the "0.4 weeks" card.
+      var amt = num(p.amount) > 0 ? '<div class="card"><div class="label">Expected amount</div><div class="value pos">' + fmt(p.amount) + '</div></div>' : '';
+      view = '<div class="cards">' + big + amt + '</div>';
     }
     return '<h1 class="page-title">Payday Countdown</h1><p class="page-sub">Count down to your next paycheck — it repeats every month on the same day, so you only set it once.</p>' +
       '<div class="panel"><h3>Set Payday</h3><div class="form-row" style="max-width:640px">' +
@@ -3010,10 +3010,11 @@
       '<label class="field"><span>To</span><select id="tf_to">' + opts + '</select></label>' +
       '<label class="field"><span>Amount (' + cur + ')</span><input id="tf_amount" type="number"/></label>' +
       '<button class="btn" data-act="transferAcc">Transfer</button></div></div>' : '';
-    var sourcePanel = '<div class="panel"><h3>Dashboard Balance Source</h3><div class="row-between" style="gap:16px;flex-wrap:wrap">' +
-      '<div><strong>' + (state.accountMode && accs.length ? "Accounts are the source of truth" : "Transaction ledger is the source of truth") + '</strong>' +
-      '<div class="mini" style="margin-top:4px">' + (state.accountMode && accs.length ? "Dashboard balance equals the total across accounts. New transactions must be assigned to an account." : "Dashboard balance equals Starting Balance + income − expenses.") + '</div></div>' +
-      '<button class="btn ' + (state.accountMode ? "ghost" : "") + '" data-act="toggleAccountMode">' + (state.accountMode ? "Use transaction ledger" : "Use accounts for Dashboard") + '</button></div>' +
+    // Plain words (build 97) instead of "Dashboard Balance Source / Transaction ledger is the source of truth".
+    var sourcePanel = '<div class="panel"><h3>Where your Current Balance comes from</h3><div class="row-between" style="gap:16px;flex-wrap:wrap">' +
+      '<div><strong>' + (state.accountMode && accs.length ? "Added up from your accounts below" : "Worked out from your transactions") + '</strong>' +
+      '<div class="mini" style="margin-top:4px">' + (state.accountMode && accs.length ? "Each new transaction needs an account, so the right balance goes up or down." : "Your money in minus money out. Correct it any time by tapping Current Balance on the Dashboard.") + '</div></div>' +
+      '<button class="btn ' + (state.accountMode ? "ghost" : "") + '" data-act="toggleAccountMode">' + (state.accountMode ? "Use my transactions instead" : "Use my accounts instead") + '</button></div>' +
       (state.accountMode && unassigned ? '<div class="hint" style="margin-top:14px">' + unassigned + ' older transaction' + (unassigned === 1 ? " is" : "s are") + ' not assigned to an account. They remain in reports but do not change the account-based Dashboard balance.</div>' : '') + '</div>';
     return '<h1 class="page-title">Accounts</h1><p class="page-sub">Track where your money sits — cash, bank, savings — and move it between them.</p>' +
       sourcePanel +
@@ -3761,7 +3762,7 @@
     toggleAccountMode: function () {
       if (!(state.accounts || []).length) { toast("Add an account first", "⚠"); return; }
       state.accountMode = !state.accountMode;
-      save(); render(); toast(state.accountMode ? "Dashboard now uses account balances" : "Dashboard now uses the transaction ledger", "🏦");
+      save(); render(); toast(state.accountMode ? "Current Balance now adds up your accounts" : "Current Balance now comes from your transactions", "🏦");
     },
     delAccount: function (e) {
       if (state.transactions.some(function (tx) { return tx.account === e.id; }) || (state.recurring || []).some(function (r) { return r.account === e.id; })) {
