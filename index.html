@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 102</title>
+<title>Finance Tracker · build 103</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -536,6 +536,20 @@
   .ft-badge-pop.out { animation: ftbadgeout .3s ease forwards; }
   @keyframes ftbadgein { from { opacity: 0; transform: translate(-50%, -24px) scale(.85); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
   @keyframes ftbadgeout { to { opacity: 0; transform: translate(-50%, -16px) scale(.95); } }
+  /* ---- Build 103 ---- */
+  /* A highlight slides along the menu from the old tab to the new one. */
+  .sidebar .nav { position: relative; z-index: 0; }
+  .nav-glide { position: absolute; z-index: -1; pointer-events: none; border-radius: 12px; background: rgba(45,212,191,.16); }
+  .sidebar .nav-glide { border-radius: 6px; background: linear-gradient(90deg, rgba(45,212,191,.20), rgba(56,189,248,.05)); box-shadow: inset 3px 0 0 var(--accent); }
+  /* Sections further down rise in as you scroll to them. */
+  .main > .ft-below { animation: none !important; opacity: 0; transform: translateY(26px); transition: opacity .5s ease, transform .55s cubic-bezier(.2,.8,.2,1); }
+  .main > .ft-below.ft-in { opacity: 1; transform: none; }
+  /* Swipe between tabs: the page follows your finger a little. */
+  .main.ft-drag { transition: none; }
+  .main.ft-drag-end { transition: transform .25s cubic-bezier(.2,.8,.2,1); }
+  /* Toast icons pop. */
+  .ftToast .tdot { display: inline-block; animation: fttab .5s cubic-bezier(.2,.9,.3,1.4) .08s both; }
+  html.motion-calm .ftToast .tdot { animation: none; }
   /* Settings → Animations → Calm: keep gentle fades/slides, drop bounces, shakes, shines and glows. */
   html.motion-calm .app.page-enter .botnav button.active .ico, html.motion-calm .app.page-enter .sidebar .nav button.active .ico,
   html.motion-calm .ft-flash, html.motion-calm .sheet.open .sheet-grid button, html.motion-calm .ft-badge-pop .bp-ico { animation: none; }
@@ -561,7 +575,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 102 · animation settings";
+  var VERSION = "build 103 · swipe & glide";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Debt","Savings","Other"];
   var CATMETA = {
@@ -4630,10 +4644,11 @@
     var navIds = nav.map(function (n) { return n.id; }), fromI = navIds.indexOf(render.lastTab), toI = navIds.indexOf(currentTab);
     var dirCls = entering && fromI >= 0 && toI >= 0 ? (toI > fromI ? " from-right" : " from-left") : "";
     render.lastTab = currentTab;
+    var beforeNav = entering ? readNavRects() : null;
     var before = entering ? null : readAnimNumbers(), beforeRows = entering ? null : readRowIds(), beforeBars = entering ? null : readBars(), beforeRings = entering ? null : readRings();
     el("root").innerHTML = '<div class="app' + (entering ? ' page-enter' + dirCls : '') + '"><div class="app-content"' + (moreOpen ? ' inert aria-hidden="true"' : '') + '>' + sidebar + '<main class="main">' + topTools + pages[currentTab]() + '</main>' + botnav + '</div>' + sheet + payoff + debtEditModal() + pinSetup + '</div>';
     wire();
-    if (entering) { countUpNumbers(); staggerLists(); endPageEnter(); } else { flashChangedNumbers(before); markNewRows(beforeRows); glideBars(beforeBars); glideRings(beforeRings); }
+    if (entering) { countUpNumbers(); staggerLists(); endPageEnter(); glideNav(beforeNav); revealBelow(); } else { flashChangedNumbers(before); markNewRows(beforeRows); glideBars(beforeBars); glideRings(beforeRings); }
     clearTimeout(render.badgeT); render.badgeT = setTimeout(checkNewBadges, 500);
   }
 
@@ -4731,6 +4746,86 @@
       e.textContent = k >= 1 ? final : show(from + (to - from) * ease);
       if (k < 1) requestAnimationFrame(frame);
     })();
+  }
+  // Build 103: a highlight slides along the menu (bottom bar on phones, sidebar on computers) to the tab you opened.
+  var NAV_BOXES = [".botnav", ".sidebar .nav"];
+  function readNavRects() {
+    var out = {};
+    NAV_BOXES.forEach(function (sel) {
+      var c = document.querySelector(sel), b = c && c.querySelector("button.active");
+      if (!c || !b) return;
+      var cr = c.getBoundingClientRect(), r = b.getBoundingClientRect();
+      if (r.width && cr.width) out[sel] = { l: r.left - cr.left, t: r.top - cr.top, w: r.width, h: r.height };
+    });
+    return out;
+  }
+  function glideNav(before) {
+    if (!before || !motionOK()) return;
+    var now = readNavRects();
+    NAV_BOXES.forEach(function (sel) {
+      var a = before[sel], b = now[sel], c = document.querySelector(sel);
+      if (!a || !b || !c || (Math.abs(a.l - b.l) < 2 && Math.abs(a.t - b.t) < 2)) return;
+      var g = document.createElement("span"); g.className = "nav-glide"; c.insertBefore(g, c.firstChild);
+      var px = function (o, op) { return { left: o.l + "px", top: o.t + "px", width: o.w + "px", height: o.h + "px", opacity: op }; };
+      try {
+        var an = g.animate([px(a, 1), px(b, 1), px(b, 0)], { duration: 620, easing: "cubic-bezier(.3,.8,.2,1)", fill: "forwards" });
+        an.onfinish = function () { g.remove(); };
+      } catch (e) { g.remove(); }
+      setTimeout(function () { if (g.parentNode) g.remove(); }, 1000);
+    });
+  }
+  // Build 103: on a long page, sections below the screen rise in when you scroll down to them.
+  function revealBelow() {
+    if (!motionOK() || !("IntersectionObserver" in window)) return;
+    if (revealBelow.io) revealBelow.io.disconnect();
+    var items = Array.prototype.filter.call(document.querySelectorAll(".main > *"), function (e) { return e.getBoundingClientRect().top > innerHeight + 8; });
+    if (!items.length) return;
+    var io = revealBelow.io = new IntersectionObserver(function (ents) {
+      ents.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add("ft-in"); io.unobserve(en.target); } });
+    }, { rootMargin: "0px 0px -30px 0px", threshold: 0.04 });
+    items.forEach(function (e) { e.classList.add("ft-below"); io.observe(e); });
+  }
+  // Build 103: on a phone, swipe left/right on the page to move between the bottom-bar tabs.
+  function setupSwipeTabs() {
+    var root = el("root"); if (!root || setupSwipeTabs.done) return; setupSwipeTabs.done = true;
+    var st = null;
+    function tabs() { return orderedNav().map(function (n) { return n.id; }); } // same order as the menu (as before build 103)
+    function blocked(t) {
+      for (var n = t; n && n !== root; n = n.parentNode) {
+        if (n.nodeType !== 1) continue;
+        if (/^(INPUT|TEXTAREA|SELECT|BUTTON|CANVAS|svg)$/i.test(n.tagName) || n.isContentEditable) return true;
+        if (n.matches && n.matches(".modal-ov, .sheet, .df-editor, .bal-editor, [data-noswipe]")) return true;
+        var cs = getComputedStyle(n); if (n.scrollWidth > n.clientWidth + 2 && /(auto|scroll)/.test(cs.overflowX)) return true;
+      }
+      return false;
+    }
+    root.addEventListener("touchstart", function (e) {
+      st = null;
+      if (e.touches.length !== 1 || moreOpen || locked || payoffPrompt || !document.querySelector(".botnav") || getComputedStyle(document.querySelector(".botnav")).display === "none") return;
+      var p = e.touches[0];
+      if (p.clientX < 24 || p.clientX > innerWidth - 24) return; // leave the screen edges to the phone's own back gesture
+      if (!e.target.closest || !e.target.closest(".main") || blocked(e.target)) return;
+      var list = tabs(), i = list.indexOf(currentTab); if (i < 0) return;
+      st = { x: p.clientX, y: p.clientY, t: Date.now(), i: i, list: list, horiz: null, main: document.querySelector(".main") };
+    }, { passive: true });
+    root.addEventListener("touchmove", function (e) {
+      if (!st) return;
+      var p = e.touches[0], dx = p.clientX - st.x, dy = p.clientY - st.y;
+      if (st.horiz === null && (Math.abs(dx) > 12 || Math.abs(dy) > 12)) st.horiz = Math.abs(dx) > Math.abs(dy) * 1.6;
+      if (!st.horiz) return;
+      var edge = (dx > 0 && st.i === 0) || (dx < 0 && st.i === st.list.length - 1);
+      if (motionOK() && st.main) { st.main.classList.add("ft-drag"); st.main.style.transform = "translateX(" + Math.round(dx * (edge ? 0.08 : 0.22)) + "px)"; }
+    }, { passive: true });
+    root.addEventListener("touchend", function (e) {
+      if (!st) return;
+      var s = st; st = null;
+      var p = e.changedTouches[0], dx = p.clientX - s.x, dy = p.clientY - s.y;
+      var go = s.horiz && Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.6 && Date.now() - s.t < 900;
+      var next = go ? s.list[s.i + (dx < 0 ? 1 : -1)] : null;
+      if (next) { currentTab = next; moreOpen = false; window.scrollTo(0, 0); render(); return; }
+      if (s.main && s.main.style.transform) { s.main.classList.remove("ft-drag"); s.main.classList.add("ft-drag-end"); s.main.style.transform = ""; setTimeout(function () { s.main.classList.remove("ft-drag-end"); }, 300); }
+    }, { passive: true });
+    root.addEventListener("touchcancel", function () { if (st && st.main) { st.main.classList.remove("ft-drag"); st.main.style.transform = ""; } st = null; }, { passive: true });
   }
   // Build 101: goal/progress rings glide to their new amount instead of jumping.
   function readRings() { return Array.prototype.map.call(document.querySelectorAll(".main .ring-arc"), function (c) { return c.getAttribute("stroke-dasharray"); }); }
@@ -5016,6 +5111,7 @@
     if (state.hideOnOpen) privacy = true;
     try { theme = localStorage.getItem("ft_theme") || "dark"; } catch (e) {}
     applyTheme();
+    try { setupSwipeTabs(); } catch (e) {}
     if (state.pin && isManuallyLocked()) locked = true; // only stays locked if you pressed 🔒 last time
     applyRecurring();
     applySubscriptions();
@@ -5025,25 +5121,7 @@
     if (!initCloud()) finishSplash(); // reconnects automatically if you've set up sync before
     setTimeout(finishSplash, 5000); // network fallback: never leave the launch screen stuck
 
-    // Swipe left/right to move between tabs (mobile)
-    var tsX = 0, tsY = 0, tsT = 0;
-    document.addEventListener("touchstart", function (e) {
-      if (e.touches.length !== 1) { tsT = 0; return; }
-      tsX = e.touches[0].clientX; tsY = e.touches[0].clientY; tsT = Date.now();
-    }, { passive: true });
-    document.addEventListener("touchend", function (e) {
-      if (!tsT || locked || moreOpen) return;
-      var dx = e.changedTouches[0].clientX - tsX, dy = e.changedTouches[0].clientY - tsY, dt = Date.now() - tsT;
-      tsT = 0;
-      if (dt > 600 || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
-      var t = e.target; // ignore swipes inside a horizontally-scrollable element
-      while (t && t !== document.body) { try { if (t.scrollWidth > t.clientWidth + 4 && /auto|scroll/.test(getComputedStyle(t).overflowX)) return; } catch (er) {} t = t.parentNode; }
-      var ids = orderedNav().map(function (n) { return n.id; });
-      var i = ids.indexOf(currentTab); if (i < 0) return;
-      var ni = dx < 0 ? i + 1 : i - 1;
-      if (ni < 0 || ni >= ids.length) return;
-      currentTab = ids[ni]; window.scrollTo(0, 0); render();
-    }, { passive: true });
+    // Swipe left/right between tabs (mobile): moved into setupSwipeTabs() in build 103 (page follows your finger).
 
     var shield = document.createElement("div");
     shield.id = "ftShield";
