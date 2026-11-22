@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 100</title>
+<title>Finance Tracker · build 101</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -511,6 +511,20 @@
   .app.page-enter .ach-shine { position: relative; overflow: hidden; }
   .app.page-enter .ach-shine::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.22) 50%, transparent 70%); transform: translateX(-120%); animation: ftshine 1.1s ease .45s forwards; pointer-events: none; }
   @keyframes ftshine { to { transform: translateX(120%); } }
+  /* ---- Build 101 ---- */
+  /* Pages slide in from the side you moved toward. */
+  .app.page-enter.from-right .main > * { animation-name: ftfromright; }
+  .app.page-enter.from-left .main > * { animation-name: ftfromleft; }
+  @keyframes ftfromright { from { opacity: 0; transform: translateX(22px); } to { opacity: 1; transform: none; } }
+  @keyframes ftfromleft { from { opacity: 0; transform: translateX(-22px); } to { opacity: 1; transform: none; } }
+  .app.page-enter.from-right .main > .spend-alert.bad { animation-name: ftfromright, ftnudge; }
+  .app.page-enter.from-left .main > .spend-alert.bad { animation-name: ftfromleft, ftnudge; }
+  /* Undo toasts: a line along the bottom shrinks while Undo is still available. */
+  .ftToast.has-undo { position: relative; overflow: hidden; }
+  .ftToast .tlife { position: absolute; left: 14px; right: 14px; bottom: 0; height: 2px; border-radius: 2px; background: var(--accent); opacity: .75; transform-origin: left center; animation: ftlife linear forwards; }
+  @keyframes ftlife { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+  /* A wrong value: quick shake and a red outline. */
+  .ft-shake { animation: ftnudge .45s ease; border-color: var(--red, #f87171) !important; box-shadow: 0 0 0 3px rgba(248,113,113,.22) !important; }
   /* Big buttons and tappable cards press in; on a computer, tappable cards lift when you point at them. */
   button.btn:active { transform: scale(.97); }
   .card-link { transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
@@ -528,7 +542,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 100 · more animations";
+  var VERSION = "build 101 · motion polish";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Debt","Savings","Other"];
   var CATMETA = {
@@ -634,11 +648,17 @@
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c]; }); }
   function num(v) { var n = parseFloat(v); return isFinite(n) ? n : 0; }
   function money(v) { return Math.round((num(v) + Number.EPSILON) * 100) / 100; }
+  // Build 101: a box with a wrong value gives a quick "no" shake and a red outline.
+  function shakeEl(x) {
+    if (!x) return;
+    x.classList.remove("ft-shake"); void x.offsetWidth; x.classList.add("ft-shake");
+    setTimeout(function () { x.classList.remove("ft-shake"); }, 1200);
+  }
   function positiveAmount(id) {
     var input = el(id), n = input ? Number(input.value) : NaN;
     if (!isFinite(n) || n <= 0 || money(n) <= 0) {
       toast("Enter an amount greater than zero", "!");
-      if (input) input.focus();
+      if (input) { input.focus(); shakeEl(input); }
       return null;
     }
     return money(n);
@@ -2242,6 +2262,13 @@
       (num(p.amount) > 0 ? '<button type="button" class="btn sm" data-act="pdLog" data-k="' + ds + '">+ Log ' + fmt(p.amount) + '</button>'
         : '<button type="button" class="btn ghost sm" data-tab="payday">Set salary amount</button>') + '</div>';
   }
+  // Build 101: confetti once on payday (once per day, per phone) the first time you see the Dashboard.
+  function cheerPayday() {
+    var key = "ftPaydayCheer", d = today();
+    try { if (localStorage.getItem(key) === d) return; localStorage.setItem(key, d); } catch (e) { if (cheerPayday.done === d) return; }
+    cheerPayday.done = d;
+    if (motionOK()) setTimeout(function () { celebrate("💰 It's payday!"); }, 900);
+  }
   function dashPaydayPanel(safe) {
     var p = state.payday || {}, nx = nextPayday(false), editing = !!dashPaydayPanel.edit;
     var open = 'data-tab="payday" role="button" tabindex="0" aria-label="Open Payday"';
@@ -2255,6 +2282,7 @@
     var dateL = nx.date.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) +
       (nx.moved ? " (moved — usually " + nx.usual.toLocaleDateString(undefined, { day: "numeric", month: "short" }) + ")" : "");
     var expected = num(p.amount) > 0 ? " · " + fmt(p.amount) + " coming in" : "";
+    if (days === 0) cheerPayday();
     if (days === 0) return '<section class="panel card-link countdown" ' + open + '>' + title +
       '<div class="cd-big pay" style="font-size:30px;margin-top:6px">🎉 It\'s payday!</div><div class="mini">' + esc(dateL) + expected + '</div>' +
       salaryPrompt(ymdLocal(nx.date)) + '</section>';
@@ -2616,9 +2644,9 @@
   // Add (sign 1) or deduct (sign −1) the typed amount from this month's spending limit.
   function saApply(sign) {
     var amt = money(num(val("sa_amt")));
-    if (!(amt > 0)) { toast("Type an amount first", "⚠️"); return; }
+    if (!(amt > 0)) { toast("Type an amount first", "⚠️"); shakeEl(el("sa_amt")); return; }
     var s = spendStatus(), was = s.adj, next = money(was + sign * amt);
-    if (s.base + next < 0) { toast("You can take off at most " + fmt(s.base + was) + " this month", "⚠️"); return; }
+    if (s.base + next < 0) { toast("You can take off at most " + fmt(s.base + was) + " this month", "⚠️"); shakeEl(el("sa_amt")); return; }
     if (!state.spendAdjust || typeof state.spendAdjust !== "object") state.spendAdjust = {};
     Object.keys(state.spendAdjust).forEach(function (k) { if (k < prevMonth(s.ym)) delete state.spendAdjust[k]; }); // drop old months (keep last month for the wrap-up)
     if (next) state.spendAdjust[s.ym] = next; else delete state.spendAdjust[s.ym];
@@ -3795,8 +3823,11 @@
       action.onclick = function () { actionFn(); close(); };
       t.appendChild(action);
     }
+    var life = duration || (actionFn ? 6000 : 1900);
+    // Build 101: a thin line along the bottom shrinks to show how long Undo is still available.
+    if (actionLabel && actionFn) { t.classList.add("has-undo"); var bar = document.createElement("span"); bar.className = "tlife"; bar.style.animationDuration = life + "ms"; t.appendChild(bar); }
     wrap.appendChild(t);
-    timer = setTimeout(close, duration || (actionFn ? 6000 : 1900));
+    timer = setTimeout(close, life);
   }
   function removeWithUndo(getList, id, label, onRemove, onRestore) {
     var list = getList(), index = -1;
@@ -4517,11 +4548,15 @@
       '<label class="field" style="margin-bottom:14px"><span>Type it again</span><input id="lk_pin2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="••••"/></label>' +
       '<div class="toolbar"><button class="btn" data-act="pinSetupSave">Save & lock now</button><button class="btn ghost" data-act="pinSetupCancel">Cancel</button></div></div></div>' : '';
     // Build 99: animate only when a page is opened (tab change / first show), never on an ordinary re-render.
-    var entering = render.lastTab !== currentTab; render.lastTab = currentTab;
-    var before = entering ? null : readAnimNumbers(), beforeRows = entering ? null : readRowIds(), beforeBars = entering ? null : readBars();
-    el("root").innerHTML = '<div class="app' + (entering ? ' page-enter' : '') + '"><div class="app-content"' + (moreOpen ? ' inert aria-hidden="true"' : '') + '>' + sidebar + '<main class="main">' + topTools + pages[currentTab]() + '</main>' + botnav + '</div>' + sheet + payoff + debtEditModal() + pinSetup + '</div>';
+    var entering = render.lastTab !== currentTab;
+    // Build 101: the new page slides in from the side you moved toward (pages further along the menu come from the right).
+    var navIds = nav.map(function (n) { return n.id; }), fromI = navIds.indexOf(render.lastTab), toI = navIds.indexOf(currentTab);
+    var dirCls = entering && fromI >= 0 && toI >= 0 ? (toI > fromI ? " from-right" : " from-left") : "";
+    render.lastTab = currentTab;
+    var before = entering ? null : readAnimNumbers(), beforeRows = entering ? null : readRowIds(), beforeBars = entering ? null : readBars(), beforeRings = entering ? null : readRings();
+    el("root").innerHTML = '<div class="app' + (entering ? ' page-enter' + dirCls : '') + '"><div class="app-content"' + (moreOpen ? ' inert aria-hidden="true"' : '') + '>' + sidebar + '<main class="main">' + topTools + pages[currentTab]() + '</main>' + botnav + '</div>' + sheet + payoff + debtEditModal() + pinSetup + '</div>';
     wire();
-    if (entering) { countUpNumbers(); staggerLists(); endPageEnter(); } else { flashChangedNumbers(before); markNewRows(beforeRows); glideBars(beforeBars); }
+    if (entering) { countUpNumbers(); staggerLists(); endPageEnter(); } else { flashChangedNumbers(before); markNewRows(beforeRows); glideBars(beforeBars); glideRings(beforeRings); }
   }
 
   /* ---- Build 99: number animations ---- */
@@ -4541,12 +4576,12 @@
   function endPageEnter() {
     var a = document.querySelector("#root > .app.page-enter");
     clearTimeout(endPageEnter.t);
-    endPageEnter.t = setTimeout(function () { if (a && a.isConnected) a.classList.remove("page-enter"); }, 1700);
+    endPageEnter.t = setTimeout(function () { if (a && a.isConnected) a.classList.remove("page-enter", "from-right", "from-left"); }, 1700);
   }
   function countUpNumbers() {
     if (!motionOK()) return;
     var els = Array.prototype.slice.call(document.querySelectorAll(ANIM_NUM_SEL)).map(function (e) {
-      var p = parseShownNumber(e.textContent); return p && p.n > 0 && e.children.length === 0 ? { e: e, p: p, final: e.textContent } : null;
+      var p = parseShownNumber(e.textContent); if (p && p.n > 0 && e.children.length === 0) { e.setAttribute("data-final", e.textContent); return { e: e, p: p, final: e.textContent }; } return null;
     }).filter(Boolean);
     if (!els.length || document.hidden) return;
     var start = performance.now(), dur = 750, done = false; // timed from now, so a slow first frame doesn't restart at 0
@@ -4567,7 +4602,8 @@
   // On an ordinary re-render (e.g. you logged a spend), any big number that changed glows for a moment.
   function readAnimNumbers() {
     var out = {};
-    document.querySelectorAll(ANIM_NUM_SEL).forEach(function (e, i) { out[animKey(e, i)] = e.textContent; });
+    // data-final = the real number while a count/roll is still running, so a quick second change starts from the truth.
+    document.querySelectorAll(ANIM_NUM_SEL).forEach(function (e, i) { out[animKey(e, i)] = e.getAttribute("data-final") || e.textContent; });
     return out;
   }
   function animKey(e, i) { return i + "|" + String(e.className || "").replace(/\s*ft-flash/g, ""); }
@@ -4581,6 +4617,41 @@
     // At most two floating amounts, Left to Spend first, so the screen doesn't fill with bubbles.
     changed.sort(function (x, y) { return (y[0].classList.contains("spend-amount") ? 1 : 0) - (x[0].classList.contains("spend-amount") ? 1 : 0); });
     changed.slice(0, 2).forEach(function (c) { floatDelta(c[0], c[1]); });
+    changed.forEach(function (c) { rollNumber(c[0], c[1]); });
+  }
+  // Build 101: a changed number rolls from its old value to the new one (≈0.55s), always ending on the exact text.
+  function rollNumber(e, oldText) {
+    var a = parseShownNumber(oldText), b = parseShownNumber(e.textContent), final = e.textContent;
+    if (!a || !b || a.post !== b.post || e.children.length) return;
+    var cur = state.currency || "$", money = b.pre.indexOf(cur) >= 0 || a.pre.indexOf(cur) >= 0;
+    if (money !== (b.pre.indexOf(cur) >= 0)) return; // mixed formats: don't guess
+    var from = (/[−-]/.test(a.pre) ? -1 : 1) * a.n, to = (/[−-]/.test(b.pre) ? -1 : 1) * b.n, dec = b.dec, plus = b.pre.charAt(0) === "+";
+    if (from === to || document.hidden) return;
+    e.setAttribute("data-final", final);
+    var t0 = performance.now(), dur = 550, done = false;
+    function show(v) {
+      var neg = v < 0 && Math.abs(v) >= Math.pow(10, -dec) / 2;
+      return (neg ? "−" : (plus ? "+" : "")) + (money ? cur : "") + Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec }) + b.post;
+    }
+    setTimeout(function () { done = true; if (e.isConnected) e.textContent = final; }, dur + 120);
+    (function frame(ts) {
+      if (done || !e.isConnected) return;
+      var k = Math.max(0, Math.min(1, ((ts || performance.now()) - t0) / dur)), ease = 1 - Math.pow(1 - k, 3);
+      e.textContent = k >= 1 ? final : show(from + (to - from) * ease);
+      if (k < 1) requestAnimationFrame(frame);
+    })();
+  }
+  // Build 101: goal/progress rings glide to their new amount instead of jumping.
+  function readRings() { return Array.prototype.map.call(document.querySelectorAll(".main .ring-arc"), function (c) { return c.getAttribute("stroke-dasharray"); }); }
+  function glideRings(before) {
+    if (!before || !motionOK()) return;
+    var arcs = document.querySelectorAll(".main .ring-arc");
+    if (arcs.length !== before.length) return;
+    var moved = [];
+    arcs.forEach(function (c, i) { var now = c.getAttribute("stroke-dasharray"); if (before[i] && before[i] !== now) { moved.push([c, now]); c.style.transition = "none"; c.style.strokeDasharray = before[i]; } });
+    if (!moved.length) return;
+    void document.body.offsetWidth;
+    moved.forEach(function (m) { m[0].style.transition = "stroke-dasharray .8s cubic-bezier(.2,.8,.2,1)"; m[0].style.strokeDasharray = m[1]; });
   }
   // Build 100: the difference floats up from the number ("−S$12.00" red, "+S$50.00" green).
   function floatDelta(e, oldText) {
