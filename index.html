@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finance Tracker · build 103</title>
+<title>Finance Tracker · build 104</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <meta name="theme-color" content="#0b1120" />
@@ -550,6 +550,25 @@
   /* Toast icons pop. */
   .ftToast .tdot { display: inline-block; animation: fttab .5s cubic-bezier(.2,.9,.3,1.4) .08s both; }
   html.motion-calm .ftToast .tdot { animation: none; }
+  /* ---- Build 104 ---- */
+  /* Expense/Income switch: sliding pill; category chips pop in; the chip you pick bounces. */
+  .qa-type { position: relative; }
+  .qa-type button { position: relative; z-index: 1; transition: color .2s ease; }
+  .qa-type .seg-glide { position: absolute; z-index: 0; border-radius: 9px; pointer-events: none; }
+  .qa-type.seg-gliding button.on { background: transparent !important; }
+  .qa-chip.ft-chip-in { animation: ftpopin .3s cubic-bezier(.2,.9,.3,1.2) both; }
+  .qa-chip.ft-chip-pick { animation: fttab .35s cubic-bezier(.2,.9,.3,1.4); }
+  /* PIN screen: each dot pops as you type; a wrong PIN shakes the dots red. */
+  .pin-dot.just { animation: ftdot .25s cubic-bezier(.2,.9,.3,1.6); }
+  @keyframes ftdot { from { transform: scale(.4); } to { transform: scale(1); } }
+  .pin-dots.pin-err { animation: ftnudge .45s ease; }
+  .pin-dots.pin-err .pin-dot { border-color: var(--red, #f87171) !important; }
+  /* Hide/show amounts: numbers blur in. */
+  .app.priv-flip :is(.value, .spend-amount, .cd-big, .nw-amt, .tx-amt, .pos, .neg, td) { animation: ftunblur .45s ease both; }
+  @keyframes ftunblur { from { filter: blur(7px); opacity: .35; } to { filter: none; opacity: 1; } }
+  /* Coins from money coming in. */
+  .ft-coin { position: fixed; z-index: 99990; pointer-events: none; font-size: 18px; line-height: 1; transform: translate(-50%,-50%); }
+  html.motion-calm .qa-chip.ft-chip-pick, html.motion-calm .pin-dot.just { animation: none; }
   /* Settings → Animations → Calm: keep gentle fades/slides, drop bounces, shakes, shines and glows. */
   html.motion-calm .app.page-enter .botnav button.active .ico, html.motion-calm .app.page-enter .sidebar .nav button.active .ico,
   html.motion-calm .ft-flash, html.motion-calm .sheet.open .sheet-grid button, html.motion-calm .ft-badge-pop .bp-ico { animation: none; }
@@ -575,7 +594,7 @@
 "use strict";
 (function () {
   var STORAGE_KEY = "financeTracker_v1";
-  var VERSION = "build 103 · swipe & glide";
+  var VERSION = "build 104 · playful touches";
   var COLORS = ["#2dd4bf","#38bdf8","#a78bfa","#fbbf24","#f87171","#34d399","#fb7185","#60a5fa","#f472b6","#facc15"];
   var CATEGORIES = ["Salary","Freelance","Gift","Food","Rent","Utilities","Transport","Shopping","Entertainment","Subscriptions","Health","Debt","Savings","Other"];
   var CATMETA = {
@@ -3766,7 +3785,7 @@
 
   function lockScreen() {
     var total = state.pin.length, filled = pinBuffer.length, dots = "";
-    for (var i = 0; i < total; i++) dots += '<span style="display:inline-block;width:14px;height:14px;border-radius:50%;margin:0 7px;transition:all .15s;background:' + (i < filled ? "var(--accent)" : "transparent") + ';border:2px solid ' + (i < filled ? "var(--accent)" : "var(--border)") + '"></span>';
+    for (var i = 0; i < total; i++) dots += '<span class="pin-dot' + (i === filled - 1 ? ' just' : '') + '" style="display:inline-block;width:14px;height:14px;border-radius:50%;margin:0 7px;transition:all .15s;background:' + (i < filled ? "var(--accent)" : "transparent") + ';border:2px solid ' + (i < filled ? "var(--accent)" : "var(--border)") + '"></span>';
     var keyStyle = "height:72px;width:72px;border-radius:50%;font-size:26px;font-weight:500;background:var(--panel);color:var(--text);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto;cursor:pointer;font-family:inherit";
     var keys = "";
     ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"].forEach(function (k) {
@@ -3781,7 +3800,7 @@
         icon +
         '<h2 style="margin:0 0 4px;font-size:22px;font-weight:700">Finance</h2>' +
         '<p class="mini" style="margin:0 0 24px;' + (pinError ? "color:var(--red)" : "") + '">' + (pinError ? "Wrong PIN — try again" : "Enter your PIN to unlock") + '</p>' +
-        '<div style="margin:0 0 28px">' + dots + '</div>' +
+        '<div class="pin-dots' + (pinError ? ' pin-err' : '') + '" style="margin:0 0 28px">' + dots + '</div>' +
         '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:264px;margin:0 auto">' + keys + '</div>' +
         '<button class="btn ghost sm" data-act="forgotPin" style="margin-top:26px">Forgot PIN?</button>' +
         '<div class="mini" id="pinMsg" style="margin-top:10px"></div>' +
@@ -4067,7 +4086,12 @@
       fA.balance = money(num(fA.balance) - amt); tA.balance = money(num(tA.balance) + amt);
       save(); render(); toast("Transferred " + fmt(amt), "🔄");
     },
-    privacy: function () { privacy = !privacy; try { localStorage.setItem("ft_privacy", privacy ? "1" : "0"); } catch (e) {} render(); },
+    privacy: function () {
+      privacy = !privacy; try { localStorage.setItem("ft_privacy", privacy ? "1" : "0"); } catch (e) {} render();
+      // Build 104: amounts blur in as they hide/show.
+      var a = document.querySelector("#root > .app");
+      if (a && motionOK()) { a.classList.remove("priv-flip"); void a.offsetWidth; a.classList.add("priv-flip"); setTimeout(function () { a.classList.remove("priv-flip"); }, 700); }
+    },
     theme: function () {
       var flip = function () { theme = theme === "light" ? "dark" : "light"; try { localStorage.setItem("ft_theme", theme); } catch (e) {} applyTheme(); render(); };
       // Build 102: the new colours spread out in a circle from the button you tapped (where the browser supports it).
@@ -4106,7 +4130,7 @@
     pinDigit: function (e) {
       pinError = false; pinBuffer += e.k;
       if (pinBuffer.length >= state.pin.length) {
-        if (pinBuffer === state.pin) { locked = false; pinBuffer = ""; setManualLock(false); } else { pinBuffer = ""; pinError = true; }
+        if (pinBuffer === state.pin) { locked = false; pinBuffer = ""; setManualLock(false); render.lastTab = null; /* build 104: the app plays its opening animation */ } else { pinBuffer = ""; pinError = true; }
       }
       render();
     },
@@ -4747,6 +4771,43 @@
       if (k < 1) requestAnimationFrame(frame);
     })();
   }
+  // Build 104: the Expense/Income switch — the coloured pill slides across instead of jumping.
+  function glideSeg(from, to) {
+    var c = to.parentNode; if (!c || !motionOK() || !c.animate) return;
+    var cr = c.getBoundingClientRect(), a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+    var col = function (x) { return x.getAttribute("data-qtype") === "income" ? "rgba(52,211,153,.18)" : "rgba(248,113,113,.18)"; };
+    var g = document.createElement("span"); g.className = "seg-glide"; c.insertBefore(g, c.firstChild);
+    c.classList.add("seg-gliding");
+    var an = g.animate([
+      { left: (a.left - cr.left) + "px", top: (a.top - cr.top) + "px", width: a.width + "px", height: a.height + "px", background: col(from) },
+      { left: (b.left - cr.left) + "px", top: (b.top - cr.top) + "px", width: b.width + "px", height: b.height + "px", background: col(to) }
+    ], { duration: 280, easing: "cubic-bezier(.3,.8,.2,1.1)", fill: "forwards" });
+    var done = function () { c.classList.remove("seg-gliding"); if (g.parentNode) g.remove(); };
+    an.onfinish = done; setTimeout(done, 600);
+  }
+  // Build 104: logging money IN gives a little burst of coins from the new row.
+  function coinBurst(row) {
+    if (!motionFull() || !document.body.animate) return;
+    var nav = document.querySelector(".botnav"), navTop = nav && nav.getBoundingClientRect().height ? nav.getBoundingClientRect().top : innerHeight;
+    var onScreen = function (x) { if (!x) return null; var b = x.getBoundingClientRect(); return b.width && b.top > 40 && b.bottom < navTop - 4 ? b : null; };
+    // From the new row if you can see it, else the Add button, else just above the bottom bar (where the "+S$…" message shows).
+    var r = onScreen(row.querySelector(".tx-amt") || row) || onScreen(document.querySelector('[data-act="addTx"]')) ||
+      { left: innerWidth / 2 - 10, width: 20, top: navTop - 70, height: 20 };
+    var cx = r.left + r.width / 2, cy = r.top + r.height / 2, bits = ["🪙", "🪙", "✨", "🪙", "💰", "🪙", "✨", "🪙", "🪙", "✨"];
+    bits.forEach(function (ch, i) {
+      var s = document.createElement("span"); s.className = "ft-coin"; s.textContent = ch;
+      s.style.left = cx + "px"; s.style.top = cy + "px"; document.body.appendChild(s);
+      var ang = (-160 + (i / (bits.length - 1)) * 140) * Math.PI / 180, dist = 50 + Math.random() * 45;
+      var dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist;
+      var an = s.animate([
+        { transform: "translate(-50%,-50%) scale(.4)", opacity: 0 },
+        { transform: "translate(calc(-50% + " + dx * 0.7 + "px), calc(-50% + " + dy * 0.7 + "px)) scale(1.1)", opacity: 1, offset: 0.35 },
+        { transform: "translate(calc(-50% + " + dx + "px), calc(-50% + " + (dy + 40) + "px)) scale(.8) rotate(" + (dx > 0 ? 40 : -40) + "deg)", opacity: 0 }
+      ], { duration: 900 + Math.random() * 300, easing: "cubic-bezier(.2,.7,.4,1)", delay: i * 18, fill: "forwards" });
+      an.onfinish = function () { s.remove(); };
+      setTimeout(function () { if (s.parentNode) s.remove(); }, 1600);
+    });
+  }
   // Build 103: a highlight slides along the menu (bottom bar on phones, sidebar on computers) to the tab you opened.
   var NAV_BOXES = [".botnav", ".sidebar .nav"];
   function readNavRects() {
@@ -4867,7 +4928,7 @@
   function markNewRows(before) {
     if (!before || !motionOK() || !Object.keys(before).length) return;
     var fresh = Array.prototype.filter.call(document.querySelectorAll("[data-rowid]"), function (r) { return !before[r.getAttribute("data-rowid")]; });
-    if (fresh.length >= 1 && fresh.length <= 3) fresh.forEach(function (r) { r.classList.add("ft-new"); });
+    if (fresh.length >= 1 && fresh.length <= 3) fresh.forEach(function (r) { r.classList.add("ft-new"); if (fresh.length === 1 && r.querySelector(".tx-amt.pos")) coinBurst(r); });
   }
   // Progress bars glide from their old width to the new one instead of jumping.
   function readBars() { return Array.prototype.map.call(document.querySelectorAll(".main .progress > div"), function (b) { return b.style.width; }); }
@@ -5023,9 +5084,14 @@
     // Transactions quick add: switch type / pick category without re-rendering (keeps what you've typed)
     root.querySelectorAll("[data-qtype]").forEach(function (b) {
       b.onclick = function () {
-        var ty = b.getAttribute("data-qtype");
+        var ty = b.getAttribute("data-qtype"), was = root.querySelector("[data-qtype].on");
+        if (was && was !== b) glideSeg(was, b);
         root.querySelectorAll("[data-qtype]").forEach(function (x) { x.classList.toggle("on", x === b); });
-        root.querySelectorAll("[data-qset]").forEach(function (s) { s.hidden = s.getAttribute("data-qset") !== ty; });
+        root.querySelectorAll("[data-qset]").forEach(function (s) {
+          var show = s.getAttribute("data-qset") === ty, popIn = show && s.hidden;
+          s.hidden = !show;
+          if (popIn && motionOK()) s.querySelectorAll(".qa-chip").forEach(function (c, i) { c.classList.remove("ft-chip-in"); void c.offsetWidth; c.style.animationDelay = Math.min(i * 0.025, 0.3).toFixed(3) + "s"; c.classList.add("ft-chip-in"); });
+        });
         el("t_type").value = ty; pageTransactions.qType = ty;
         var set = root.querySelector('[data-qset="' + ty + '"]'), on = set && set.querySelector(".qa-chip.on");
         if (!on && set) { on = set.querySelector('[data-qcat="' + (ty === "income" ? (pageTransactions.lastIncCat || "Salary") : (pageTransactions.lastExpCat || "Food")) + '"]') || set.querySelector(".qa-chip"); if (on) on.classList.add("on"); }
@@ -5036,6 +5102,7 @@
     root.querySelectorAll("[data-qcat]").forEach(function (b) {
       b.onclick = function () {
         b.parentNode.querySelectorAll(".qa-chip").forEach(function (x) { x.classList.toggle("on", x === b); });
+        if (motionOK()) { b.classList.remove("ft-chip-pick"); void b.offsetWidth; b.classList.add("ft-chip-pick"); }
         el("t_cat").value = b.getAttribute("data-qcat");
       };
     });
